@@ -1,0 +1,78 @@
+/* Hamilton design tokens — Branding §3 verbatim.
+ *
+ * R-phosphor-overuse: phosphor green oklch(85% 0.18 145) appears ONLY in
+ * --trust-nominal and --gating-secondary. Any other use fails the
+ * scripts/lint-phosphor.sh CI gate.
+ */
+
+:root {
+  /* §3.1 Surface tiers (three depth levels, dark) */
+  --surface-base: oklch(14% 0.01 250);
+  --surface-panel: oklch(18% 0.012 250);
+  --surface-elevated: oklch(22% 0.014 250);
+  --surface-modal-scrim: oklch(8% 0.005 250 / 0.72);
+
+  /* §3.2 Text emphasis */
+  --text-primary: oklch(96% 0.005 90);
+  --text-secondary: oklch(78% 0.008 90);
+  --text-tertiary: oklch(58% 0.01 90);
+  --text-citation: oklch(70% 0.04 50);
+
+  /* §3.3 Trust gradient — load-bearing R16 gradient edge */
+  --trust-nominal: oklch(85% 0.18 145);     /* phosphor; SOURCE OF TRUTH */
+  --trust-watching: oklch(80% 0.17 117);
+  --trust-degraded: oklch(72% 0.18 75);
+  --trust-failed: oklch(54% 0.16 47);
+  --trust-roe-line: oklch(72% 0.20 75);
+
+  /* §3.4 Kill-chain gating accent — load-bearing R16 gating edge */
+  --gating-primary: oklch(72% 0.20 75);
+  --gating-secondary: oklch(85% 0.18 145); /* phosphor; SOURCE OF TRUTH */
+
+  /* §3.5 Track affiliation */
+  --affiliation-friendly: oklch(70% 0.13 230);
+  --affiliation-enemy: oklch(58% 0.18 25);
+  --affiliation-neutral: oklch(72% 0.02 80);
+  --affiliation-unknown: oklch(65% 0.10 145);
+
+  /* §3.6 Status states (Evan-contract back-compat — distinct from trust) */
+  --status-healthy: oklch(72% 0.05 145);
+  --status-degraded: oklch(70% 0.10 90);
+  --status-critical: oklch(60% 0.16 50);
+  --status-offline: oklch(38% 0.005 250);
+
+  /* §3.7 Citation / provenance tier */
+  --citation-text: oklch(70% 0.04 50);
+  --citation-rule: oklch(45% 0.02 50);
+  --citation-bg-hover: oklch(20% 0.015 50);
+
+  /* §4.2 Fluid type scale */
+  --text-micro: clamp(0.6875rem, 0.65rem + 0.15vw, 0.75rem);
+  --text-body: clamp(0.8125rem, 0.78rem + 0.2vw, 0.9375rem);
+  --text-panel: clamp(0.9375rem, 0.88rem + 0.3vw, 1.0625rem);
+  --text-modal: clamp(1.5rem, 1.2rem + 1.2vw, 2.25rem);
+  --text-hero: clamp(2.5rem, 1.8rem + 3vw, 4.5rem);
+  --text-readout: clamp(2rem, 1.6rem + 2vw, 3.25rem);
+
+  /* Easing tokens — Branding §6.1 */
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out-smooth: cubic-bezier(0.4, 0, 0.6, 1);
+  --ease-out-back-subtle: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  /* Durations */
+  --duration-modal-arrival: 420ms;
+  --duration-trust-decay: 800ms;
+  --duration-recovery-pulse: 600ms;
+  --duration-candidate-reveal: 280ms;
+  --duration-numeral-tick: 120ms;
+  --duration-roe-cross: 240ms;
+
+  /* Spacing — quiet rhythm, not uniform */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-12: 3rem;
+}

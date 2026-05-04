@@ -1,0 +1,88 @@
+/* Motion primitives — Branding §6.1.
+ * Compositor-friendly only: transform, opacity, clip-path, filter.
+ * Reduced-motion fallback for every primitive.
+ */
+
+@keyframes gating-modal-arrival {
+  0% {
+    opacity: 0;
+    transform: translateY(8px);
+    filter: blur(0);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+  }
+}
+
+@keyframes gating-modal-arrival-blur-cop {
+  0% { filter: blur(0); }
+  100% { filter: blur(8px); }
+}
+
+@keyframes gating-subtitle-arrival {
+  0% { opacity: 0; transform: translateY(4px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes recovery-pulse {
+  0% { opacity: 0.3; filter: drop-shadow(0 0 0 transparent); }
+  60% { opacity: 1; filter: drop-shadow(0 0 24px var(--trust-nominal)); }
+  100% { opacity: 1; filter: drop-shadow(0 0 0 transparent); }
+}
+
+@keyframes fingerprint-candidate-reveal {
+  0% { opacity: 0; transform: translateX(-12px); clip-path: inset(0 100% 0 0); }
+  100% { opacity: 1; transform: translateX(0); clip-path: inset(0 0 0 0); }
+}
+
+@keyframes hairline-rule-extend {
+  0% { transform: scaleX(0); }
+  100% { transform: scaleX(1); }
+}
+
+@keyframes halo-pulse {
+  0%, 100% { opacity: 0.55; transform: scale(1); }
+  50% { opacity: 0.95; transform: scale(1.18); }
+}
+
+.motion-modal-frame {
+  animation: gating-modal-arrival var(--duration-modal-arrival) var(--ease-out-expo) both;
+}
+
+.motion-modal-subtitle {
+  animation: gating-subtitle-arrival 200ms var(--ease-out-expo) both;
+  animation-delay: 100ms;
+}
+
+.motion-cop-blur {
+  animation: gating-modal-arrival-blur-cop var(--duration-modal-arrival) var(--ease-out-expo) both;
+}
+
+.motion-candidate-reveal {
+  animation: fingerprint-candidate-reveal var(--duration-candidate-reveal) var(--ease-out-expo) both;
+}
+
+.motion-recovery-pulse {
+  animation: recovery-pulse var(--duration-recovery-pulse) var(--ease-out-back-subtle) both;
+}
+
+.motion-hairline-extend {
+  transform-origin: left center;
+  animation: hairline-rule-extend 600ms var(--ease-out-expo) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .motion-modal-frame,
+  .motion-modal-subtitle,
+  .motion-cop-blur,
+  .motion-candidate-reveal,
+  .motion-recovery-pulse,
+  .motion-hairline-extend {
+    animation-duration: 120ms;
+    animation-timing-function: linear;
+  }
+
+  .motion-cop-blur { animation: none; }
+}

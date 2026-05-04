@@ -1,0 +1,68 @@
+/* Typography — Branding §4. Self-hosted only. NFR-01.
+ *
+ * Inter Tight is the license-clean substitute for Söhne Buch.
+ * JetBrains Mono is the fallback for Berkeley Mono.
+ *
+ * Phase 0 ships .gitkeep stubs in /public/fonts/ — production .woff2 files
+ * are sourced separately. font-display: swap means missing files don't
+ * block rendering; the fallback stack carries the design until the .woff2
+ * lands.
+ */
+
+@font-face {
+  font-family: 'Inter Tight';
+  src: url('/fonts/InterTight-Variable.woff2') format('woff2-variations'),
+       url('/fonts/InterTight-Regular.woff2') format('woff2');
+  font-weight: 400 700;
+  font-display: swap;
+  font-style: normal;
+  unicode-range: U+0000-007F, U+00A0-00FF, U+2010-2027;
+}
+
+@font-face {
+  font-family: 'JetBrains Mono';
+  src: url('/fonts/JetBrainsMono-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-display: swap;
+  font-style: normal;
+  unicode-range: U+0000-007F, U+00A0-00FF, U+2010-2027;
+}
+
+@font-face {
+  font-family: 'JetBrains Mono';
+  src: url('/fonts/JetBrainsMono-Medium.woff2') format('woff2');
+  font-weight: 500;
+  font-display: swap;
+  font-style: normal;
+  unicode-range: U+0000-007F, U+00A0-00FF, U+2010-2027;
+}
+
+:root {
+  --font-sans: 'Inter Tight', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+}
+
+body {
+  font-family: var(--font-sans);
+  font-size: var(--text-body);
+  line-height: 1.45;
+  color: var(--text-secondary);
+  font-feature-settings: 'kern' 1, 'liga' 1;
+}
+
+/* Tabular numerics — load-bearing per Branding §4.3.
+ * The trust-score numeral is the most-looked-at glyph cluster in the demo.
+ * It must not jitter as digits change.
+ */
+.trust-readout,
+.tabular {
+  font-family: var(--font-mono);
+  font-feature-settings: 'tnum' 1, 'zero' 1;
+  font-variant-numeric: tabular-nums slashed-zero;
+  letter-spacing: -0.01em;
+}
+
+.text-citation {
+  color: var(--citation-text);
+  font-size: var(--text-micro);
+}
