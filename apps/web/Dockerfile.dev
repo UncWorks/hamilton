@@ -1,0 +1,22 @@
+# syntax=docker/dockerfile:1.6
+# Dev image — hot reload via bind mount in compose.
+
+FROM node:20-slim
+WORKDIR /app
+
+RUN corepack enable
+
+COPY pnpm-workspace.yaml package.json ./
+COPY packages/contracts/package.json ./packages/contracts/
+COPY apps/web/package.json ./apps/web/
+
+RUN pnpm install
+
+COPY packages/contracts ./packages/contracts
+COPY apps/web ./apps/web
+
+RUN pnpm --filter @hamilton/contracts build
+
+WORKDIR /app/apps/web
+EXPOSE 3000
+CMD ["pnpm", "dev"]

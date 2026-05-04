@@ -1,0 +1,103 @@
+name: hamilton
+
+services:
+  # MQTT broker — the renderer-agnostic spine (System Design §5)
+  mosquitto:
+    image: eclipse-mosquitto:2.0
+    container_name: hamilton-mqtt
+    ports:
+      - "1883:1883"   # MQTT
+      - "9001:9001"   # WebSockets (frontend)
+    volumes:
+      - ./mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+    healthcheck:
+      test: ["CMD-SHELL", "mosquitto_sub -h localhost -t '$$SYS/#' -C 1 -W 2 || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 3
+
+  # Local LLM fallback (Llama 3.2 3B via Ollama) — NFR-01 offline guarantee
+  ollama:
+    image: ollama/ollama:latest
+    container_name: hamilton-ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama-models:/root/.ollama
+    # Model is pulled lazily; first run takes a few minutes.
+    # To preload: docker exec hamilton-ollama ollama pull llama3.2:3b
+
+  # Trust engine (Rust + Tokio + Axum)
+  trust-engine:
+    build:
+      context: ../..
+      dockerfile: services/trust-engine/Dockerfile
+    container_name: hamilton-trust-engine
+    depends_on:
+      mosquitto:
+        condition: service_healthy
+    environment:
+      MQTT_BROKER_URL: mqtt://mosquitto:1883
+      TRUST_ENGINE_HTTP_PORT: 8080
+      RUST_LOG: hamilton=info,trust_engine=debug
+    ports:
+      - "8080:8080"
+    profiles: ["full"]
+
+  # Comms simulator (Python — Avdiivka scenario)
+  comms-sim:
+    build:
+      context: ../..
+      dockerfile: services/comms-sim/Dockerfile
+    container_name: hamilton-comms-sim
+    depends_on:
+      mosquitto:
+        condition: service_healthy
+    environment:
+      MQTT_BROKER_URL: mqtt://mosquitto:1883
+      COMMS_SIM_SCENARIO: ${COMMS_SIM_SCENARIO:-avdiivka}
+      COMMS_SIM_SPEED: ${COMMS_SIM_SPEED:-1}
+      COMMS_SIM_SEED: ${COMMS_SIM_SEED:-42}
+    profiles: ["full"]
+
+  # LLM narrator (Node — function-calling abstraction)
+  llm-narrator:
+    build:
+      context: ../..
+      dockerfile: services/llm-narrator/Dockerfile
+    container_name: hamilton-llm-narrator
+    depends_on:
+      mosquitto:
+        condition: service_healthy
+    environment:
+      MQTT_BROKER_URL: mqtt://mosquitto:1883
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      ANTHROPIC_MODEL: ${ANTHROPIC_MODEL:-claude-3-5-sonnet-latest}
+      OLLAMA_URL: http://ollama:11434
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-llama3.2:3b}
+    profiles: ["full"]
+
+  # Next.js dev server
+  web:
+    build:
+      context: ../..
+      dockerfile: apps/web/Dockerfile.dev
+    container_name: hamilton-web
+    depends_on:
+      mosquitto:
+        condition: service_healthy
+    environment:
+      NEXT_PUBLIC_MQTT_WS_URL: ws://localhost:9001
+      NEXT_PUBLIC_RENDERER: ${NEXT_PUBLIC_RENDERER:-maplibre}
+      NEXT_PUBLIC_ROE_FLOOR: ${NEXT_PUBLIC_ROE_FLOOR:-0.6}
+    ports:
+      - "3000:3000"
+    volumes:
+      - ../../apps/web:/app/apps/web
+      - ../../packages:/app/packages
+      - /app/apps/web/node_modules
+      - /app/apps/web/.next
+    profiles: ["full"]
+
+volumes:
+  ollama-models:

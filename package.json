@@ -1,0 +1,24 @@
+{
+  "name": "hamilton",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Hamilton — comms-integrity evaluation layer. The commander's aide-de-camp for the comms channel.",
+  "packageManager": "pnpm@9.12.0",
+  "scripts": {
+    "dev": "pnpm --filter web dev",
+    "build": "pnpm -r build",
+    "lint": "pnpm -r lint",
+    "lint:phosphor": "bash scripts/lint-phosphor.sh",
+    "verify:assets": "bash scripts/verify-assets.sh",
+    "verify:deps": "bash scripts/count-deps.sh"
+  },
+  "engines": {
+    "node": ">=20.10.0",
+    "pnpm": ">=9.0.0"
+  },
+  "pnpm": {
+    "overrides": {
+      "@zip.js/zip.js": "2.7.43"
+    }
+  }
+}

@@ -1,0 +1,54 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build outputs
+dist/
+build/
+.next/
+target/
+*.tsbuildinfo
+
+# Environment
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# Cesium / large assets (tracked via Git LFS or sourced separately)
+apps/web/public/cesium/*
+!apps/web/public/cesium/.gitkeep
+apps/web/public/tiles/*
+!apps/web/public/tiles/.gitkeep
+apps/web/public/fonts/*
+!apps/web/public/fonts/.gitkeep
+assets/cesium-tiles/
+assets/terrain/
+assets/gltf/
+
+# Demo fallback
+demo-fallback.mp4
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+
+# Claude
+.claude/settings.local.json
+
+# DuckDB
+*.duckdb
+*.duckdb.wal
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp

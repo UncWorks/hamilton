@@ -1,0 +1,66 @@
+{
+  "version": "0.1.0",
+  "source_note": "Public-source EW characterizations per FRS §2.4a. Library is data, not code (NFR-06). Citations: Bronk RUSI 2024, JAPCC 2023, WaPo 2024.",
+  "entries": [
+    {
+      "method_id": "ground_based_gps_uhf_barrage",
+      "named_systems": ["R-330Zh Zhitel", "Pole-21"],
+      "frequency_band_mhz": [100, 2000],
+      "hop_spread_hz": 50000,
+      "gps_l1_overlap": true,
+      "gps_l2_overlap": true,
+      "time_domain_pattern": "barrage",
+      "effective_range_km": 30,
+      "munitions_affected": ["Excalibur", "JDAM-ER", "Switchblade 300", "GMLRS-U"],
+      "source_citation": "Bronk RUSI 2024"
+    },
+    {
+      "method_id": "cellular_uhf_barrage",
+      "named_systems": ["R-934B Sinitsa"],
+      "frequency_band_mhz": [800, 2700],
+      "hop_spread_hz": 20000,
+      "gps_l1_overlap": false,
+      "gps_l2_overlap": false,
+      "time_domain_pattern": "barrage",
+      "effective_range_km": 15,
+      "munitions_affected": ["ATAK position-share", "FPV C2 link"],
+      "source_citation": "JAPCC 2023"
+    },
+    {
+      "method_id": "swept_uhf_low_power",
+      "named_systems": ["Krasukha-2"],
+      "frequency_band_mhz": [300, 1000],
+      "hop_spread_hz": 5000,
+      "gps_l1_overlap": false,
+      "gps_l2_overlap": false,
+      "time_domain_pattern": "swept",
+      "effective_range_km": 8,
+      "munitions_affected": [],
+      "source_citation": "WaPo 2024"
+    },
+    {
+      "method_id": "directional_gps_l1_spot",
+      "named_systems": ["Pole-21 (directional mode)"],
+      "frequency_band_mhz": [1570, 1580],
+      "hop_spread_hz": 1000,
+      "gps_l1_overlap": true,
+      "gps_l2_overlap": false,
+      "time_domain_pattern": "continuous",
+      "effective_range_km": 20,
+      "munitions_affected": ["Excalibur", "JDAM-ER"],
+      "source_citation": "Bronk RUSI 2024"
+    },
+    {
+      "method_id": "pulsed_uhf_wide",
+      "named_systems": ["Lorandit"],
+      "frequency_band_mhz": [200, 6000],
+      "hop_spread_hz": 100000,
+      "gps_l1_overlap": true,
+      "gps_l2_overlap": true,
+      "time_domain_pattern": "pulsed",
+      "effective_range_km": 12,
+      "munitions_affected": ["FPV C2 link", "Switchblade 300"],
+      "source_citation": "JAPCC 2023"
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "name": "Hamilton",
+  "short_name": "Hamilton",
+  "description": "The commander's aide-de-camp for the comms channel.",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "landscape",
+  "background_color": "#0a0d12",
+  "theme_color": "#0a0d12",
+  "icons": []
+}
