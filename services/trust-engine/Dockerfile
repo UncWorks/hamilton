@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1.6
 
-FROM rust:1.82-slim AS builder
+FROM rust:1.86-slim AS builder
 WORKDIR /build
 
 # System deps for duckdb-rs (bundled feature still needs cmake + clang)
@@ -14,6 +14,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY Cargo.toml Cargo.lock* ./
 COPY packages/contracts-rs ./packages/contracts-rs
 COPY services/trust-engine ./services/trust-engine
+# trust-library include_str!s assets/fingerprints/library.json relative to
+# the crate root — needs to be in the build context.
+COPY assets ./assets
 
 RUN cargo build --release --bin trust-engine
 
