@@ -1,0 +1,357 @@
+// Data + table renderers for src/stories/BrandingAudit.mdx.
+// Line numbers refer to the tree at the commit that introduced Storybook.
+
+import type { ReactNode } from 'react';
+
+export type Severity = 'high' | 'med' | 'low';
+
+export interface Finding {
+  id: string;
+  severity: Severity;
+  area: string;
+  where: string;
+  finding: string;
+  spec: string;
+}
+
+export const FINDINGS: Finding[] = [
+  {
+    id: 'A01',
+    severity: 'high',
+    area: 'Fonts',
+    where: 'public/fonts/ (only .gitkeep) · src/styles/typography.css:12-38',
+    finding:
+      'No woff2 files are committed, so every @font-face 404s and the whole UI renders in the system fallback (-apple-system / SF Mono). Inter Tight + JetBrains Mono never appear on screen. See Foundations/Typography → Families (live load check).',
+    spec: '§4.1, §4.4',
+  },
+  {
+    id: 'A02',
+    severity: 'high',
+    area: 'Iconography',
+    where: 'CesiumSpine.tsx:142-148 · MapSpine.tsx:100-126 · MapSpine.tsx:28-47',
+    finding:
+      'Both renderers draw tracks as circles (Cesium `point`, deck.gl ScatterplotLayer). The §5.2 polygon rule (sides = sensor type, enemy 45°, neutral outlined, unknown dashed) exists in track-symbol.ts and buildIconPolygons() but is never used. Reference rendering: COP/TrackSymbol.',
+    spec: '§5.2, FR-06',
+  },
+  {
+    id: 'A03',
+    severity: 'high',
+    area: 'Color',
+    where: 'trust-gradient.ts:62-73 (trustRgb)',
+    finding:
+      'Hand-tuned RGB mirrors of the trust tokens drift badly: degraded [220,178,90] vs token ≈ #e49000 (yellow-tan vs amber), watching blue channel 110 vs 48, failed [170,100,70] vs ≈ #b54800. The map shows different trust colors than the panel. See Foundations/Colors → Renderer Mirrors.',
+    spec: '§3.3',
+  },
+  {
+    id: 'A04',
+    severity: 'high',
+    area: 'Color',
+    where: 'track-symbol.ts:35-41 (affiliationRgb) · tokens.css:33-36',
+    finding:
+      'Affiliation RGB mirrors drift from the OKLCH tokens (friendly [70,140,220] vs ≈ #28acdf; enemy [180,70,80] vs ≈ #cf4040). The CSS --affiliation-* tokens are defined but referenced nowhere.',
+    spec: '§3.5',
+  },
+  {
+    id: 'A05',
+    severity: 'high',
+    area: 'Color',
+    where: 'tokens.css:23-25 · trust-gradient.ts:13-40',
+    finding:
+      'Spec defines watching/degraded/failed as continuous gradients (→ oklch(75% .16 90) → oklch(62% .18 60) → oklch(45% .14 35)). Tokens are single flat stops with different values (80%/.17/117, 72%/.18/75, 54%/.16/47) and trustBand() steps between them. See Foundations/Trust Bands → Gradient Strip.',
+    spec: '§3.3, §6.3',
+  },
+  {
+    id: 'A06',
+    severity: 'high',
+    area: 'Overlay',
+    where: 'CesiumSpine.tsx:228,230,235,258 · MapSpine.tsx:140',
+    finding:
+      'Jammer + directional-vector overlays use the trustRgb("degraded") literal (#dbb25a / Color(0.86,0.7,0.35)) at 0.55 (Cesium) vs 0.43 (deck.gl) alpha, solid line. Spec: --gating-primary at 40%, dashed, drawn outward with clip-path.',
+    spec: '§10.3',
+  },
+  {
+    id: 'A07',
+    severity: 'high',
+    area: 'Modal motion',
+    where: 'motion.css:6-22, 59-61 · KillChainGate.tsx:56-69',
+    finding:
+      'The COP never blurs behind the gate: .motion-cop-blur is defined but not applied anywhere, and gating-modal-arrival animates filter blur(0) → blur(0) (no-op). Frame 1 of the load-bearing beat is missing.',
+    spec: '§6.1, §6.2, §10.5',
+  },
+  {
+    id: 'A08',
+    severity: 'med',
+    area: 'Modal',
+    where: 'KillChainGate.tsx:128, 141-146',
+    finding:
+      'Option-button leaders use --gating-secondary (phosphor) always; spec puts --gating-primary on leaders and phosphor only on the focused option. No :focus-visible treatment — hover is inline style mutation, keyboard focus is invisible.',
+    spec: '§10.5, §10.6',
+  },
+  {
+    id: 'A09',
+    severity: 'med',
+    area: 'Copy',
+    where: 'KillChainGate.tsx:15, 36, 94',
+    finding:
+      'Headline renders "Trust on UNIT_B-position + UNIT_B-GPS…" (uppercased source_id) vs spec "B-position + B-GPS". Option (c) hard-codes "B" regardless of the gated source (see Modal/KillChainGate → Other Source).',
+    spec: '§10.5 verbatim text',
+  },
+  {
+    id: 'A10',
+    severity: 'med',
+    area: 'Typography',
+    where: 'CesiumSpine.tsx:151, 234',
+    finding:
+      'Cesium label font is "500 12px JetBrainsMono, …" — family name without the space never matches @font-face "JetBrains Mono", and px sizes bypass --text-micro.',
+    spec: '§4.1, §4.2',
+  },
+  {
+    id: 'A11',
+    severity: 'med',
+    area: 'Semantics',
+    where: 'LlmToggle.tsx:12-17 · EventTerminal.tsx:116-127 · tokens.css:39-42',
+    finding:
+      'Infrastructure/status meanings borrow trust + gating tokens (LLM "active" = --trust-nominal phosphor with glow; terminal "recovery" = --trust-nominal, "fingerprint" = --trust-degraded). The --status-* tier is defined but unused. Phosphor leaks semantically even though lint-phosphor.sh (literal grep) passes.',
+    spec: '§3.6, §13 R-phosphor-overuse',
+  },
+  {
+    id: 'A12',
+    severity: 'med',
+    area: 'Wordmark',
+    where: 'Wordmark.tsx:1-3, 14-30',
+    finding:
+      'Rendered as live text in a span (depends on the missing font, A01). Spec and the file header comment say inline SVG with flattened paths.',
+    spec: '§8.1',
+  },
+  {
+    id: 'A13',
+    severity: 'med',
+    area: 'Brand bar',
+    where: 'BrandBar.tsx:28, 45-54',
+    finding:
+      'Hairline rule sits inside the lockup column under the tagline with a 4px (px literal) gap; spec: 12px below the wordmark (§8.1) and full bar width when the gate fires (§10.5).',
+    spec: '§8.1, §10.5',
+  },
+  {
+    id: 'A14',
+    severity: 'med',
+    area: 'Opacity',
+    where: 'CesiumSpine.tsx:127 · MapSpine.tsx:42, 110',
+    finding:
+      'Three different icon-opacity floors: Cesium max(0.25, score), deck.gl max(60/255≈0.24, score), buildIconPolygons max(70/255≈0.27). FR-06 says opacity = score (30% at failed). See Foundations/Trust Bands → Mapping.',
+    spec: '§3.3, §5.2, FR-06',
+  },
+  {
+    id: 'A15',
+    severity: 'med',
+    area: 'Halo',
+    where: 'CesiumSpine.tsx:174-196 · MapSpine.tsx:74-98 · motion.css:45-48',
+    finding:
+      'Cesium halo is a static ground ellipse sized in metres (haloRadiusPx×30 m, alpha 0.18, no pulse); deck.gl pulses radius at alpha 90/255. halo-pulse keyframe is unused. Two renderers, two halo behaviours.',
+    spec: '§5.2, §6.3, §6.4',
+  },
+  {
+    id: 'A16',
+    severity: 'med',
+    area: 'Modal',
+    where: 'KillChainGate.tsx:57-69, 78, 101, 105',
+    finding:
+      'Scrim and frame share one z-100 container (spec: scrim z90, frame z100). Glow is box-shadow (spec: filter drop-shadow); subtitle adds an unspecified text-shadow and weight 600 vs headline 500.',
+    spec: '§6.2, §7.2',
+  },
+  {
+    id: 'A17',
+    severity: 'low',
+    area: 'Radii',
+    where: 'CandidateCards.tsx:60 · LlmToggle.tsx:34, 43',
+    finding: 'Only two components round corners (4px dashed empty card, 2px toggle); everything else is square. No radius token.',
+    spec: '§2 (instrument register)',
+  },
+  {
+    id: 'A18',
+    severity: 'low',
+    area: 'Tracking',
+    where:
+      'TrustPanel.tsx:26,58,68,93 · CandidateCards.tsx:22,64,160 · BrandBar.tsx:35,65 · LlmToggle.tsx:52,67 · KillChainGate.tsx:90,103,136 · EventTerminal.tsx:76 · Spine.tsx:54 · TrustReadout.tsx:43 · Wordmark.tsx:24',
+    finding: 'Eight ad-hoc letter-spacing values (0 → 0.32em) and no tracking tokens.',
+    spec: '§4',
+  },
+  {
+    id: 'A19',
+    severity: 'low',
+    area: 'Typography',
+    where: 'CandidateCards.tsx:17-27 · TrustPanel.tsx:88-97 vs EventTerminal.tsx:70-86 · Spine.tsx:45-58',
+    finding:
+      'The uppercase micro "eyebrow" label is sans in the panel but mono in the terminal and loader, with 0.06/0.08/0.16em tracking. See Foundations/Typography → Eyebrow Variants.',
+    spec: '§4.1',
+  },
+  {
+    id: 'A20',
+    severity: 'low',
+    area: 'Citation',
+    where: 'CandidateCards.tsx:149-164 · tokens.css:19, 45-47',
+    finding:
+      'Citation is always-visible text with a native title tooltip, not the z-50 hover card on --citation-bg-hover (unused). Citation set in sans inside a mono card. --text-citation duplicates --citation-text and is unused.',
+    spec: '§3.7, §7.2',
+  },
+  {
+    id: 'A21',
+    severity: 'low',
+    area: 'Layout',
+    where: 'app/page.tsx:72-99',
+    finding: 'Terminal spans full width (spec: cols 1–8); no 12-column grid or 24px gutters; grid rows hard-coded 56px / 160px.',
+    spec: '§7.2',
+  },
+  {
+    id: 'A22',
+    severity: 'low',
+    area: 'Color literals',
+    where: 'CesiumSpine.tsx:67, 152, 153, 236 · app/layout.tsx:13',
+    finding: '#0a0d12 (≈ but ≠ --surface-base #06090d) and #f5f0e6 (≈ --text-primary) hard-coded.',
+    spec: '§3.1, §3.2',
+  },
+  {
+    id: 'A23',
+    severity: 'low',
+    area: 'Icons',
+    where: 'EventTerminal.tsx:84',
+    finding: 'Unicode "⏸" glyph for pause; the §5.3 custom 16-glyph SVG set does not exist.',
+    spec: '§5.3',
+  },
+  {
+    id: 'A24',
+    severity: 'low',
+    area: 'Copy',
+    where: 'BrandBar.tsx:66, 70 · TrustPanel.tsx:71',
+    finding:
+      'Operator renders "FDC · ADAM" via text-transform (spec "FDC · Adam"). Panel subtitle uppercases affiliation but leaves sensor type lowercase and only replaces the first underscore.',
+    spec: '§7.2',
+  },
+  {
+    id: 'A25',
+    severity: 'low',
+    area: 'Motion',
+    where: 'motion.css (absent) · tokens.css:59, 64, 67, 68',
+    finding:
+      'trust-decay, score-numeral-tick, roe-floor-cross and playhead-scrub primitives are not implemented; their tokens (--duration-trust-decay/numeral-tick/roe-cross, --ease-in-out-smooth) are unused. .motion-recovery-pulse is defined but unused.',
+    spec: '§6.1',
+  },
+  {
+    id: 'A26',
+    severity: 'med',
+    area: 'COP framing',
+    where: 'CesiumSpine.tsx:19-21, 76-88',
+    finding:
+      'Fixed camera (4.5 km alt, 0.06° south of the AO, pitch −55°) puts units A/B/C at the very top edge of the Cesium view, and fully off-screen at wide aspect ratios (e.g. a 2:1 canvas). Observed while verifying COP/CesiumSpine; stories use a near-square canvas to keep tracks visible.',
+    spec: '§7.2, §10.1 (B icon must be the focal point)',
+  },
+  {
+    id: 'A27',
+    severity: 'low',
+    area: 'Dark scheme',
+    where: 'app/global.css:11-19 · app/layout.tsx:14',
+    finding:
+      'Dark color-scheme is declared only via the Next viewport meta; global.css has no `color-scheme: dark`, so native scrollbars/form controls render light wherever the meta is absent (visible in Storybook, e.g. the TrustPanel scrollbar).',
+    spec: '§3.1',
+  },
+];
+
+export interface PortRow {
+  uncwork: string;
+  path: string;
+  hamilton: string;
+  note: string;
+}
+
+export const UNCWORK_MAP: PortRow[] = [
+  { uncwork: 'App', path: 'src/app.tsx', hamilton: 'app/page.tsx (Pages/COP)', note: 'Both compose header / map / panel / terminal.' },
+  { uncwork: 'Panel', path: 'src/components/ui/panel.tsx', hamilton: 'none — candidate to port', note: 'Hamilton has no shared panel primitive; each component inlines surface + eyebrow styles (A19).' },
+  { uncwork: 'Toggle', path: 'src/components/ui/toggle.tsx', hamilton: 'LlmToggle (inline buttons)', note: 'Port as a token-driven primitive and rebuild LlmToggle on it.' },
+  { uncwork: 'MissionHeader', path: 'src/features/hud/components/mission-header.tsx', hamilton: 'BrandBar', note: 'uncwork adds UTC clock + blinking status dot.' },
+  { uncwork: 'FooterStrip', path: 'src/features/hud/components/footer-strip.tsx', hamilton: 'none — candidate to port', note: 'AO / datum / keyboard hints strip.' },
+  { uncwork: 'StatusSummary', path: 'src/features/hud/components/status-summary.tsx', hamilton: 'none — candidate to port', note: 'Natural home for the unused --status-* tokens (A11).' },
+  { uncwork: 'TypeLegend', path: 'src/features/hud/components/type-legend.tsx', hamilton: 'none — candidate to port', note: 'Track-symbology legend; Foundations/Iconography is the design reference.' },
+  { uncwork: 'LinkDetailPanel', path: 'src/features/links/components/link-detail-panel.tsx', hamilton: 'TrustPanel', note: 'uncwork shows link status + detectors; Hamilton shows trust readout, trace, candidates.' },
+  { uncwork: 'TrackContextMenu', path: 'src/features/links/components/track-context-menu.tsx', hamilton: 'none — candidate to port', note: 'Hamilton selection is click-only (selectSource).' },
+  { uncwork: 'LayerTogglePanel', path: 'src/features/map/components/layer-toggle-panel.tsx', hamilton: 'none — candidate to port', note: 'Hamilton has no layer controls.' },
+  { uncwork: 'MapView', path: 'src/features/map/components/map-view.tsx', hamilton: 'MapSpine (+ CesiumSpine, Spine)', note: 'Both deck.gl; uncwork has a basemap style, Hamilton has none yet.' },
+  { uncwork: 'ReplayControls', path: 'src/features/replay/components/replay-controls.tsx', hamilton: 'none — candidate to port', note: 'Would implement the §6.1 playhead-scrub primitive.' },
+  { uncwork: 'ScenarioSwitcher', path: 'src/features/scenarios/components/scenario-switcher.tsx', hamilton: 'none — candidate to port', note: 'Hamilton scenario is fixed (Avdiivka).' },
+  { uncwork: 'DataSourceToggle', path: 'src/features/data-source/components/data-source-toggle.tsx', hamilton: 'none — candidate to port', note: 'Live vs mock feed; Storybook MQTT mock is the Hamilton analogue.' },
+  { uncwork: 'EventTerminal', path: 'src/features/terminal/components/event-terminal.tsx', hamilton: 'EventTerminal', note: 'Same role; uncwork derives log client-side, Hamilton polls /api/events.' },
+  { uncwork: 'attribution layer + fingerprintTone', path: 'src/features/attribution/lib/*', hamilton: 'CandidateCards + CesiumSpine jammer overlay', note: 'uncwork tones attribution on the map; Hamilton shows FR-04a cards in the panel.' },
+  { uncwork: 'link icons (iconFor / previewSvg)', path: 'src/features/links/lib/icons.ts', hamilton: 'track-symbol.ts symbolGeometry', note: 'uncwork has an SVG icon set; Hamilton geometry is unused by renderers (A02).' },
+  { uncwork: 'heatmap layer', path: 'src/features/heatmap/lib/build-heatmap-layer.ts', hamilton: 'none — candidate to port', note: '' },
+  { uncwork: 'trails layer', path: 'src/features/trails/lib/build-trails-layer.ts', hamilton: 'none — candidate to port', note: '' },
+];
+
+const SEV_COLOR: Record<Severity, string> = {
+  high: 'var(--gating-primary)',
+  med: 'var(--trust-watching)',
+  low: 'var(--text-tertiary)',
+};
+
+const cell = {
+  padding: '6px 8px',
+  verticalAlign: 'top' as const,
+  borderTop: '1px solid var(--surface-elevated)',
+  fontSize: 13,
+};
+
+function Table({ head, children }: { head: string[]; children: ReactNode }) {
+  return (
+    <table style={{ borderCollapse: 'collapse', width: '100%' }}>
+      <thead>
+        <tr>
+          {head.map((h) => (
+            <th key={h} style={{ ...cell, textAlign: 'left', borderTop: 'none' }}>
+              {h}
+            </th>
+          ))}
+        </tr>
+      </thead>
+      <tbody>{children}</tbody>
+    </table>
+  );
+}
+
+export function FindingsTable({ severity }: { severity?: Severity }) {
+  const rows = severity ? FINDINGS.filter((f) => f.severity === severity) : FINDINGS;
+  return (
+    <Table head={['ID', 'Sev', 'Area', 'Where (file:line)', 'Finding', 'Spec']}>
+      {rows.map((f) => (
+        <tr key={f.id}>
+          <td style={cell}>
+            <code>{f.id}</code>
+          </td>
+          <td style={{ ...cell, color: SEV_COLOR[f.severity], fontWeight: 600 }}>{f.severity}</td>
+          <td style={cell}>{f.area}</td>
+          <td style={cell}>
+            <code style={{ fontSize: 12 }}>{f.where}</code>
+          </td>
+          <td style={cell}>{f.finding}</td>
+          <td style={cell}>{f.spec}</td>
+        </tr>
+      ))}
+    </Table>
+  );
+}
+
+export function UncworkTable() {
+  return (
+    <Table head={['uncwork component', 'path (frontend/)', 'Hamilton equivalent', 'Note']}>
+      {UNCWORK_MAP.map((r) => (
+        <tr key={r.uncwork}>
+          <td style={cell}>
+            <strong>{r.uncwork}</strong>
+          </td>
+          <td style={cell}>
+            <code style={{ fontSize: 12 }}>{r.path}</code>
+          </td>
+          <td style={{ ...cell, color: r.hamilton.startsWith('none') ? 'var(--gating-primary)' : undefined }}>{r.hamilton}</td>
+          <td style={cell}>{r.note}</td>
+        </tr>
+      ))}
+    </Table>
+  );
+}

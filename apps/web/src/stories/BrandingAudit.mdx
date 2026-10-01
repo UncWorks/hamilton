@@ -1,0 +1,74 @@
+import { Meta } from '@storybook/blocks';
+import { FINDINGS, FindingsTable, UNCWORK_MAP, UncworkTable } from './support/audit-data';
+
+<Meta title="Branding Audit" />
+
+# Branding audit
+
+Every component in `apps/web` compared against **docs/Branding and Frontend Design.md** (the spec). This page is the
+working list for unifying look-and-feel. **Nothing here has been fixed** — components are untouched; the stories
+render them exactly as they ship. Line numbers point at the tree as of the commit that added Storybook.
+
+{FINDINGS.length} findings: {FINDINGS.filter((f) => f.severity === 'high').length} high,
+{' '}{FINDINGS.filter((f) => f.severity === 'med').length} medium,
+{' '}{FINDINGS.filter((f) => f.severity === 'low').length} low.
+
+## How to use this page
+
+- **Foundations/Colors → Renderer Mirrors / Hard-coded Literals** shows the color drift side by side with Δ values.
+- **Foundations/Trust Bands** shows score → color / halo / opacity as each renderer actually applies it.
+- **Foundations/Typography → Families** live-checks whether the self-hosted fonts loaded (they don't — A01).
+- **COP/TrackSymbol (overlay)** is the spec-correct §5.2 icon, built from the app's own geometry helpers, for the
+  renderers to converge on.
+
+## High severity — the load-bearing look
+
+<FindingsTable severity="high" />
+
+## Medium
+
+<FindingsTable severity="med" />
+
+## Low
+
+<FindingsTable severity="low" />
+
+## What is already consistent
+
+- All panel / modal / terminal / brand-bar colors go through `var(--…)` tokens — the hard-coded literals are
+  confined to the two WebGL renderers (which can't read CSS) and `app/layout.tsx` `themeColor`.
+- Phosphor literal discipline holds (`scripts/lint-phosphor.sh` passes): the OKLCH phosphor value only appears in
+  `tokens.css` and `trust-gradient.ts`.
+- `.trust-readout` tabular numerics are applied to every score numeral (TrustReadout, CandidateCards).
+- Surface tiers are used as specified: base → panel → elevated → modal scrim.
+
+## Components without a story of their own
+
+- **`RootLayout`** (`app/layout.tsx`) — renders `<html>`/`<body>` and Next `<Script>` tags, so it cannot mount
+  inside a story. Its effects (global.css, Cesium base URL + script) are reproduced by `.storybook/preview.tsx` and
+  the Cesium story loader.
+- **`CandidateCard`, `CitationHover`** (private in `CandidateCards.tsx`) — not exported; covered by
+  Panel/CandidateCards (all branches, including the empty filler and no-munitions states).
+- **`TraceBullets`** (private in `TrustPanel.tsx`) — covered by Panel/TrustPanel (0–3 bullets via Playground).
+- **`RoeFloorIndicator`** (private in `TrustReadout.tsx`) — covered by Panel/TrustReadout (above / on / below floor).
+- **`SpineLoader`** (private in `Spine.tsx`) — only visible while the dynamic chunk loads; flashes in COP/Spine.
+- **`SpineWithProps`** (private in `app/page.tsx`) — page-local adapter; covered by Pages/COP.
+- **WebGL renderers** (`CesiumSpine`, `MapSpine`) — storied and render offline, but need a WebGL-capable browser;
+  headless/CI snapshot runners without GPU will show an empty canvas.
+
+## uncwork → Hamilton component map
+
+`/Users/kristianromero/Projects/uncwork/frontend/src` (read-only inventory). {UNCWORK_MAP.length} uncwork surfaces;
+{' '}{UNCWORK_MAP.filter((r) => r.hamilton.startsWith('none')).length} have no Hamilton equivalent and are candidates to
+port. Note uncwork's visual language is a Tailwind hex "terminal" theme (`#00d9ff` cyan accent, `#00ff88` green,
+`#ff6b35` hot, 8–10px mono text, rgba cyan glows, rounded status dots) — anything ported must be re-skinned onto
+Hamilton's OKLCH tokens, not copied.
+
+<UncworkTable />
+
+## Dependency impact (NFR-07)
+
+Storybook adds **five devDependencies** to `apps/web` (`storybook`, `@storybook/nextjs`, `@storybook/react`,
+`@storybook/addon-essentials`, `@storybook/blocks`, all pinned `8.6.18`). **Zero runtime dependencies** — nothing is
+imported from app code, and `next build` output is unchanged. `scripts/count-deps.sh` counts dev + runtime deps
+together, so its ceiling number rises by 5; the ≤25 *runtime* budget is unaffected.
