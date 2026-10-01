@@ -48,6 +48,7 @@ const preview: Preview = {
           'Toggle',
           'COP',
           'Pages',
+          'Explorations',
         ],
       },
     },

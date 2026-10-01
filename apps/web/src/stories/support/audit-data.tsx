@@ -144,10 +144,11 @@ export const FINDINGS: Finding[] = [
   {
     id: 'A15',
     severity: 'med',
-    area: 'Halo',
-    where: 'CesiumSpine.tsx:174-196 · MapSpine.tsx:74-98 · motion.css:45-48',
+    area: 'Halo — FIXED',
+    where:
+      'was TrackGlyph.tsx:62-70 + motion.css:45-48 (off-centre) · MapSpine.tsx:59-98 · CesiumSpine.tsx:174-196 → now trust-gradient.ts haloFrameAt() + motion.css .halo',
     finding:
-      'Cesium halo is a static ground ellipse sized in metres (haloRadiusPx×30 m, alpha 0.18, no pulse); deck.gl pulses radius at alpha 90/255. halo-pulse keyframe is unused. Two renderers, two halo behaviours.',
+      'FIXED. Root cause of the off-centre pulse: halo-pulse scaled an SVG <circle> with transform-origin: center but no transform-box, so it resolved against the SVG viewport (view-box) — origin (46px,46px) instead of the circle at (0,0); the halo slid ~8px up-left each pulse. Also: deck.gl wrapped its clock at 4000ms (mid-pulse jumps) and its halo radius (1−c)×24 was smaller than the 18px icon; Cesium drew a static metre-sized ground ellipse (foreshortened by the −55° pitch, re-added every tick). All three now share one concentric screen-space geometry (icon edge + (1−c)×24px, spec period, static ring under prefers-reduced-motion). Live treatment = Option 1 in Explorations/Halo Options.',
     spec: '§5.2, §6.3, §6.4',
   },
   {
