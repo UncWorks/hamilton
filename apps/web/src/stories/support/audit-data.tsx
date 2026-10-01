@@ -255,6 +255,61 @@ export const FINDINGS: Finding[] = [
       'Dark color-scheme is declared only via the Next viewport meta; global.css has no `color-scheme: dark`, so native scrollbars/form controls render light wherever the meta is absent (visible in Storybook, e.g. the TrustPanel scrollbar).',
     spec: '§3.1',
   },
+  // --- COP symbology conformance vs APP-6(E) / 2525E (Explorations/Track Symbology) ---
+  {
+    id: 'S01',
+    severity: 'high',
+    area: 'Symbology — open, pending option selection',
+    where: 'CesiumSpine.tsx:156-161 · MapSpine.tsx:119-145',
+    finding:
+      'OPEN — pending option selection. Deviation: tracks are circles; in APP-6 a circle reads as the friend sea-surface frame. Options A/B/C in Explorations/Track Symbology.',
+    spec: 'APP-6(E) frames · §5.1, §5.2',
+  },
+  {
+    id: 'S02',
+    severity: 'med',
+    area: 'Symbology — open, pending option selection',
+    where: 'CesiumSpine.tsx · MapSpine.tsx (absent)',
+    finding:
+      'OPEN — pending option selection. Missing: echelon marks, status (anticipated) dash, operational-condition bar.',
+    spec: 'APP-6(E) amplifiers B, status, AL',
+  },
+  {
+    id: 'S03',
+    severity: 'med',
+    area: 'Symbology — open, pending option selection',
+    where: 'Spine.tsx:37-40 · MapSpine.tsx',
+    finding:
+      'OPEN — pending option selection. Missing: MapSpine has no jammer symbol; Spine.tsx drops jammerLocation before it reaches MapSpine.',
+    spec: 'SIDC 10065200001102002500',
+  },
+  {
+    id: 'S04',
+    severity: 'med',
+    area: 'Symbology — open, pending option selection',
+    where: 'MapSpine.tsx (directional LineLayer) · CesiumSpine.tsx (directional polyline)',
+    finding:
+      'OPEN — pending option selection. Deviation: directional line uses the --trust-degraded colour and is not a standard graphic; should be "Bearing Line – Jammer" (25 220107) in ink with the label at the far end.',
+    spec: 'SIDC 10032500002201070000',
+  },
+  {
+    id: 'S05',
+    severity: 'med',
+    area: 'Symbology — open, pending option selection',
+    where: 'MapSpine.tsx track-halo · CesiumSpine.tsx halo point',
+    finding:
+      'OPEN — pending option selection. Deviation: the filled halo disc (now concentric, see A15) covers the amplifier slots (T, J). Option B replaces it with a frame-shaped outline halo.',
+    spec: 'APP-6(E) amplifier layout',
+  },
+  {
+    id: 'S06',
+    severity: 'low',
+    area: 'Symbology — open, pending option selection',
+    where: 'CesiumSpine.tsx (label entity) · MapSpine.tsx (none)',
+    finding:
+      'OPEN — pending option selection. Deviation: labels are Cesium-only and always on (raw source_id + score); spec wants T left, J (trust) right only below 0.60, with a dark text outline.',
+    spec: 'APP-6(E) amplifiers T, J',
+  },
 ];
 
 export interface PortRow {

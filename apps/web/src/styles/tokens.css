@@ -35,6 +35,26 @@
   --affiliation-neutral: oklch(72% 0.02 80);
   --affiliation-unknown: oklch(65% 0.10 145);
 
+  /* Track symbology — APP-6(E) / 2525E exploration (Explorations/Track
+   * Symbology). PROPOSED, additive only: no renderer uses these yet and the
+   * §3.5 affiliation tokens above are unchanged. Contrast vs --surface-base. */
+  --sym-ink: oklch(90% 0.01 90);              /* #e0ded7 · 14.8:1 — frames, icons, ink graphics */
+  --sym-ink-strong: oklch(94% 0.008 90);      /* #edebe5 — Option A frame + icon */
+  --sym-plate: oklch(14% 0.01 250 / 0.85);    /* surface-base @ 0.85 — frame backing plate */
+  --sym-select: oklch(96% 0.005 90);          /* selection double frame */
+  --sym-fill-friend: oklch(68% 0.085 232);    /* #5fa2c4 — Option A fill */
+  --sym-fill-hostile: oklch(60% 0.14 18);     /* #c65860 */
+  --sym-fill-neutral: oklch(66% 0.07 178);    /* #60a192 */
+  --sym-fill-unknown: oklch(80% 0.085 98);    /* #ccbf7e */
+  /* Option A dim fills (score < 0.60) */
+  --sym-fill-friend-dim: #1c485d;
+  --sym-fill-hostile-dim: #64262b;
+  --sym-fill-neutral-dim: #1e4840;
+  --sym-fill-unknown-dim: #564d25;
+  /* Strokes / condition bar in the failed band: --trust-failed is only 3.7:1
+   * on --surface-base; this reaches 5.1:1 (non-text minimum 3:1). */
+  --trust-failed-stroke: oklch(62% 0.16 47);  /* #d1611b */
+
   /* §3.6 Status states (Evan-contract back-compat — distinct from trust) */
   --status-healthy: oklch(72% 0.05 145);
   --status-degraded: oklch(70% 0.10 90);
