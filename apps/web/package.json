@@ -10,7 +10,8 @@
     "postinstall": "node scripts/stage-cesium.mjs",
     "storybook": "pnpm --filter @hamilton/contracts build && storybook dev -p 6006 --no-open",
     "build-storybook": "pnpm --filter @hamilton/contracts build && storybook build -o storybook-static",
-    "typecheck": "tsc --noEmit -p ."
+    "typecheck": "tsc --noEmit -p .",
+    "test": "node --test src/lib/*.test.ts"
   },
   "dependencies": {
     "@deck.gl/core": "9.0.33",
@@ -33,6 +34,7 @@
     "@storybook/blocks": "8.6.18",
     "@storybook/nextjs": "8.6.18",
     "@storybook/react": "8.6.18",
+    "@storybook/test": "8.6.18",
     "@types/node": "22.7.5",
     "@types/react": "18.3.11",
     "@types/react-dom": "18.3.0",

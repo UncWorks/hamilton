@@ -262,7 +262,7 @@ export const FINDINGS: Finding[] = [
     area: 'Symbology — open, pending option selection',
     where: 'CesiumSpine.tsx:156-161 · MapSpine.tsx:119-145',
     finding:
-      'OPEN — pending option selection. Deviation: tracks are circles; in APP-6 a circle reads as the friend sea-surface frame. Options A/B/C in Explorations/Track Symbology.',
+      'OPEN — pending option selection. Deviation: tracks are circles; in APP-6 a circle reads as the friend sea-surface frame. Options A/B/C/B′ in Explorations/Track Symbology. B′: standard 2525E land-unit frames (monochrome --sym-ink, affiliation by shape), solid regardless of trust; SIDC stored as 2525E numeric, 2525C letter code for TAK export.',
     spec: 'APP-6(E) frames · §5.1, §5.2',
   },
   {
@@ -271,7 +271,7 @@ export const FINDINGS: Finding[] = [
     area: 'Symbology — open, pending option selection',
     where: 'CesiumSpine.tsx · MapSpine.tsx (absent)',
     finding:
-      'OPEN — pending option selection. Missing: echelon marks, status (anticipated) dash, operational-condition bar.',
+      'OPEN — pending option selection. Missing: echelon marks, status (anticipated) dash, operational-condition bar. B′: echelon marks (team • / platoon ••• / battery |) and the status-1 dash for candidate sites are drawn; the AL operational-condition bar is deliberately NOT used — it is equipment-only and yellow/red reads as damaged/destroyed (see S08).',
     spec: 'APP-6(E) amplifiers B, status, AL',
   },
   {
@@ -280,7 +280,7 @@ export const FINDINGS: Finding[] = [
     area: 'Symbology — open, pending option selection',
     where: 'Spine.tsx:37-40 · MapSpine.tsx',
     finding:
-      'OPEN — pending option selection. Missing: MapSpine has no jammer symbol; Spine.tsx drops jammerLocation before it reaches MapSpine.',
+      'OPEN — pending option selection. Missing: MapSpine has no jammer symbol; Spine.tsx drops jammerLocation before it reaches MapSpine. B′ (story mock): confirmed fix J1 as a solid hostile jammer, candidates as status-1 dashed hostile diamonds inside a dashed NAI labelled with T (controlling HQ) and W (DTG). Renderer wiring still open.',
     spec: 'SIDC 10065200001102002500',
   },
   {
@@ -289,7 +289,7 @@ export const FINDINGS: Finding[] = [
     area: 'Symbology — open, pending option selection',
     where: 'MapSpine.tsx (directional LineLayer) · CesiumSpine.tsx (directional polyline)',
     finding:
-      'OPEN — pending option selection. Deviation: directional line uses the --trust-degraded colour and is not a standard graphic; should be "Bearing Line – Jammer" (25 220107) in ink with the label at the far end.',
+      'OPEN — pending option selection. Deviation: directional line uses the --trust-degraded colour and is not a standard graphic; should be "Bearing Line – Jammer" (25 220107) in ink with the label at the far end. B′: drawn as the bearing line in ink, labelled at the far end with T and W per FM 1-02.2 ¶5-42.',
     spec: 'SIDC 10032500002201070000',
   },
   {
@@ -298,7 +298,7 @@ export const FINDINGS: Finding[] = [
     area: 'Symbology — open, pending option selection',
     where: 'MapSpine.tsx track-halo · CesiumSpine.tsx halo point',
     finding:
-      'OPEN — pending option selection. Deviation: the filled halo disc (now concentric, see A15) covers the amplifier slots (T, J). Option B replaces it with a frame-shaped outline halo.',
+      'OPEN — pending option selection. Deviation: the filled halo disc (now concentric, see A15) covers the amplifier slots (T, J). Option B replaces it with a frame-shaped outline halo. B′: keeps the live centred halo (Option 1) as the "Hamilton link-trust overlay (non-2525)" — trust tokens only, toggleable, stripped on export, frozen when stale — and pushes the text amplifiers outside its extent so it never covers T / J / W / AR.',
     spec: 'APP-6(E) amplifier layout',
   },
   {
@@ -307,8 +307,45 @@ export const FINDINGS: Finding[] = [
     area: 'Symbology — open, pending option selection',
     where: 'CesiumSpine.tsx (label entity) · MapSpine.tsx (none)',
     finding:
-      'OPEN — pending option selection. Deviation: labels are Cesium-only and always on (raw source_id + score); spec wants T left, J (trust) right only below 0.60, with a dark text outline.',
+      'OPEN — pending option selection. Deviation: labels are Cesium-only and always on (raw source_id + score); spec wants T left, J (trust) right only below 0.60, with a dark text outline. B′: T left; right line = semantic rating + score + J code ("DEGRADED 0.42 D4") shown below 0.60, when stale, or on hover/focus; W (last-good DTG) and AR NRT when stale; hover/focus opens the factor-breakdown tooltip. Scale: src/lib/link-trust-rating.ts.',
     spec: 'APP-6(E) amplifiers T, J',
+  },
+  // --- Option B conflicts with US 2525E / FM 1-02.2 (us-symbology-findings.md) ---
+  {
+    id: 'S07',
+    severity: 'high',
+    area: 'Symbology — Option B conflict, resolved in B′',
+    where: 'Explorations/Track Symbology → Option B (BAND_DASH)',
+    finding:
+      'Option B dashes the frame by trust band. In 2525 a dashed frame already means status 1 (anticipated/planned) or the assumed-friend / suspect / pending identities — a trust-degraded friend reads as "assumed friend". RESOLVED IN B′: frames stay solid; dashes only for status 1 (candidate jammer sites).',
+    spec: 'MIL-STD-2525E status / identity · FM 1-02.2',
+  },
+  {
+    id: 'S08',
+    severity: 'high',
+    area: 'Symbology — Option B conflict, resolved in B′',
+    where: 'Explorations/Track Symbology → Option B (condition bar)',
+    finding:
+      'Option B draws the AL operational-condition bar in the trust colour. AL is defined for equipment/installations only; on a unit yellow/red reads as damaged/destroyed. RESOLVED IN B′: no AL bar; trust is carried by J / W / AR and the non-2525 overlay.',
+    spec: 'MIL-STD-2525E amplifier AL',
+  },
+  {
+    id: 'S09',
+    severity: 'high',
+    area: 'Symbology — Option B conflict, resolved in B′',
+    where: 'Explorations/Track Symbology → Option B (failed band)',
+    finding:
+      'Option B adds the "damaged" slash in the failed band. It means physical damage — dangerous in a fires context. RESOLVED IN B′: no slash; UNRELIABLE (E5) is a rating label, not a condition.',
+    spec: 'MIL-STD-2525E operational condition',
+  },
+  {
+    id: 'S10',
+    severity: 'med',
+    area: 'Symbology — Option B conflict, resolved in B′',
+    where: 'Explorations/Track Symbology → Option B (J amplifier)',
+    finding:
+      'Option B writes a raw score ("0.42") into J, breaking the A–F × 1–6 evaluation-rating format. RESOLVED IN B′: J = mapped code (B2 / C3 / D4 / E5) used for export; the visible label is the semantic name + score (NOMINAL / WATCH / DEGRADED / UNRELIABLE, STALE) with the J code secondary.',
+    spec: 'MIL-STD-2525E amplifier J · FM 2-22.3 App. B',
   },
 ];
 

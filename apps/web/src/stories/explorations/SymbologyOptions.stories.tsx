@@ -1,5 +1,6 @@
 import type { Decorator, Meta, StoryObj } from '@storybook/react';
-import type { CSSProperties, ReactNode } from 'react';
+import { useId, useRef, type CSSProperties, type ReactNode } from 'react';
+import { expect, fireEvent, userEvent, waitFor, within } from '@storybook/test';
 import type { SensorType } from '@hamilton/contracts';
 import { trustBand } from '@/lib/trust-gradient';
 import {
@@ -14,7 +15,21 @@ import {
   type MilSymbolProps,
   type SymbologyOption,
 } from '@/stories/support/MilSymbol';
-import { CANDIDATES, JAMMER_LOCATION, PHASE_TRACKS } from '@/stories/fixtures/avdiivka';
+import { CANDIDATES, JAMMER_LOCATION, PHASE_TRACKS, at, componentsFor } from '@/stories/fixtures/avdiivka';
+import { STALE_AFTER_S, formatDtg, rateLinkTrust } from '@/lib/link-trust-rating';
+import {
+  FireMissionPopup,
+  LegendPrime,
+  MilSymbolPrime,
+  RatingCell,
+  RatingExplanation,
+  SIDC_TABLE_PRIME_MD,
+  SidcTablePrime,
+  TRIGGER_CSS,
+  explainRating,
+  useAnchoredTips,
+  type ExplanationProps,
+} from '@/stories/support/OptionBPrime';
 import { mono } from '@/stories/support/foundation-ui';
 
 // ---------------------------------------------------------------------------
@@ -30,6 +45,10 @@ interface SymbologyArgs {
   phase: 'nominal' | 'watching' | 'degraded' | 'failed';
   /** COP story: symbol size in px. */
   size: 16 | 24 | 32;
+  /** Option B′: Hamilton link-trust overlay (non-2525 halo). */
+  overlay: boolean;
+  /** COP – Option B′: scenario clock in seconds (0:45 → 1:20). */
+  clock: number;
 }
 
 /** Machado 2009 deuteranopia, severity 1.0 — linear RGB (feColorMatrix default). */
@@ -306,12 +325,14 @@ const meta = {
       },
     },
   },
-  args: { deuteranopia: false, reducedMotion: false, phase: 'degraded', size: 24 },
+  args: { deuteranopia: false, reducedMotion: false, phase: 'degraded', size: 24, overlay: true, clock: 75 },
   argTypes: {
     deuteranopia: { control: 'boolean' },
     reducedMotion: { control: 'boolean' },
     phase: { control: 'inline-radio', options: ['nominal', 'watching', 'degraded', 'failed'] },
     size: { control: 'inline-radio', options: [16, 24, 32] },
+    overlay: { control: 'boolean', table: { disable: true } },
+    clock: { control: { type: 'range', min: 45, max: 80, step: 1 }, table: { disable: true } },
   },
 } satisfies Meta<SymbologyArgs>;
 
@@ -319,6 +340,7 @@ export default meta;
 type Story = StoryObj<SymbologyArgs>;
 
 const matrixOnly = { phase: { table: { disable: true } }, size: { table: { disable: true } } } as const;
+const shown = { table: { disable: false } } as const;
 
 export const OptionA: Story = {
   name: 'Option A — APP-6 palette-tuned',
@@ -338,11 +360,11 @@ export const OptionC: Story = {
   render: ({ reducedMotion }) => <OptionPage option="C" reducedMotion={reducedMotion} />,
 };
 
-/** A, B and C at 24px, same rows/columns, for direct comparison. */
+/** A, B, C and B′ at 24px, same rows/columns, for direct comparison. */
 export const SideBySide: Story = {
   name: 'Side by side',
-  argTypes: matrixOnly,
-  render: ({ reducedMotion }) => (
+  argTypes: { ...matrixOnly, overlay: shown },
+  render: ({ reducedMotion, overlay }) => (
     <div style={{ display: 'grid', gap: 'var(--space-4)', padding: 'var(--space-4)', background: 'var(--surface-panel)' }}>
       {(['A', 'B', 'C'] as const).map((o) => (
         <div key={o} style={{ display: 'grid', gap: 'var(--space-2)' }}>
@@ -350,6 +372,10 @@ export const SideBySide: Story = {
           <Matrix option={o} size={24} reducedMotion={reducedMotion} margin={12} />
         </div>
       ))}
+      <div style={{ display: 'grid', gap: 'var(--space-2)' }}>
+        <p style={{ margin: 0, maxWidth: 980, fontSize: 12, color: 'var(--text-secondary)' }}>{RATIONALE_PRIME}</p>
+        <MatrixPrime size={24} reducedMotion={reducedMotion} overlay={overlay} margin={4} />
+      </div>
     </div>
   ),
 };
@@ -542,4 +568,404 @@ export const CopOptionB: Story = {
       },
     },
   },
+};
+
+// ===========================================================================
+// Option B′ — US MIL-STD-2525E / FM 1-02.2 conformant ("modified Option B")
+// ===========================================================================
+
+const RATIONALE_PRIME: ReactNode = (
+  <>
+    <strong>Option B′ — US 2525E-conformant.</strong> Monochrome standard frames that stay <em>solid</em> regardless of trust; dashes only
+    for status 1 (candidate sites). No AL condition bar, no damaged slash, no frame colour. Trust travels in standard fields where the
+    meaning matches — J (evaluation rating, exported), W (DTG of last good update), AR = NRT + grey frame when stale — and as the
+    centred <strong>Hamilton link-trust overlay (non-2525)</strong> halo, toggleable, trust tokens only. Visible label: semantic name +
+    score, J code secondary. Hover or focus a scored symbol for the factor breakdown. ROE / Excalibur gate → fire-mission popup.
+  </>
+);
+
+/** Fixed "now" for the matrix / tooltip stories — the 1:20 gating beat. */
+const NOW_ISO = at(41);
+
+interface PrimeCol {
+  score: number;
+  stale?: boolean;
+}
+const PRIME_COLS: PrimeCol[] = [{ score: 0.95 }, { score: 0.72 }, { score: 0.45 }, { score: 0.2 }, { score: 0.72, stale: true }];
+const STALE_AGE_S = STALE_AFTER_S + 4;
+
+function explanationFor(title: string, score: number, stale = false, neighbours = 'neighbours'): ExplanationProps {
+  return {
+    title,
+    components: componentsFor(score),
+    payloadScore: score,
+    lastGoodIso: at(41 - (stale ? STALE_AGE_S : 1)),
+    nowIso: NOW_ISO,
+    neighbours,
+    topCandidate: CANDIDATES[0],
+  };
+}
+
+function MatrixPrime({ size, reducedMotion, overlay, margin = 8 }: { size: number; reducedMotion: boolean; overlay: boolean; margin?: number }) {
+  return (
+    <table style={{ borderCollapse: 'collapse', justifySelf: 'start', ...mapSurface }}>
+      <thead>
+        <tr>
+          <th style={{ ...th, textAlign: 'right' }}>{size}px</th>
+          {PRIME_COLS.map((c) => {
+            const r = rateLinkTrust(c.score, { stale: c.stale ?? false });
+            return (
+              <th key={`${c.score}${c.stale ?? ''}`} style={{ ...th, color: r.labelToken }}>
+                {c.score.toFixed(2)} · {r.label} {r.jCode}
+                {c.stale ? ` (${STALE_AGE_S}s, NRT)` : ''}
+              </th>
+            );
+          })}
+        </tr>
+      </thead>
+      <tbody>
+        {ROWS.map((row) => (
+          <tr key={row.label} style={{ borderTop: '1px solid var(--surface-elevated)' }}>
+            <th style={{ ...th, textAlign: 'right', color: 'var(--text-secondary)', whiteSpace: 'nowrap' }}>{row.label}</th>
+            {PRIME_COLS.map((c) => {
+              const stale = c.stale ?? false;
+              const scored = !row.jammer;
+              const lastGood = at(41 - (stale ? STALE_AGE_S : 1));
+              return (
+                <td key={`${c.score}${stale}`} style={{ padding: 0, verticalAlign: 'middle' }}>
+                  <RatingCell
+                    frame={row.frame}
+                    icon={row.icon}
+                    sizePx={size}
+                    designation={row.designation}
+                    echelon={row.echelon}
+                    selected={row.selected}
+                    overlay={overlay}
+                    reducedMotion={reducedMotion}
+                    margin={margin}
+                    {...(scored
+                      ? { score: c.score, stale, dtg: formatDtg(lastGood), explanation: explanationFor(row.label, c.score, stale) }
+                      : row.jammer === 'candidate'
+                        ? { status: 'anticipated' as const, info: `match ${c.score.toFixed(2)}` }
+                        : {})}
+                  />
+                </td>
+              );
+            })}
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
+}
+
+const PRIME_DOCS =
+  'Option B′ — US MIL-STD-2525E / FM 1-02.2 conformant. Rating scale and J mapping: `src/lib/link-trust-rating.ts` ' +
+  '(single source of truth, unit-tested with `pnpm --filter @hamilton/web test`). Scores shown in tooltips are RECOMPUTED from the ' +
+  'fixture components with the aggregator formula (0.6 × Σwᵢcᵢ + 0.4 × min c; weights 0.2/0.3/0.2/0.3 from ' +
+  '`services/trust-engine/crates/aggregator/src/lib.rs`); a mismatch with the payload score is flagged in red inside the tooltip.\n\n' +
+  '### SIDCs\n' +
+  SIDC_TABLE_PRIME_MD;
+
+export const OptionBPrimeMatrix: Story = {
+  name: 'Option B′ – Matrix',
+  argTypes: { ...matrixOnly, overlay: shown },
+  parameters: { docs: { description: { story: PRIME_DOCS } } },
+  render: ({ reducedMotion, overlay }) => (
+    <div style={{ display: 'grid', gap: 'var(--space-4)', padding: 'var(--space-4)', background: 'var(--surface-panel)' }}>
+      <style>{TRIGGER_CSS}</style>
+      <p style={{ margin: 0, maxWidth: 1080, fontSize: 13, color: 'var(--text-secondary)' }}>{RATIONALE_PRIME}</p>
+      {SIZES.map((size) => (
+        <MatrixPrime key={size} size={size} reducedMotion={reducedMotion} overlay={overlay} />
+      ))}
+      <LegendPrime />
+      <SidcTablePrime />
+    </div>
+  ),
+};
+
+const TOOLTIP_STATES: { key: string; score: number; stale?: boolean }[] = [
+  { key: 'nominal', score: 0.95 },
+  { key: 'watch', score: 0.72 },
+  { key: 'degraded', score: 0.42 },
+  { key: 'unreliable', score: 0.18 },
+  { key: 'stale', score: 0.42, stale: true },
+];
+
+/**
+ * Every band with its explanation forced open (static, for review), plus one
+ * live symbol at the top — the play function hovers it, checks the tooltip
+ * opens with the recomputed formula, closes on unhover, opens on keyboard
+ * focus and closes on Escape, then leaves it open.
+ */
+export const OptionBPrimeRatingTooltip: Story = {
+  name: 'Option B′ – Rating Tooltip',
+  argTypes: { ...matrixOnly, overlay: shown },
+  parameters: { docs: { description: { story: PRIME_DOCS } } },
+  render: ({ reducedMotion, overlay }) => (
+    <div style={{ display: 'grid', gap: 'var(--space-4)', padding: 'var(--space-4)', background: 'var(--surface-panel)' }}>
+      <style>{TRIGGER_CSS}</style>
+      <div style={{ display: 'flex', gap: 'var(--space-3)', alignItems: 'center', minHeight: 120, ...mapSurface, padding: 'var(--space-3)' }}>
+        <span style={{ fontSize: 12, color: 'var(--text-secondary)', maxWidth: 220 }}>
+          Live: hover, or Tab to focus, the symbol (or its label). Escape closes.
+        </span>
+        <RatingCell
+          testId="live-trigger"
+          frame="friend"
+          icon="fa"
+          sizePx={32}
+          designation="B"
+          echelon="battery"
+          score={0.42}
+          dtg={formatDtg(at(40))}
+          overlay={overlay}
+          reducedMotion={reducedMotion}
+          explanation={explanationFor('B · FA battery', 0.42, false, 'neighbours A, C')}
+        />
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(620px, 1fr))', gap: 'var(--space-4)' }}>
+        {TOOLTIP_STATES.map((st) => (
+          <div key={st.key} style={{ ...mapSurface, padding: 'var(--space-3)' }}>
+            <RatingCell
+              forceOpen
+              frame="friend"
+              icon="fa"
+              sizePx={32}
+              designation="B"
+              echelon="battery"
+              score={st.score}
+              stale={st.stale}
+              dtg={formatDtg(at(41 - (st.stale ? STALE_AGE_S : 1)))}
+              overlay={overlay}
+              reducedMotion={reducedMotion}
+              explanation={explanationFor('B · FA battery', st.score, st.stale ?? false, 'neighbours A, C')}
+            />
+          </div>
+        ))}
+      </div>
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const trigger = canvas.getByTestId('live-trigger');
+    const tipId = trigger.getAttribute('aria-describedby');
+    await expect(tipId).toBeTruthy();
+    const tip = canvasElement.ownerDocument.getElementById(tipId!)!;
+    await expect(tip).toHaveAttribute('role', 'tooltip');
+    await expect(tip).not.toBeVisible();
+    await userEvent.hover(trigger);
+    await waitFor(() => expect(tip).toBeVisible());
+    await expect(tip).toHaveTextContent('DEGRADED');
+    await expect(tip).toHaveTextContent('J D4');
+    await expect(within(tip).getByTestId('formula')).toHaveTextContent(/= 0\.420$/);
+    await expect(tip).toHaveTextContent('Below ROE floor 0.60 → GPS-guided fires gated');
+    await userEvent.unhover(trigger);
+    await waitFor(() => expect(tip).not.toBeVisible());
+    // Keyboard path. element.focus() does not dispatch focus events while the
+    // browser window itself is unfocused (CI / background tabs), so also fire
+    // focusin (what React's onFocus listens to) explicitly.
+    trigger.focus();
+    fireEvent.focusIn(trigger);
+    await waitFor(() => expect(tip).toBeVisible());
+    fireEvent.keyDown(trigger, { key: 'Escape' });
+    await waitFor(() => expect(tip).not.toBeVisible());
+    await userEvent.hover(trigger);
+    await waitFor(() => expect(tip).toBeVisible());
+  },
+};
+
+// ---------------------------------------------------------------------------
+// COP – Option B′
+// ---------------------------------------------------------------------------
+
+/** Scenario clock (s) → B link-trust score. 0:45 watching → 1:15 0.42 (fixture beats). */
+const B_TIMELINE: [number, number][] = [
+  [45, 0.72],
+  [52, 0.66],
+  [58, 0.61],
+  [62, 0.55],
+  [67, 0.48],
+  [72, 0.44],
+  [75, 0.42],
+  [80, 0.42],
+];
+/** Scenario clock 1:20 = T0 + 41 s (fixture GATE_OPEN.triggered_at). */
+const CLOCK_TO_T0_S = 39;
+/** B's last frame that passed CRC — after this B goes silent → STALE at > STALE_AFTER_S. */
+const B_LAST_GOOD_CLOCK = 68;
+const OTHER_SCORES: Record<string, number> = { unit_a: 0.97, unit_c: 0.96 };
+const NEIGHBOURS: Record<string, string> = { unit_a: 'neighbours B, C', unit_b: 'neighbours A, C', unit_c: 'neighbours A, B' };
+const UNIT_TITLE: Record<string, string> = { unit_a: 'A · FA observer team', unit_b: 'B · FA battery', unit_c: 'C · FA target-acq radar platoon' };
+
+function bScoreAt(clock: number): number {
+  for (let i = 1; i < B_TIMELINE.length; i++) {
+    const [t1, s1] = B_TIMELINE[i]!;
+    const [t0, s0] = B_TIMELINE[i - 1]!;
+    if (clock <= t1) return Math.round((s0 + ((clock - t0) / (t1 - t0)) * (s1 - s0)) * 100) / 100;
+  }
+  return B_TIMELINE[B_TIMELINE.length - 1]![1];
+}
+const isoAt = (clock: number) => at(clock - CLOCK_TO_T0_S);
+const fmtClock = (c: number) => `${Math.floor(c / 60)}:${String(Math.round(c % 60)).padStart(2, '0')}`;
+
+function CopScenePrime({ clock, size, reducedMotion, overlay }: Pick<SymbologyArgs, 'clock' | 'size' | 'reducedMotion' | 'overlay'>) {
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const tips = useAnchoredTips(containerRef);
+  const baseId = `cop-bprime-${useId().replace(/:/g, '')}`;
+  const nowIso = isoAt(clock);
+  const tracks = Object.values(PHASE_TRACKS.degraded);
+  const units = tracks.map((t) => {
+    const score = t.source_id === 'unit_b' ? bScoreAt(clock) : OTHER_SCORES[t.source_id]!;
+    const lastGoodClock = t.source_id === 'unit_b' && clock > B_LAST_GOOD_CLOCK ? B_LAST_GOOD_CLOCK : clock - 1;
+    const ex: ExplanationProps = {
+      title: UNIT_TITLE[t.source_id]!,
+      components: componentsFor(score),
+      payloadScore: score,
+      lastGoodIso: isoAt(lastGoodClock),
+      nowIso,
+      neighbours: NEIGHBOURS[t.source_id],
+      topCandidate: clock >= 73 ? CANDIDATES[0] : undefined,
+    };
+    return { t, score, ex, ...explainRating(ex) };
+  });
+  const b = units.find((u) => u.t.source_id === 'unit_b')!;
+  const bPt = project(b.t.lat, b.t.lon);
+  const jPt = project(JAMMER_LOCATION.lat, JAMMER_LOCATION.lon);
+  const sites = CANDIDATE_SITES.map((st) => project(st.lat, st.lon));
+  const all = [jPt, ...sites];
+  const cx = all.reduce((a, p) => a + p[0], 0) / all.length;
+  const cy = all.reduce((a, p) => a + p[1], 0) / all.length;
+  const rx = Math.max(...all.map((p) => Math.abs(p[0] - cx))) + 44;
+  const ry = Math.max(...all.map((p) => Math.abs(p[1] - cy))) + 36;
+  const dx = (JAMMER_LOCATION.lon - b.t.lon) * Math.cos((b.t.lat * Math.PI) / 180);
+  const dy = JAMMER_LOCATION.lat - b.t.lat;
+  const bearing = ((Math.atan2(dx, dy) * 180) / Math.PI + 360) % 360;
+  const ordered = [...CANDIDATES].sort((p, q) => q.score - p.score);
+  const showBearing = clock >= 69;
+  const showCandidates = clock >= 73;
+  const showFix = clock >= 75;
+  const label: CSSProperties = { ...mono, fontSize: 11 };
+  const outlined = { stroke: 'var(--surface-base)', strokeWidth: 3, paintOrder: 'stroke' as const };
+
+  return (
+    <div style={{ padding: 'var(--space-4)', background: 'var(--surface-panel)', display: 'grid', gap: 'var(--space-3)' }}>
+      <style>{TRIGGER_CSS}</style>
+      <div style={{ ...mono, fontSize: 12, color: 'var(--text-secondary)' }}>
+        Scenario clock <span style={{ color: 'var(--text-primary)' }}>{fmtClock(clock)}</span> · {formatDtg(nowIso)} · B{' '}
+        <span style={{ color: b.rating.labelToken }}>{b.rating.label}</span> {b.rating.score.toFixed(2)} (J {b.rating.jCode}) — drag the
+        <em> clock</em> control (0:45 → 1:20). Hover or Tab to a unit for its rating breakdown.
+      </div>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-3)', alignItems: 'flex-start' }}>
+        <div ref={containerRef} style={{ position: 'relative', width: SCENE_W, maxWidth: '100%' }}>
+          <svg width={SCENE_W} height={SCENE_H} viewBox={`0 0 ${SCENE_W} ${SCENE_H}`} style={{ ...mapSurface, display: 'block', maxWidth: '100%', height: 'auto' }}>
+            {showCandidates && (
+              <g aria-label="NAI 1 — jammer">
+                <ellipse cx={cx} cy={cy} rx={rx} ry={ry} fill="none" stroke="var(--sym-ink)" strokeOpacity={0.7} strokeWidth={1.25} strokeDasharray="8 5" />
+                <text x={cx} y={cy - ry - 20} textAnchor="middle" fill="var(--sym-ink)" style={label} {...outlined}>
+                  NAI 1 — JAMMER
+                </text>
+                <text x={cx} y={cy - ry - 6} textAnchor="middle" fill="var(--text-secondary)" style={{ ...label, fontSize: 10 }} {...outlined}>
+                  T FDC-1 · W {formatDtg(isoAt(73))}
+                </text>
+              </g>
+            )}
+            {showBearing && (
+              <g aria-label="Bearing line — jammer">
+                <line x1={bPt[0]} y1={bPt[1]} x2={jPt[0]} y2={jPt[1]} stroke="var(--sym-ink)" strokeOpacity={0.8} strokeWidth={1.25} />
+                <text x={jPt[0] - 28} y={jPt[1] - 34} textAnchor="end" fill="var(--sym-ink)" style={label} {...outlined}>
+                  BRG {bearing.toFixed(0).padStart(3, '0')}° — J
+                </text>
+                <text x={jPt[0] - 28} y={jPt[1] - 20} textAnchor="end" fill="var(--text-secondary)" style={{ ...label, fontSize: 10 }} {...outlined}>
+                  T FDC-1 · W {formatDtg(isoAt(69))}
+                </text>
+              </g>
+            )}
+            {showCandidates &&
+              ordered.map((c, i) => (
+                <Placed key={c.method_id} at={sites[i]!} size={size}>
+                  <MilSymbolPrime
+                    frame="hostile"
+                    icon="jamming"
+                    sizePx={size}
+                    status="anticipated"
+                    designation={CANDIDATE_SITES[i]!.label}
+                    info={`${i === 0 ? '#1 ' : ''}${c.method_id} ${c.score.toFixed(2)}`}
+                  />
+                </Placed>
+              ))}
+            {showFix && (
+              <Placed at={jPt} size={size}>
+                <MilSymbolPrime frame="hostile" icon="jamming" sizePx={size} designation="J1" />
+              </Placed>
+            )}
+            {units.map((u) => {
+              const m = UNIT_META[u.t.source_id]!;
+              const tipId = `${baseId}-${u.t.source_id}`;
+              return (
+                <g
+                  key={u.t.source_id}
+                  data-testid={`cop-${u.t.source_id}`}
+                  aria-label={`${m.designation}: friend, link trust ${u.rating.label} ${u.rating.score.toFixed(2)}, J ${u.rating.jCode}`}
+                  {...tips.trigger(u.t.source_id, tipId)}
+                >
+                  <Placed at={project(u.t.lat, u.t.lon)} size={size}>
+                    <MilSymbolPrime
+                      frame="friend"
+                      icon={m.icon}
+                      sizePx={size}
+                      designation={m.designation}
+                      echelon={m.echelon}
+                      score={u.rating.score}
+                      stale={u.rating.stale}
+                      dtg={formatDtg(u.ex.lastGoodIso)}
+                      selected={u.t.source_id === 'unit_b'}
+                      overlay={overlay}
+                      active={tips.open?.key === u.t.source_id}
+                      reducedMotion={reducedMotion}
+                    />
+                  </Placed>
+                </g>
+              );
+            })}
+          </svg>
+          {units.map((u) => {
+            const tipId = `${baseId}-${u.t.source_id}`;
+            return (
+              <div key={u.t.source_id} {...tips.tip(u.t.source_id, tipId)}>
+                <RatingExplanation {...u.ex} />
+              </div>
+            );
+          })}
+        </div>
+        <FireMissionPopup target="TGT AB1001 · J1" observer="B" rating={b.rating} dtg={formatDtg(b.ex.lastGoodIso)} />
+      </div>
+      <SidcTablePrime />
+      <LegendPrime />
+    </div>
+  );
+}
+
+/**
+ * Avdiivka scene with Option B′ (US 2525E). A, B, C; candidate sites (status 1,
+ * dashed) inside the dashed NAI; confirmed fix J1; bearing line labelled with
+ * T and W. The **clock** control drives B from 0:45 (WATCH 0.72) to 1:20
+ * (DEGRADED 0.42; B goes silent after 1:08 → STALE / NRT from 1:19). The
+ * fire-mission popup carries the ROE / Excalibur gate. CesiumSpine / MapSpine
+ * are NOT changed.
+ */
+export const OptionBPrimeCop: Story = {
+  name: 'COP – Option B′',
+  argTypes: { phase: { table: { disable: true } }, overlay: shown, clock: shown },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          PRIME_DOCS +
+          '\n\nCandidate positions are mock (the fixture carries scores only). B timeline: 0:45 0.72 → 0:58 0.61 → 1:02 0.55 → 1:15 0.42; ' +
+          'last good update frozen at 1:08, so B is STALE (AR NRT, grey frame, frozen overlay) from 1:19. Components for every score are ' +
+          'solved to reproduce it through the aggregator formula (fixtures/avdiivka.ts componentsFor).',
+      },
+    },
+  },
+  render: ({ clock, size, reducedMotion, overlay }) => <CopScenePrime clock={clock} size={size} reducedMotion={reducedMotion} overlay={overlay} />,
 };

@@ -15,6 +15,7 @@ import {
   type TrustScorePayload,
 } from '@hamilton/contracts';
 import type { GateEvent, TrackState } from '@/store/hamilton';
+import { aggregateTrust } from '@/lib/link-trust-rating';
 
 /** Scenario epoch — the 1:20 gating beat lands at 18:42:41Z. */
 export const T0 = '2024-02-15T18:42:00.000Z';
@@ -38,14 +39,35 @@ export const BAND_EDGES = [1.0, 0.85, 0.849, 0.6, 0.599, 0.3, 0.299, 0.0] as con
 
 const healthy: TrustComponents = { temporal: 1, stability: 1, spatial: 1, fingerprint: 1 };
 
-function componentsFor(score: number): TrustComponents {
-  // Plausible decomposition — temporal + stability lead the decay.
-  return {
-    temporal: Math.max(0, Math.min(1, score - 0.08)),
-    stability: Math.max(0, Math.min(1, score - 0.04)),
-    spatial: Math.max(0, Math.min(1, score + 0.06)),
-    fingerprint: Math.max(0, Math.min(1, score + 0.02)),
-  };
+/**
+ * Per-detector degradation profile: cᵢ(t) = clamp(1 − t·dᵢ). Fingerprint leads
+ * (it is the weakest link from ~0.2 down), stability next, spatial last
+ * (B's neighbours stay unaffected → localized).
+ */
+const DECAY_PROFILE: TrustComponents = { temporal: 0.8, stability: 1.0, spatial: 0.4, fingerprint: 1.1 };
+
+/**
+ * Component decomposition that REPRODUCES `score` through the real aggregator
+ * formula (aggregator/src/lib.rs, mirrored by aggregateTrust). The previous
+ * decomposition (score −0.08/−0.04/+0.06/+0.02) did not: 0.42 → 0.382.
+ * Solved by bisection on the profile parameter t; exact to ~1e-12.
+ */
+export function componentsFor(score: number): TrustComponents {
+  if (score >= 0.999) return healthy;
+  const at = (t: number): TrustComponents => ({
+    temporal: Math.max(0, 1 - t * DECAY_PROFILE.temporal),
+    stability: Math.max(0, 1 - t * DECAY_PROFILE.stability),
+    spatial: Math.max(0, 1 - t * DECAY_PROFILE.spatial),
+    fingerprint: Math.max(0, 1 - t * DECAY_PROFILE.fingerprint),
+  });
+  let lo = 0;
+  let hi = 2.5; // aggregate(at(2.5)) = 0
+  for (let i = 0; i < 60; i++) {
+    const mid = (lo + hi) / 2;
+    if (aggregateTrust(at(mid)).score > score) lo = mid;
+    else hi = mid;
+  }
+  return at((lo + hi) / 2);
 }
 
 /** Verbatim trace bullets from Branding §10.1–§10.3. */
@@ -71,7 +93,7 @@ export function track(
     ...base[source_id],
     score,
     prev_score: overrides.prev_score ?? score,
-    components: score >= 0.999 ? healthy : componentsFor(score),
+    components: componentsFor(score),
     trace_bullets: [],
     last_update: at(0),
     ...overrides,

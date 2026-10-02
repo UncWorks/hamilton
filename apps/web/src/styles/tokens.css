@@ -54,6 +54,9 @@
   /* Strokes / condition bar in the failed band: --trust-failed is only 3.7:1
    * on --surface-base; this reaches 5.1:1 (non-text minimum 3:1). */
   --trust-failed-stroke: oklch(62% 0.16 47);  /* #d1611b */
+  /* Option B′: frame + icon once a track is past its stale time (AR = NRT),
+   * as TAK greys stale contacts. Same value as --text-tertiary (~5:1). */
+  --sym-ink-stale: oklch(58% 0.01 90);
 
   /* §3.6 Status states (Evan-contract back-compat — distinct from trust) */
   --status-healthy: oklch(72% 0.05 145);

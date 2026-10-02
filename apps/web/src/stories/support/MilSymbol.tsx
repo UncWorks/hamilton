@@ -84,15 +84,15 @@ export interface MilSymbolProps {
 /** Dark gap between an Option B frame and its outline halo, screen px. */
 const HALO_GAP_PX = 1.5;
 
-function strokeW(sizePx: number) {
+export function strokeW(sizePx: number) {
   return sizePx <= 16 ? 1.25 : 1.5;
 }
 
-function fontPx(sizePx: number) {
+export function fontPx(sizePx: number) {
   return sizePx >= 32 ? 11 : sizePx >= 24 ? 10 : 9;
 }
 
-function Icon({ kind, frame, color, k }: { kind: IconKind; frame: FrameKind; color: string; k: number }) {
+export function Icon({ kind, frame, color, k }: { kind: IconKind; frame: FrameKind; color: string; k: number }) {
   if (kind === 'none') return null;
   const sw = (1.5 * k) / 0.16; // 1.5px in 200-unit space
   const line = { fill: 'none', stroke: color, strokeWidth: sw, strokeLinecap: 'round' as const };
@@ -132,7 +132,7 @@ function Icon({ kind, frame, color, k }: { kind: IconKind; frame: FrameKind; col
   return <g transform="scale(0.16)">{parts}</g>;
 }
 
-function EchelonMark({ echelon, y, k, color }: { echelon?: Echelon | undefined; y: number; k: number; color: string }) {
+export function EchelonMark({ echelon, y, k, color }: { echelon?: Echelon | undefined; y: number; k: number; color: string }) {
   if (!echelon) return null;
   const r = 1.3;
   if (echelon === 'battery') {
@@ -148,7 +148,7 @@ function EchelonMark({ echelon, y, k, color }: { echelon?: Echelon | undefined; 
   );
 }
 
-function Amplifier({
+export function Amplifier({
   x,
   y,
   anchor,
