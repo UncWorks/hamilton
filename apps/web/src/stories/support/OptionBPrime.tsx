@@ -244,19 +244,22 @@ export function evidenceFor(f: TrustFactor, c: number, ctx: EvidenceContext = {}
       return `CRC errors 0.2% → ${crc.toFixed(1)}%${crc > 5 ? ' (>5% degraded threshold)' : ''}`;
     }
     case 'spatial': {
-      // spatial.rs: Localized → 0.6, Blanket → 0.3 (story treats the value as continuous).
+      // Trust-oriented spatial, mirroring the engine (PR #1 follow-up):
+      // 1.0 not degrading, 0.6 localized, 0.3 blanket.
       const n = ctx.neighbours ?? 'neighbours';
       if (healthy) return 'No correlated degradation';
       return c >= 0.6 ? `Localized — ${n} within 500 m unaffected` : `Blanket — ${n} also degrading`;
     }
     case 'fingerprint': {
-      // Story reading: component = 1 − library overlap (see report: the
-      // aggregator currently feeds the raw overlap, i.e. inverted).
-      if (healthy) return 'No jammer fingerprint match';
+      // `components.fingerprint` IS trust (PR #1): 1 − match strength, 1.0 when
+      // nothing matches at ≥ 0.5. The overlap ratio is derived as 1 − trust,
+      // as services/llm-narrator providers/deterministic.ts does.
+      if (healthy) return 'No jammer fingerprint match (no library entry ≥ 3/6)';
       const overlap = 1 - c;
       const dims = Math.round(overlap * 6);
-      const m = ctx.topCandidate?.method_id || 'library entry';
-      return overlap >= 0.5 ? `Matches ${m} (overlap ${dims}/6 dimensions)` : `Partial overlap ${dims}/6 with ${m} (below 0.5 match threshold)`;
+      const top = ctx.topCandidate;
+      const m = top?.method_id && Math.abs(top.score - overlap) < 0.01 ? top.method_id : 'library entry';
+      return `Jammer fingerprint matched: ${m} (overlap ratio ${overlap.toFixed(2)} = ${dims}/6 dimensions, fingerprint score ${c.toFixed(2)})`;
     }
   }
 }
@@ -382,7 +385,7 @@ export function RatingExplanation(p: ExplanationProps) {
           ? `Below ROE floor ${ROE_FLOOR.toFixed(2)} → GPS-guided fires gated`
           : `At/above ROE floor ${ROE_FLOOR.toFixed(2)} — fires not gated by link trust`}
       </div>
-      {agg.worstFactor === 'fingerprint' && p.topCandidate?.method_id && (
+      {p.components.fingerprint <= agg.worst && p.components.fingerprint < 1 && p.topCandidate?.method_id && (
         <div style={{ fontSize: 11 }}>
           Top jammer candidate: <span style={{ ...mono, color: 'var(--text-primary)' }}>{p.topCandidate.method_id}</span> (
           {p.topCandidate.named_systems.join(', ')}) · match {p.topCandidate.score.toFixed(2)}
@@ -680,7 +683,7 @@ export function LegendPrime() {
         </Swatch>
         <Swatch label={<><strong>Hamilton link-trust overlay (non-2525)</strong> — centred halo below 0.60, trust tokens only, toggleable, stripped on export</>}>
           <g transform="translate(20 14)">
-            <HaloSvg score={0.42} iconRadius={8} reducedMotion />
+            <HaloSvg score={0.31} iconRadius={8} reducedMotion />
           </g>
           <path d={FRAME_PATH.friend} transform="translate(12 6) scale(0.5)" fill="var(--sym-plate)" stroke="var(--sym-ink)" strokeWidth={3} />
         </Swatch>
@@ -688,7 +691,7 @@ export function LegendPrime() {
           <path d={FRAME_PATH.friend} transform="translate(4 -2)" fill="none" stroke="var(--sym-ink-stale)" strokeWidth={1.5} />
         </Swatch>
         <Swatch label="Right (J line): rating name + score, then the 2525 J code (export value). Shown below 0.60, when stale, or on hover/focus">
-          <text x={0} y={18} fill={rateLinkTrust(0.42).bandToken} style={{ ...mono, fontSize: 9, fontWeight: 600 }}>
+          <text x={0} y={18} fill={rateLinkTrust(0.31).bandToken} style={{ ...mono, fontSize: 9, fontWeight: 600 }}>
             DEGR.
           </text>
           <text x={30} y={18} fill="var(--text-tertiary)" style={{ ...mono, fontSize: 9 }}>

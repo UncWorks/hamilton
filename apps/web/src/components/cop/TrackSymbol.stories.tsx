@@ -19,7 +19,7 @@ const meta = {
       },
     },
   },
-  args: { affiliation: 'friendly', sensorType: 'offense', score: 0.42, radius: 18, useCssToken: true },
+  args: { affiliation: 'friendly', sensorType: 'offense', score: BAND_SAMPLES.degraded, radius: 18, useCssToken: true },
   argTypes: {
     affiliation: { control: 'inline-radio', options: AffiliationSchema.options },
     sensorType: { control: 'select', options: SensorTypeSchema.options },

@@ -13,6 +13,10 @@ render them exactly as they ship. Line numbers point at the tree as of the commi
 {' '}{FINDINGS.filter((f) => f.severity === 'med').length} medium,
 {' '}{FINDINGS.filter((f) => f.severity === 'low').length} low.
 
+**Fixtures assume PR #1 (fix/fingerprint-trust-inversion) is merged:** `components.fingerprint` is read directly as
+trust (1 − match strength), candidates are the engine's 1.00 / 0.50 / 0.17 for the Avdiivka jammer, and the old
+`1 − overlap` story workaround is gone (F01).
+
 ## How to use this page
 
 - **Foundations/Colors → Renderer Mirrors / Hard-coded Literals** shows the color drift side by side with Δ values.

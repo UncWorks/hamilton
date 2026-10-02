@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { TrustPanel } from './TrustPanel';
 import {
+  BAND_SAMPLES,
   CANDIDATES,
   PHASE_TRACKS,
   TRACE_BULLETS,
@@ -91,7 +92,7 @@ interface PlaygroundArgs {
 
 /** Drive Unit B's score, trace depth and candidates from Controls. */
 export const Playground: StoryObj<PlaygroundArgs> = {
-  args: { score: 0.42, bullets: 3, showCandidates: true, roeFloor: 0.6 },
+  args: { score: BAND_SAMPLES.degraded, bullets: 3, showCandidates: true, roeFloor: 0.6 },
   argTypes: {
     score: { control: { type: 'range', min: 0, max: 1, step: 0.01 } },
     bullets: { control: { type: 'range', min: 0, max: 3, step: 1 } },

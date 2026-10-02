@@ -3,6 +3,7 @@ import type { Meta, StoryObj } from '@storybook/react';
 import { CandidateCards } from './CandidateCards';
 import {
   CANDIDATES,
+  CANDIDATE_NO_MUNITIONS,
   CANDIDATES_LONG,
   CANDIDATES_SINGLE_MATCH,
 } from '@/stories/fixtures/avdiivka';
@@ -35,14 +36,18 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-/** Avdiivka 1:15 reveal — 0.81 / 0.42 / 0.18 (watching / degraded / failed borders). */
+/**
+ * Avdiivka 1:15 reveal, as the engine ranks the jammer RF against library.json:
+ * ground_based_gps_uhf_barrage 1.00 (6/6) · pulsed_uhf_wide 0.50 (3/6) · cellular_uhf_barrage 0.17 (1/6)
+ * (nominal / degraded / failed borders — match strength coloured on the trust gradient, Branding §10.4).
+ */
 export const TopThree: Story = {};
 
 /** Only one candidate matched — remaining slots render the dashed filler card. */
 export const SingleMatch: Story = { args: { candidates: CANDIDATES_SINGLE_MATCH } };
 
 /** Single candidate with nothing in inventory — italic "(none in current inventory)". */
-export const NoMunitionsAffected: Story = { args: { candidates: [CANDIDATES[2]!] } };
+export const NoMunitionsAffected: Story = { args: { candidates: [CANDIDATE_NO_MUNITIONS] } };
 
 /** Long method ids, system lists and citations — wrap/overflow stress test. */
 export const LongContent: Story = { args: { candidates: CANDIDATES_LONG } };

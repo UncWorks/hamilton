@@ -91,6 +91,94 @@ export function aggregateTrust(
 }
 
 // ---------------------------------------------------------------------------
+// Engine-reachable components — used by the Storybook fixtures so every
+// payload they render is one the real trust engine could emit.
+// Assumes the fingerprint semantics of PR #1 (fix/fingerprint-trust-inversion).
+// ---------------------------------------------------------------------------
+
+/**
+ * FR-04 fingerprint TRUST values the engine can emit (detectors/src/fingerprint.rs
+ * `fingerprint_trust`, PR #1): 1 − match_strength, where match_strength is the
+ * best library overlap k/6 and only counts at ≥ 0.5; no match → 1.0.
+ */
+export const ENGINE_FINGERPRINT_TRUST = [1, 1 / 2, 1 / 3, 1 / 6, 0] as const;
+
+/**
+ * FR-03 spatial TRUST. Mirrors the engine's trust-oriented spatial detector
+ * (being changed on fix/fingerprint-trust-inversion, PR #1 follow-up):
+ * 1.0 when the source is not degrading, 0.6 while degrading and localized,
+ * 0.3 while degrading and blanket.
+ */
+export const ENGINE_SPATIAL_TRUST = { notDegrading: 1, localized: 0.6, blanket: 0.3 } as const;
+
+export interface DiscreteComponents {
+  spatial: number;
+  fingerprint: number;
+}
+
+/**
+ * Discrete (spatial, fingerprint) regimes in preference order. A score takes
+ * the first regime whose reachable range contains it, so scores the engine can
+ * only reach with a jammer match get fingerprint 0 (6/6, the Avdiivka jammer).
+ */
+export const FIXTURE_REGIMES: readonly DiscreteComponents[] = [
+  { spatial: ENGINE_SPATIAL_TRUST.localized, fingerprint: 0 },
+  { spatial: ENGINE_SPATIAL_TRUST.localized, fingerprint: 1 },
+  { spatial: ENGINE_SPATIAL_TRUST.notDegrading, fingerprint: 1 },
+  { spatial: ENGINE_SPATIAL_TRUST.blanket, fingerprint: 0 },
+];
+
+/**
+ * Continuous detectors follow one degradation parameter p ≥ 0: temporal leads
+ * (cadence breaks first), stability lags (CRC climbs late). Both are piecewise
+ * linear in the engine (temporal.rs, stability.rs), so any value in [0,1] is reachable.
+ */
+const DECAY_PROFILE = { temporal: 1.5, stability: 0.1 } as const;
+const P_MAX = 1 / Math.min(DECAY_PROFILE.temporal, DECAY_PROFILE.stability);
+
+function componentsAt(p: number, r: DiscreteComponents): TrustComponentsLike {
+  return {
+    temporal: Math.max(0, 1 - p * DECAY_PROFILE.temporal),
+    stability: Math.max(0, 1 - p * DECAY_PROFILE.stability),
+    spatial: r.spatial,
+    fingerprint: r.fingerprint,
+  };
+}
+
+/** [floor, ceiling] of composite scores a regime can produce. */
+export function regimeRange(r: DiscreteComponents): [number, number] {
+  return [aggregateTrust(componentsAt(P_MAX, r)).score, aggregateTrust(componentsAt(0, r)).score];
+}
+
+export function regimeFor(score: number): DiscreteComponents {
+  return (
+    FIXTURE_REGIMES.find((r) => {
+      const [lo, hi] = regimeRange(r);
+      return score >= lo && score <= hi;
+    }) ?? FIXTURE_REGIMES[FIXTURE_REGIMES.length - 1]!
+  );
+}
+
+/**
+ * Components that reproduce `score` exactly through aggregateTrust, with
+ * spatial and fingerprint restricted to engine-reachable values. Solved by
+ * bisection on p (the composite is monotone in p). Below the lowest reachable
+ * score (~0.036) it returns the floor; callers that need exactness check
+ * aggregateTrust(result).score.
+ */
+export function solveComponents(score: number, regime: DiscreteComponents = regimeFor(score)): TrustComponentsLike {
+  if (score >= 0.999) return { temporal: 1, stability: 1, spatial: 1, fingerprint: 1 };
+  let lo = 0;
+  let hi = P_MAX;
+  for (let i = 0; i < 100; i++) {
+    const mid = (lo + hi) / 2;
+    if (aggregateTrust(componentsAt(mid, regime)).score > score) lo = mid;
+    else hi = mid;
+  }
+  return componentsAt((lo + hi) / 2, regime);
+}
+
+// ---------------------------------------------------------------------------
 // Rating scale
 // ---------------------------------------------------------------------------
 

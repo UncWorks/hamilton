@@ -10,7 +10,7 @@ import {
 } from '@/lib/trust-gradient';
 import { TrackGlyph } from '@/stories/support/TrackGlyph';
 import { TrustReadout } from '@/components/panel/TrustReadout';
-import { ROE_FLOOR } from '@/stories/fixtures/avdiivka';
+import { BAND_SAMPLES, ROE_FLOOR } from '@/stories/fixtures/avdiivka';
 import { Page, Section, mono } from '@/stories/support/foundation-ui';
 
 const meta = {
@@ -21,7 +21,7 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-const ROWS = [1.0, 0.95, 0.85, 0.8, 0.72, 0.6, 0.55, 0.42, 0.3, 0.25, 0.18, 0.0];
+const ROWS = [1.0, 0.95, 0.85, 0.8, 0.72, 0.6, 0.55, 0.45, 0.31, 0.3, 0.25, 0.13, 0.0];
 
 const th = { ...mono, color: 'var(--text-tertiary)', fontWeight: 400, textAlign: 'left' as const, padding: 'var(--space-2)' };
 const td = { ...mono, padding: 'var(--space-2)', color: 'var(--text-secondary)' };
@@ -153,7 +153,7 @@ export const Readouts: Story = {
   render: () => (
     <Page>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 'var(--space-6)' }}>
-        {[0.97, 0.72, 0.42, 0.18].map((s) => (
+        {[BAND_SAMPLES.nominal, BAND_SAMPLES.watching, BAND_SAMPLES.degraded, BAND_SAMPLES.failed].map((s) => (
           <TrustReadout key={s} score={s} roeFloor={ROE_FLOOR} />
         ))}
       </div>

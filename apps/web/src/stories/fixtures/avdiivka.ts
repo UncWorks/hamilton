@@ -15,7 +15,7 @@ import {
   type TrustScorePayload,
 } from '@hamilton/contracts';
 import type { GateEvent, TrackState } from '@/store/hamilton';
-import { aggregateTrust } from '@/lib/link-trust-rating';
+import { solveComponents } from '@/lib/link-trust-rating';
 
 /** Scenario epoch — the 1:20 gating beat lands at 18:42:41Z. */
 export const T0 = '2024-02-15T18:42:00.000Z';
@@ -26,12 +26,22 @@ export const JAMMER_LOCATION = { lat: 48.142, lon: 37.762 } as const;
 
 export const ROE_FLOOR = 0.6;
 
-/** Representative score per trust band (Branding §3.3). */
+/**
+ * Representative score per trust band (Branding §3.3). Every sample is one the
+ * real engine can emit (PR #1 fingerprint semantics, trust-oriented spatial):
+ * - nominal  0.97: not degrading (spatial 1, no fingerprint match), temporal 0.94.
+ * - watching 0.72: degrading, localized (spatial 0.6), no RF match yet, temporal 0.56.
+ * - degraded 0.31: same link one beat later, jammer matched 6/6 → fingerprint 0.
+ *   With fingerprint 0 and localized spatial the engine tops out at 0.372.
+ * - failed   0.13: temporal 0, stability 0.32, spatial 0.6, fingerprint 0 — the
+ *   score the engine emits at B-1:15 (components 0 / 0.31 / 0.6 / 0 → 0.128;
+ *   docs/plans/fix-fingerprint-trust-inversion.md §3).
+ */
 export const BAND_SAMPLES = {
   nominal: 0.97,
   watching: 0.72,
-  degraded: 0.42,
-  failed: 0.18,
+  degraded: 0.31,
+  failed: 0.13,
 } as const;
 
 /** Band edges, inclusive at the top — used for edge-case stories. */
@@ -40,34 +50,15 @@ export const BAND_EDGES = [1.0, 0.85, 0.849, 0.6, 0.599, 0.3, 0.299, 0.0] as con
 const healthy: TrustComponents = { temporal: 1, stability: 1, spatial: 1, fingerprint: 1 };
 
 /**
- * Per-detector degradation profile: cᵢ(t) = clamp(1 − t·dᵢ). Fingerprint leads
- * (it is the weakest link from ~0.2 down), stability next, spatial last
- * (B's neighbours stay unaffected → localized).
- */
-const DECAY_PROFILE: TrustComponents = { temporal: 0.8, stability: 1.0, spatial: 0.4, fingerprint: 1.1 };
-
-/**
- * Component decomposition that REPRODUCES `score` through the real aggregator
- * formula (aggregator/src/lib.rs, mirrored by aggregateTrust). The previous
- * decomposition (score −0.08/−0.04/+0.06/+0.02) did not: 0.42 → 0.382.
- * Solved by bisection on the profile parameter t; exact to ~1e-12.
+ * Component decomposition that REPRODUCES `score` exactly through the real
+ * aggregator formula (aggregator/src/lib.rs, mirrored by aggregateTrust) using
+ * only engine-reachable values: fingerprint ∈ {1, .5, .33, .17, 0} (1 − k/6,
+ * PR #1) and spatial ∈ {1, 0.6, 0.3} (mirrors the engine's trust-oriented
+ * spatial detector). Temporal/stability are solved continuously. See
+ * solveComponents in src/lib/link-trust-rating.ts (unit-tested).
  */
 export function componentsFor(score: number): TrustComponents {
-  if (score >= 0.999) return healthy;
-  const at = (t: number): TrustComponents => ({
-    temporal: Math.max(0, 1 - t * DECAY_PROFILE.temporal),
-    stability: Math.max(0, 1 - t * DECAY_PROFILE.stability),
-    spatial: Math.max(0, 1 - t * DECAY_PROFILE.spatial),
-    fingerprint: Math.max(0, 1 - t * DECAY_PROFILE.fingerprint),
-  });
-  let lo = 0;
-  let hi = 2.5; // aggregate(at(2.5)) = 0
-  for (let i = 0; i < 60; i++) {
-    const mid = (lo + hi) / 2;
-    if (aggregateTrust(at(mid)).score > score) lo = mid;
-    else hi = mid;
-  }
-  return at((lo + hi) / 2);
+  return score >= 0.999 ? healthy : solveComponents(score);
 }
 
 /** Verbatim trace bullets from Branding §10.1–§10.3. */
@@ -111,25 +102,25 @@ export const PHASE_TRACKS = {
   /** 0:45 — first signal; B enters `watching`. */
   watching: tracksRecord(
     track('unit_a', 0.98),
-    track('unit_b', 0.72, { prev_score: 0.86, trace_bullets: [TRACE_BULLETS[0]], last_update: at(14) }),
+    track('unit_b', BAND_SAMPLES.watching, { prev_score: 0.79, trace_bullets: [TRACE_BULLETS[0]], last_update: at(14) }),
     track('unit_c', 0.97),
   ),
   /** 1:15 — candidate reveal; B below ROE floor. */
   degraded: tracksRecord(
     track('unit_a', 0.96),
-    track('unit_b', 0.42, { prev_score: 0.61, trace_bullets: [...TRACE_BULLETS], last_update: at(39) }),
+    track('unit_b', BAND_SAMPLES.degraded, { prev_score: BAND_SAMPLES.watching, trace_bullets: [...TRACE_BULLETS], last_update: at(39) }),
     track('unit_c', 0.95),
   ),
   /** 1:50 — B failed; icon at ~30% opacity. */
   failed: tracksRecord(
     track('unit_a', 0.96),
-    track('unit_b', 0.18, { prev_score: 0.42, trace_bullets: [...TRACE_BULLETS], last_update: at(68) }),
+    track('unit_b', BAND_SAMPLES.failed, { prev_score: BAND_SAMPLES.degraded, trace_bullets: [...TRACE_BULLETS], last_update: at(68) }),
     track('unit_c', 0.95),
   ),
   /** 2:15 — recovered. */
   recovered: tracksRecord(
     track('unit_a', 1.0),
-    track('unit_b', 1.0, { prev_score: 0.18, trace_bullets: ['B-link recovered — cadence 1.0s, CRC 0.1%.'], last_update: at(95) }),
+    track('unit_b', 1.0, { prev_score: BAND_SAMPLES.failed, trace_bullets: ['B-link recovered — cadence 1.0s, CRC 0.1%.'], last_update: at(95) }),
     track('unit_c', 1.0),
   ),
 } as const;
@@ -137,13 +128,16 @@ export const PHASE_TRACKS = {
 /** Mixed-affiliation track list for icon/halo coverage. */
 export const AFFILIATION_TRACKS: TrackState[] = [
   track('unit_a', 0.97),
-  { ...track('unit_b', 0.42), source_id: 'hostile_ew_1', affiliation: 'enemy', sensor_type: 'defense', lat: 48.142, lon: 37.762 },
-  { ...track('unit_c', 0.72), source_id: 'civ_relay', affiliation: 'neutral', sensor_type: 'recon_mobile', lat: 48.1355, lon: 37.752 },
-  { ...track('unit_c', 0.18), source_id: 'unk_emitter', affiliation: 'unknown', sensor_type: 'detection', lat: 48.145, lon: 37.735 },
+  { ...track('unit_b', BAND_SAMPLES.degraded), source_id: 'hostile_ew_1', affiliation: 'enemy', sensor_type: 'defense', lat: 48.142, lon: 37.762 },
+  { ...track('unit_c', BAND_SAMPLES.watching), source_id: 'civ_relay', affiliation: 'neutral', sensor_type: 'recon_mobile', lat: 48.1355, lon: 37.752 },
+  { ...track('unit_c', BAND_SAMPLES.failed), source_id: 'unk_emitter', affiliation: 'unknown', sensor_type: 'detection', lat: 48.145, lon: 37.735 },
 ];
 
 // ---------------------------------------------------------------------------
-// FR-04a fingerprint candidates (Branding §10.4 verbatim)
+// FR-04a fingerprint candidates — what the engine publishes for the Avdiivka
+// jammer RF (100–2000 MHz, 50 kHz hop, L1+L2, barrage, 30 km). `score` on the
+// candidates topic is MATCH STRENGTH k/6 (not trust). Entry fields are copied
+// verbatim from assets/fingerprints/library.json.
 // ---------------------------------------------------------------------------
 
 export const CANDIDATES_PAYLOAD: FingerprintCandidatesPayload = FingerprintCandidatesPayloadSchema.parse({
@@ -153,28 +147,41 @@ export const CANDIDATES_PAYLOAD: FingerprintCandidatesPayload = FingerprintCandi
     {
       method_id: 'ground_based_gps_uhf_barrage',
       named_systems: ['R-330Zh Zhitel', 'Pole-21'],
-      score: 0.81,
-      munitions_affected: ['Excalibur', 'JDAM-ER', 'Switchblade 300'],
-      source_citation: 'Bronk, Watling & Reynolds — RUSI, "Stormbreak", 2024',
+      score: 6 / 6, // 1.00
+      munitions_affected: ['Excalibur', 'JDAM-ER', 'Switchblade 300', 'GMLRS-U'],
+      source_citation: 'Bronk RUSI 2024',
+    },
+    {
+      method_id: 'pulsed_uhf_wide',
+      named_systems: ['Lorandit'],
+      score: 3 / 6, // 0.50
+      munitions_affected: ['FPV C2 link', 'Switchblade 300'],
+      source_citation: 'JAPCC 2023',
     },
     {
       method_id: 'cellular_uhf_barrage',
-      named_systems: ['Leer-3', 'RB-341V'],
-      score: 0.42,
+      named_systems: ['R-934B Sinitsa'],
+      score: 1 / 6, // 0.17
       munitions_affected: ['ATAK position-share', 'FPV C2 link'],
-      source_citation: 'JAPCC, "Electronic Warfare in Ukraine", 2023',
-    },
-    {
-      method_id: 'swept_uhf_low_power',
-      named_systems: ['Shipovnik-Aero'],
-      score: 0.18,
-      munitions_affected: [],
-      source_citation: 'Washington Post, "Russian jamming blunts U.S. weapons", 2024',
+      source_citation: 'JAPCC 2023',
     },
   ],
 } satisfies FingerprintCandidatesPayload);
 
 export const CANDIDATES: FingerprintCandidate[] = CANDIDATES_PAYLOAD.candidates;
+
+/**
+ * Library entry with no munitions in inventory (library.json swept_uhf_low_power).
+ * It scores 0/6 against the Avdiivka jammer, so the 3/6 here is a hypothetical
+ * RF observation used only to exercise the "(none in current inventory)" path.
+ */
+export const CANDIDATE_NO_MUNITIONS: FingerprintCandidate = {
+  method_id: 'swept_uhf_low_power',
+  named_systems: ['Krasukha-2'],
+  score: 3 / 6,
+  munitions_affected: [],
+  source_citation: 'WaPo 2024',
+};
 
 /** Only one meaningful match; trailing slots are the "no further match" filler. */
 export const CANDIDATES_SINGLE_MATCH: FingerprintCandidate[] = [
@@ -188,7 +195,7 @@ export const CANDIDATES_LONG: FingerprintCandidate[] = [
   {
     method_id: 'ground_based_gps_uhf_barrage_with_meaconing_and_l2_overlap_variant',
     named_systems: ['R-330Zh Zhitel', 'Pole-21', 'Tirada-2', 'Krasukha-4', 'Murmansk-BN'],
-    score: 0.88,
+    score: 5 / 6, // 0.83 — a reachable k/6 match strength
     munitions_affected: ['Excalibur', 'JDAM-ER', 'Switchblade 300', 'GMLRS', 'HIMARS M30A1', 'Phoenix Ghost'],
     source_citation:
       'Bronk, Watling & Reynolds — RUSI Special Report, "Stormbreak: Fighting Through Russian Defences in Ukraine\'s 2023 Offensive", Sept 2023, pp. 14–19',
@@ -201,7 +208,14 @@ export const CANDIDATES_LONG: FingerprintCandidate[] = [
 // Trust score payloads (B decay timeline)
 // ---------------------------------------------------------------------------
 
-export const B_DECAY_SCORES = [1.0, 0.97, 0.91, 0.86, 0.79, 0.72, 0.66, 0.61, 0.55, 0.48, 0.42, 0.33, 0.26, 0.18] as const;
+/**
+ * Unit B as the engine scores it: healthy → spatial flags the link as
+ * localized-degrading (≤ 0.79) → temporal degrades (WATCH) → the jammer RF
+ * matches 6/6, fingerprint trust drops 1 → 0 and B falls below the ROE floor in
+ * one beat (0.72 → 0.31) → stability collapses into the failed band (0.13).
+ * Temporal and stability never improve along the sequence.
+ */
+export const B_DECAY_SCORES = [1.0, 0.79, 0.77, 0.76, 0.74, 0.72, 0.31, 0.28, 0.24, 0.2, 0.16, 0.13] as const;
 
 export const B_DECAY_PAYLOADS: TrustScorePayload[] = B_DECAY_SCORES.map((score, i) =>
   TrustScorePayloadSchema.parse({
@@ -220,10 +234,10 @@ const RAW_EVENTS: DetectionEvent[] = [
   { source_id: 'unit_b', kind: 'temporal_anomaly', message: 'cadence 1.0s → 6.1s', timestamp: '2024-02-15T18:42:14.000Z' },
   { source_id: 'unit_b', kind: 'stability', message: 'CRC 0.2% → 14%', timestamp: '2024-02-15T18:42:22.000Z' },
   { source_id: 'unit_b', kind: 'spatial', message: 'directional · flank corridor · A, C unaffected', timestamp: '2024-02-15T18:42:30.000Z' },
-  { source_id: 'unit_b', kind: 'fingerprint', message: 'ground_based_gps_uhf_barrage 0.81 · cellular_uhf_barrage 0.42 · swept_uhf_low_power 0.18', timestamp: '2024-02-15T18:42:36.000Z' },
-  { source_id: 'unit_b', kind: 'modal_gated', message: 'trust 0.42 < ROE floor 0.60 — kill-chain gated', timestamp: '2024-02-15T18:42:41.000Z' },
+  { source_id: 'unit_b', kind: 'fingerprint', message: 'ground_based_gps_uhf_barrage 1.00 · pulsed_uhf_wide 0.50 · cellular_uhf_barrage 0.17', timestamp: '2024-02-15T18:42:36.000Z' },
+  { source_id: 'unit_b', kind: 'modal_gated', message: 'trust 0.31 < ROE floor 0.60 — kill-chain gated', timestamp: '2024-02-15T18:42:41.000Z' },
   { source_id: 'unit_b', kind: 'modal_selection', message: 'FDC · Adam selected shift_non_gps', timestamp: '2024-02-15T18:43:10.000Z' },
-  { source_id: 'unit_b', kind: 'recovery', message: 'trust 0.18 → 1.00 · cadence 1.0s', timestamp: '2024-02-15T18:43:35.000Z' },
+  { source_id: 'unit_b', kind: 'recovery', message: 'trust 0.13 → 1.00 · cadence 1.0s', timestamp: '2024-02-15T18:43:35.000Z' },
 ];
 
 export const TERMINAL_EVENTS: DetectionEvent[] = RAW_EVENTS.map((e) => DetectionEventSchema.parse(e));
@@ -250,7 +264,7 @@ export const TERMINAL_EVENTS_FULL: DetectionEvent[] = Array.from({ length: 80 },
 export const GATE_OPEN: GateEvent = {
   source_id: 'unit_b',
   triggered_at: at(41),
-  score_at_trigger: 0.42,
+  score_at_trigger: BAND_SAMPLES.degraded,
   selected_option: null,
 };
 

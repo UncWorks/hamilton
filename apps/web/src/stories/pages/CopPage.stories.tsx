@@ -34,8 +34,9 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 /**
- * Live replay of the 0:45 → 1:20 crescendo: B decays 1.00 → 0.18 one tick per 1.5s, narration
- * bullets arrive, FR-04a candidates reveal at 0.61, and the kill-chain gate fires on the 0.60 crossing.
+ * Live replay of the 0:45 → 1:20 crescendo: B decays 1.00 → 0.13 one tick per 1.5s, narration
+ * bullets arrive, and the jammer fingerprint match (fingerprint trust 1 → 0) drops B from 0.72 to
+ * 0.31 in one beat: FR-04a candidates reveal and the kill-chain gate fires on that 0.60 crossing.
  */
 export const CrescendoReplay: Story = {
   parameters: {

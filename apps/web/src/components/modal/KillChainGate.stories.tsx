@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react';
 import { KillChainGate } from './KillChainGate';
 import { TrustPanel } from '@/components/panel/TrustPanel';
 import {
+  BAND_SAMPLES,
   CANDIDATES,
   GATE_OPEN,
   GATE_RESOLVED,
@@ -39,15 +40,15 @@ const gated = (score: number, tracks = PHASE_TRACKS.degraded) => ({
   gateHistory: [{ ...GATE_OPEN, score_at_trigger: score }],
 });
 
-/** Unit B crosses 0.60 → 0.42. Options are clickable (store closes the gate). */
-export const Gated: Story = { parameters: { hamilton: gated(0.42) } };
+/** Unit B crosses 0.60 → 0.31 on the jammer fingerprint match. Options are clickable (store closes the gate). */
+export const Gated: Story = { parameters: { hamilton: gated(BAND_SAMPLES.degraded) } };
 
 /** Gate open while B has already fallen to the failed band. */
-export const GatedFailedBand: Story = { parameters: { hamilton: gated(0.18, PHASE_TRACKS.failed) } };
+export const GatedFailedBand: Story = { parameters: { hamilton: gated(BAND_SAMPLES.failed, PHASE_TRACKS.failed) } };
 
 /** The gate as it lands on the COP — trust panel behind the scrim (R16: context stays visible). */
 export const OverTrustPanel: Story = {
-  parameters: { hamilton: gated(0.42) },
+  parameters: { hamilton: gated(BAND_SAMPLES.degraded) },
   render: () => (
     <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', height: '100vh' }}>
       <div

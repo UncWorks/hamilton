@@ -307,7 +307,7 @@ export const FINDINGS: Finding[] = [
     area: 'Symbology — open, pending option selection',
     where: 'CesiumSpine.tsx (label entity) · MapSpine.tsx (none)',
     finding:
-      'OPEN — pending option selection. Deviation: labels are Cesium-only and always on (raw source_id + score); spec wants T left, J (trust) right only below 0.60, with a dark text outline. B′: T left; right line = semantic rating + score + J code ("DEGRADED 0.42 D4") shown below 0.60, when stale, or on hover/focus; W (last-good DTG) and AR NRT when stale; hover/focus opens the factor-breakdown tooltip. Scale: src/lib/link-trust-rating.ts.',
+      'OPEN — pending option selection. Deviation: labels are Cesium-only and always on (raw source_id + score); spec wants T left, J (trust) right only below 0.60, with a dark text outline. B′: T left; right line = semantic rating + score + J code ("DEGRADED 0.31 D4") shown below 0.60, when stale, or on hover/focus; W (last-good DTG) and AR NRT when stale; hover/focus opens the factor-breakdown tooltip. Scale: src/lib/link-trust-rating.ts.',
     spec: 'APP-6(E) amplifiers T, J',
   },
   // --- Option B conflicts with US 2525E / FM 1-02.2 (us-symbology-findings.md) ---
@@ -344,8 +344,21 @@ export const FINDINGS: Finding[] = [
     area: 'Symbology — Option B conflict, resolved in B′',
     where: 'Explorations/Track Symbology → Option B (J amplifier)',
     finding:
-      'Option B writes a raw score ("0.42") into J, breaking the A–F × 1–6 evaluation-rating format. RESOLVED IN B′: J = mapped code (B2 / C3 / D4 / E5) used for export; the visible label is the semantic name + score (NOMINAL / WATCH / DEGRADED / UNRELIABLE, STALE) with the J code secondary.',
+      'Option B writes a raw score ("0.31") into J, breaking the A–F × 1–6 evaluation-rating format. RESOLVED IN B′: J = mapped code (B2 / C3 / D4 / E5) used for export; the visible label is the semantic name + score (NOMINAL / WATCH / DEGRADED / UNRELIABLE, STALE) with the J code secondary.',
     spec: 'MIL-STD-2525E amplifier J · FM 2-22.3 App. B',
+  },
+  // --- Story fixtures vs engine semantics ---
+  {
+    id: 'F01',
+    severity: 'low',
+    area: 'Fixtures — fingerprint semantics, resolved (assumes PR #1 merged)',
+    where: 'stories/fixtures/avdiivka.ts · stories/support/OptionBPrime.tsx (evidenceFor) · lib/link-trust-rating.ts (solveComponents)',
+    finding:
+      'RESOLVED. The Storybook workaround that read components.fingerprint as 1 − overlap is removed: stories now treat it directly as trust (1 − match strength, 1.0 = no match), and evidence strings derive the overlap ratio as 1 − trust, as the narrator does. Fixtures align with PR #1 (fix/fingerprint-trust-inversion) semantics, so the stories assume PR #1 is merged. ' +
+      'Candidates are what the engine emits for the Avdiivka jammer: ground_based_gps_uhf_barrage 1.00 (6/6), pulsed_uhf_wide 0.50 (3/6), cellular_uhf_barrage 0.17 (1/6), with munitions and citations from assets/fingerprints/library.json (replacing the unreachable 0.81 / 0.42 / 0.18). ' +
+      'Every fixture payload uses engine-reachable components (fingerprint ∈ {1, .5, .33, .17, 0}; spatial 1 / 0.6 / 0.3, mirroring the trust-oriented spatial detector) and reproduces its score exactly, so the B′ tooltip mismatch warning stays silent. ' +
+      'Band samples changed: degraded 0.42 → 0.31 (a 6/6 match caps a localized source at 0.372), failed 0.18 → 0.13 (the engine\'s B-1:15 output); B now crosses the ROE floor on the jammer match (0.72 → 0.31) instead of a gradual slide.',
+    spec: 'FRS FR-04 / FR-04a / FR-05 · PR #1',
   },
 ];
 

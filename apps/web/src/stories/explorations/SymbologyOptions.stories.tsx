@@ -15,7 +15,7 @@ import {
   type MilSymbolProps,
   type SymbologyOption,
 } from '@/stories/support/MilSymbol';
-import { CANDIDATES, JAMMER_LOCATION, PHASE_TRACKS, at, componentsFor } from '@/stories/fixtures/avdiivka';
+import { BAND_SAMPLES, CANDIDATES, JAMMER_LOCATION, PHASE_TRACKS, at, componentsFor } from '@/stories/fixtures/avdiivka';
 import { STALE_AFTER_S, formatDtg, rateLinkTrust } from '@/lib/link-trust-rating';
 import {
   FireMissionPopup,
@@ -663,7 +663,8 @@ const PRIME_DOCS =
   'Option B′ — US MIL-STD-2525E / FM 1-02.2 conformant. Rating scale and J mapping: `src/lib/link-trust-rating.ts` ' +
   '(single source of truth, unit-tested with `pnpm --filter @hamilton/web test`). Scores shown in tooltips are RECOMPUTED from the ' +
   'fixture components with the aggregator formula (0.6 × Σwᵢcᵢ + 0.4 × min c; weights 0.2/0.3/0.2/0.3 from ' +
-  '`services/trust-engine/crates/aggregator/src/lib.rs`); a mismatch with the payload score is flagged in red inside the tooltip.\n\n' +
+  '`services/trust-engine/crates/aggregator/src/lib.rs`); a mismatch with the payload score is flagged in red inside the tooltip. ' +
+  'Fingerprint is a TRUST component (1 − match strength, 1.0 = no match; PR #1); candidate scores are match strength.\n\n' +
   '### SIDCs\n' +
   SIDC_TABLE_PRIME_MD;
 
@@ -687,9 +688,9 @@ export const OptionBPrimeMatrix: Story = {
 const TOOLTIP_STATES: { key: string; score: number; stale?: boolean }[] = [
   { key: 'nominal', score: 0.95 },
   { key: 'watch', score: 0.72 },
-  { key: 'degraded', score: 0.42 },
-  { key: 'unreliable', score: 0.18 },
-  { key: 'stale', score: 0.42, stale: true },
+  { key: 'degraded', score: BAND_SAMPLES.degraded },
+  { key: 'unreliable', score: BAND_SAMPLES.failed },
+  { key: 'stale', score: BAND_SAMPLES.degraded, stale: true },
 ];
 
 /**
@@ -716,11 +717,11 @@ export const OptionBPrimeRatingTooltip: Story = {
           sizePx={32}
           designation="B"
           echelon="battery"
-          score={0.42}
+          score={BAND_SAMPLES.degraded}
           dtg={formatDtg(at(40))}
           overlay={overlay}
           reducedMotion={reducedMotion}
-          explanation={explanationFor('B · FA battery', 0.42, false, 'neighbours A, C')}
+          explanation={explanationFor('B · FA battery', BAND_SAMPLES.degraded, false, 'neighbours A, C')}
         />
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(620px, 1fr))', gap: 'var(--space-4)' }}>
@@ -757,7 +758,7 @@ export const OptionBPrimeRatingTooltip: Story = {
     await waitFor(() => expect(tip).toBeVisible());
     await expect(tip).toHaveTextContent('DEGRADED');
     await expect(tip).toHaveTextContent('J D4');
-    await expect(within(tip).getByTestId('formula')).toHaveTextContent(/= 0\.420$/);
+    await expect(within(tip).getByTestId('formula')).toHaveTextContent(/= 0\.310$/);
     await expect(tip).toHaveTextContent('Below ROE floor 0.60 → GPS-guided fires gated');
     await userEvent.unhover(trigger);
     await waitFor(() => expect(tip).not.toBeVisible());
@@ -778,16 +779,21 @@ export const OptionBPrimeRatingTooltip: Story = {
 // COP – Option B′
 // ---------------------------------------------------------------------------
 
-/** Scenario clock (s) → B link-trust score. 0:45 watching → 1:15 0.42 (fixture beats). */
+/**
+ * Scenario clock (s) → B link-trust score, as the engine produces it (PR #1):
+ * 0:45 spatial flags B localized-degrading (0.79), temporal slips through WATCH
+ * to 0.72, then at 1:13 the jammer RF matches 6/6 → fingerprint trust 1 → 0 and
+ * B drops below the ROE floor in one beat to DEGRADED 0.31 (BAND_SAMPLES).
+ * Temporal and stability never improve along the timeline; candidates appear
+ * at the same beat (clock ≥ 73).
+ */
 const B_TIMELINE: [number, number][] = [
-  [45, 0.72],
-  [52, 0.66],
-  [58, 0.61],
-  [62, 0.55],
-  [67, 0.48],
-  [72, 0.44],
-  [75, 0.42],
-  [80, 0.42],
+  [45, 0.79],
+  [55, 0.76],
+  [64, 0.72],
+  [72, 0.72],
+  [73, BAND_SAMPLES.degraded],
+  [80, BAND_SAMPLES.degraded],
 ];
 /** Scenario clock 1:20 = T0 + 41 s (fixture GATE_OPEN.triggered_at). */
 const CLOCK_TO_T0_S = 39;
@@ -948,8 +954,8 @@ function CopScenePrime({ clock, size, reducedMotion, overlay }: Pick<SymbologyAr
 /**
  * Avdiivka scene with Option B′ (US 2525E). A, B, C; candidate sites (status 1,
  * dashed) inside the dashed NAI; confirmed fix J1; bearing line labelled with
- * T and W. The **clock** control drives B from 0:45 (WATCH 0.72) to 1:20
- * (DEGRADED 0.42; B goes silent after 1:08 → STALE / NRT from 1:19). The
+ * T and W. The **clock** control drives B from 0:45 (WATCH 0.79) to 1:20
+ * (DEGRADED 0.31 after the 1:13 jammer match; B goes silent after 1:08 → STALE / NRT from 1:19). The
  * fire-mission popup carries the ROE / Excalibur gate. CesiumSpine / MapSpine
  * are NOT changed.
  */
@@ -961,9 +967,10 @@ export const OptionBPrimeCop: Story = {
       description: {
         story:
           PRIME_DOCS +
-          '\n\nCandidate positions are mock (the fixture carries scores only). B timeline: 0:45 0.72 → 0:58 0.61 → 1:02 0.55 → 1:15 0.42; ' +
+          '\n\nCandidate positions are mock (the fixture carries scores only). B timeline: 0:45 0.79 → 1:04 0.72 (WATCH) → 1:13 jammer fingerprint match 6/6, fingerprint trust 1 → 0 → 0.31 (DEGRADED, gated); ' +
           'last good update frozen at 1:08, so B is STALE (AR NRT, grey frame, frozen overlay) from 1:19. Components for every score are ' +
-          'solved to reproduce it through the aggregator formula (fixtures/avdiivka.ts componentsFor).',
+          'solved to reproduce it through the aggregator formula with engine-reachable values only (fingerprint 1 − k/6, spatial 1 / 0.6 / 0.3; ' +
+          'fixtures/avdiivka.ts componentsFor). Assumes PR #1 (fingerprint trust inversion) is merged.',
       },
     },
   },

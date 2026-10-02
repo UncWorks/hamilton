@@ -36,12 +36,15 @@ export function startMqtt(_url: string, bindings: MqttBindings): MqttClientHandl
   }
 
   if (cfg.script === 'crescendo') {
+    // Candidates arrive with the first payload whose fingerprint trust drops
+    // below 1 (the jammer RF match), the same beat the engine publishes them.
+    const revealAt = B_DECAY_PAYLOADS.findIndex((p) => p.components.fingerprint < 1);
     B_DECAY_PAYLOADS.forEach((payload, i) => {
       later((i + 1) * cfg.tickMs, () => {
         // Re-stamp so the store sees fresh timestamps on replay.
         bindings.onTrust({ ...payload, timestamp: new Date().toISOString() });
         const bullets =
-          payload.score < 0.55 ? 3 : payload.score < 0.7 ? 2 : payload.score < 0.9 ? 1 : 0;
+          payload.score < 0.55 ? 3 : payload.score < 0.75 ? 2 : payload.score < 0.9 ? 1 : 0;
         if (bullets > 0) {
           bindings.onNarration({
             source_id: 'unit_b',
@@ -49,7 +52,7 @@ export function startMqtt(_url: string, bindings: MqttBindings): MqttClientHandl
             provider: 'claude',
           });
         }
-        if (payload.score <= 0.61 && payload.score > 0.55) {
+        if (i === revealAt) {
           bindings.onCandidates({ ...CANDIDATES_PAYLOAD, timestamp: new Date().toISOString() });
         }
       });
