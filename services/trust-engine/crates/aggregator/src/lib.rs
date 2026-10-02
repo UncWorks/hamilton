@@ -83,6 +83,8 @@ pub fn aggregate(
         score,
         components,
         timestamp: now,
+        lat: None,
+        lon: None,
     }
 }
 
@@ -364,125 +366,229 @@ mod tests {
     }
 
     // End-to-end over the Avdiivka beats (comms-sim scenario values, no
-    // jitter) through the real detectors + bundled fingerprint library.
-    #[test]
-    fn avdiivka_beats_end_to_end() {
+    // jitter) through the real detectors + bundled fingerprint library, for
+    // all three units. "Degrading" is measured by the engine's own detectors
+    // (spatial::is_degrading), exactly as src/ticker.rs does.
+    mod avdiivka {
+        use super::super::*;
         use trust_detectors::{
             fingerprint::{match_fingerprint, FingerprintEntry, RfFingerprint, TimeDomainPattern},
-            spatial::{classify_spatial, NeighborState, Position, SourceLocation},
+            spatial::{classify_spatial, is_degrading, NeighborState, Position, SourceLocation},
             stability::{detect_stability, StabilityWindow},
             temporal::{detect_temporal, InterArrival, TemporalBaseline},
         };
 
-        const ROE_FLOOR: f64 = 0.6;
-        let raw = include_str!("../../../../../assets/fingerprints/library.json");
-        let parsed: serde_json::Value = serde_json::from_str(raw).unwrap();
-        let library: Vec<FingerprintEntry> = parsed["entries"]
-            .as_array()
-            .unwrap()
-            .iter()
-            .map(|e| serde_json::from_value(e.clone()).unwrap())
-            .collect();
-        let jammer = RfFingerprint {
-            frequency_band_mhz: [100.0, 2000.0],
-            hop_spread_hz: 50_000.0,
-            gps_l1_overlap: true,
-            gps_l2_overlap: true,
-            time_domain_pattern: TimeDomainPattern::Barrage,
-            effective_range_km: 30.0,
-        };
-        let baseline = TemporalBaseline {
-            mean_seconds: 1.0,
-            stddev_seconds: 0.05,
-        };
-        let b = SourceLocation {
-            id: "unit_b".into(),
-            position: Position {
-                lat: 48.140,
-                lon: 37.745,
-            },
-        };
-        let neighbors = [
-            NeighborState {
-                id: "unit_a".into(),
-                position: Position {
-                    lat: 48.1422,
-                    lon: 37.745,
-                },
-                degrading: false,
-            },
-            NeighborState {
-                id: "unit_c".into(),
-                position: Position {
-                    lat: 48.1378,
-                    lon: 37.745,
-                },
-                degrading: false,
-            },
-        ];
-        let tick = |inter_arrival: f64, crc: f64, rf: Option<&RfFingerprint>| {
-            let t = detect_temporal(
-                &[InterArrival {
-                    seconds: inter_arrival,
-                }],
-                &baseline,
-            );
-            let s = detect_stability(&StabilityWindow {
-                crc_error_rate: crc,
-                duplicate_rate: 0.0,
-                baseline_duplicate_rate: 0.0,
-            });
-            let sp = classify_spatial(&b, &neighbors, 500.0);
-            let fp = rf.and_then(|rf| match_fingerprint(rf, &library));
-            aggregate(
-                "unit_b",
-                DetectorReadings {
-                    temporal: &t,
-                    stability: &s,
-                    spatial: &sp,
-                    fingerprint: fp.as_ref(),
-                },
-                &AggregatorWeights::default(),
-                Utc::now(),
-            )
-        };
+        pub const ROE_FLOOR: f64 = 0.6;
 
-        let beats = [
-            ("B-0:00", tick(1.0, 0.002, None)),
-            ("B-0:45", tick(6.1, 0.002, None)),
-            ("B-0:55", tick(6.1, 0.14, None)),
-            ("B-1:15", tick(6.1, 0.14, Some(&jammer))),
-            ("B-1:50", tick(1.8, 0.04, Some(&jammer))),
-            ("B-2:15", tick(1.0, 0.002, None)),
-        ];
-        for (label, p) in &beats {
-            eprintln!(
-                "{label}: score={:.3} temporal={:.2} stability={:.2} spatial={:.2} fingerprint={:.2}",
-                p.score,
-                p.components.temporal,
-                p.components.stability,
-                p.components.spatial,
-                p.components.fingerprint
+        /// One unit's telemetry at a beat: (inter_arrival_s, crc, jammer RF?).
+        #[derive(Clone, Copy)]
+        pub struct Tel(pub f64, pub f64, pub bool);
+        pub const HEALTHY: Tel = Tel(1.0, 0.002, false);
+
+        fn library() -> Vec<FingerprintEntry> {
+            let raw = include_str!("../../../../../assets/fingerprints/library.json");
+            let parsed: serde_json::Value = serde_json::from_str(raw).unwrap();
+            parsed["entries"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .map(|e| serde_json::from_value(e.clone()).unwrap())
+                .collect()
+        }
+
+        fn jammer() -> RfFingerprint {
+            RfFingerprint {
+                frequency_band_mhz: [100.0, 2000.0],
+                hop_spread_hz: 50_000.0,
+                gps_l1_overlap: true,
+                gps_l2_overlap: true,
+                time_domain_pattern: TimeDomainPattern::Barrage,
+                effective_range_km: 30.0,
+            }
+        }
+
+        /// comms-sim SOURCE_POSITIONS (= apps/web SEED_TRACKS): A and C are
+        /// ~245 m north/south of B, inside the 500 m radius.
+        pub fn positions() -> [(&'static str, Position); 3] {
+            [
+                (
+                    "unit_a",
+                    Position {
+                        lat: 48.1422,
+                        lon: 37.745,
+                    },
+                ),
+                (
+                    "unit_b",
+                    Position {
+                        lat: 48.140,
+                        lon: 37.745,
+                    },
+                ),
+                (
+                    "unit_c",
+                    Position {
+                        lat: 48.1378,
+                        lon: 37.745,
+                    },
+                ),
+            ]
+        }
+
+        /// Run one engine tick over A, B, C telemetry. Returns [A, B, C].
+        pub fn tick(units: [Tel; 3]) -> [TrustScorePayload; 3] {
+            let library = library();
+            let jammer = jammer();
+            let baseline = TemporalBaseline {
+                mean_seconds: 1.0,
+                stddev_seconds: 0.05,
+            };
+            let pos = positions();
+            let readings: Vec<_> = units
+                .iter()
+                .map(|&Tel(ia, crc, _)| {
+                    (
+                        detect_temporal(&[InterArrival { seconds: ia }], &baseline),
+                        detect_stability(&StabilityWindow {
+                            crc_error_rate: crc,
+                            duplicate_rate: 0.0,
+                            baseline_duplicate_rate: 0.0,
+                        }),
+                    )
+                })
+                .collect();
+            let degrading: Vec<bool> = readings.iter().map(|(t, s)| is_degrading(t, s)).collect();
+            std::array::from_fn(|i| {
+                let (id, p) = pos[i];
+                let neighbors: Vec<NeighborState> = (0..3)
+                    .filter(|&j| j != i)
+                    .map(|j| NeighborState {
+                        id: pos[j].0.into(),
+                        position: pos[j].1,
+                        degrading: degrading[j],
+                    })
+                    .collect();
+                let sp = classify_spatial(
+                    &SourceLocation {
+                        id: id.into(),
+                        position: p,
+                    },
+                    degrading[i],
+                    &neighbors,
+                    500.0,
+                );
+                let fp = units[i]
+                    .2
+                    .then(|| match_fingerprint(&jammer, &library))
+                    .flatten();
+                aggregate(
+                    id,
+                    DetectorReadings {
+                        temporal: &readings[i].0,
+                        stability: &readings[i].1,
+                        spatial: &sp,
+                        fingerprint: fp.as_ref(),
+                    },
+                    &AggregatorWeights::default(),
+                    Utc::now(),
+                )
+            })
+        }
+
+        pub fn print(label: &str, abc: &[TrustScorePayload; 3]) {
+            for p in abc {
+                eprintln!(
+                    "{label} {}: score={:.3} temporal={:.2} stability={:.2} spatial={:.2} fingerprint={:.2}",
+                    p.source_id,
+                    p.score,
+                    p.components.temporal,
+                    p.components.stability,
+                    p.components.spatial,
+                    p.components.fingerprint
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn healthy_units_score_one() {
+        use avdiivka::{tick, HEALTHY};
+        for p in tick([HEALTHY; 3]) {
+            assert!(
+                (p.score - 1.0).abs() < 1e-12,
+                "{}: {}",
+                p.source_id,
+                p.score
+            );
+            assert!((p.components.spatial - 1.0).abs() < f64::EPSILON);
+        }
+    }
+
+    // B degrades alone: B is localized (0.6); A and C are NOT dragged into a
+    // false "blanket" and stay at full trust.
+    #[test]
+    fn localized_b_leaves_a_and_c_at_full_trust() {
+        use avdiivka::{tick, Tel, HEALTHY};
+        let [a, b, c] = tick([HEALTHY, Tel(6.1, 0.14, true), HEALTHY]);
+        assert!((b.components.spatial - 0.6).abs() < f64::EPSILON);
+        for p in [&a, &c] {
+            assert!(
+                (p.score - 1.0).abs() < 1e-12,
+                "{}: {}",
+                p.source_id,
+                p.score
             );
         }
-        let score = |i: usize| beats[i].1.score;
+    }
 
+    // Everyone degraded → every unit takes the blanket penalty (0.3).
+    #[test]
+    fn all_degraded_gives_blanket_penalty() {
+        use avdiivka::{tick, Tel};
+        let d = Tel(1.2, 0.08, false);
+        for p in tick([d; 3]) {
+            assert!((p.components.spatial - 0.3).abs() < f64::EPSILON);
+        }
+    }
+
+    #[test]
+    fn avdiivka_beats_end_to_end() {
+        use avdiivka::{print, tick, Tel, HEALTHY, ROE_FLOOR};
+
+        let beats = [
+            ("B-0:00", tick([HEALTHY, HEALTHY, HEALTHY])),
+            ("B-0:45", tick([HEALTHY, Tel(6.1, 0.002, false), HEALTHY])),
+            ("B-0:55", tick([HEALTHY, Tel(6.1, 0.14, false), HEALTHY])),
+            ("B-1:15", tick([HEALTHY, Tel(6.1, 0.14, true), HEALTHY])),
+            ("B-1:50", tick([HEALTHY, Tel(1.8, 0.04, true), HEALTHY])),
+            ("B-2:15", tick([HEALTHY, HEALTHY, HEALTHY])),
+        ];
+        for (label, abc) in &beats {
+            print(label, abc);
+        }
+        let b = |i: usize| &beats[i].1[1];
+        let score = |i: usize| b(i).score;
+
+        // A and C stay at full trust at every beat: no false blanket.
+        for (label, [a, _, c]) in &beats {
+            assert!((a.score - 1.0).abs() < 1e-12, "{label} A {}", a.score);
+            assert!((c.score - 1.0).abs() < 1e-12, "{label} C {}", c.score);
+        }
+        // Healthy B idles at 1.0 and recovers to 1.0.
+        assert!((score(0) - 1.0).abs() < 1e-12);
+        assert!((score(5) - 1.0).abs() < 1e-12);
+        // Degrading B is localized (A, C healthy): spatial 0.6.
+        for i in 1..=4 {
+            assert!((b(i).components.spatial - 0.6).abs() < f64::EPSILON);
+        }
         // Fingerprinting the jammer adds evidence: trust drops further at 1:15.
-        assert!(beats[3].1.components.fingerprint.abs() < 1e-10);
-        assert!(
-            score(3) < score(2),
-            "1:15 {} !< 0:55 {}",
-            score(3),
-            score(2)
-        );
-        // Below the ROE floor through the 1:20 gate.
+        assert!(b(3).components.fingerprint.abs() < 1e-10);
+        assert!(score(3) < score(2));
         assert!(score(3) < ROE_FLOOR);
         // Monotonic down through degradation, up through recovery.
         assert!(score(1) < score(0) && score(2) < score(1));
         assert!(score(4) > score(3) && score(5) > score(4));
-        // Recovered above the floor with no residual fingerprint penalty.
-        assert!(score(5) >= ROE_FLOOR);
-        assert!((beats[5].1.components.fingerprint - 1.0).abs() < f64::EPSILON);
+        assert!((b(5).components.fingerprint - 1.0).abs() < f64::EPSILON);
     }
 
     #[test]

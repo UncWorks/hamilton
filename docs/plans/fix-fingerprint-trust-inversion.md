@@ -105,7 +105,13 @@ Considered:
   change proposed for the fingerprint fix.** §5.1 example is replaced with the
   engine's actual B-1:15 output.
 
-Pre-existing, **not caused by this change and out of scope** (flagged as follow-ups):
+> **Superseded numbers.** This table predates the spatial and gate-timing fixes.
+> Both follow-ups below are now fixed on the same branch; see
+> [`fix-spatial-trust-and-gate-timing.md`](./fix-spatial-trust-and-gate-timing.md)
+> for the current A/B/C beat table.
+
+Pre-existing, **not caused by this change and out of scope** (flagged as follow-ups,
+since fixed: see the sibling plan):
 1. **Spatial is not trust-oriented.** `classify_spatial` returns 0.6 (localized) for any
    source, healthy or not, and 0.3 (blanket) for healthy neighbours of a degraded
    source. All units idle at 0.79 instead of 1.0. While B degrades, A and C drop to 0.64.

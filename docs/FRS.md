@@ -79,8 +79,8 @@ The system is a **comms-integrity evaluation layer** that consumes per-source te
 |---|---|
 | **ID** | `FR-03` |
 | **Statement** | The system shall localize a degradation event by checking whether neighbors within a configurable radius (default 500m) experience correlated degradation. If neighbors are healthy, the event is classified as **directional/localized**, not blanket atmospheric/EMI. |
-| **Input** | Trust scores of all sources within radius of degraded source |
-| **Output** | Spatial classification (`localized` / `blanket`) attached to the degradation event |
+| **Input** | Reported position (`lat`/`lon` on every telemetry payload) and **engine-measured** degradation of every source within radius. A source counts as degrading when its own `FR-01` temporal anomaly (> 3σ) or `FR-02` stability flag fires. A self-reported flag from the source is never used. Radius: `TRUST_ENGINE_SPATIAL_RADIUS_M`, default 500. |
+| **Output** | Spatial classification (`nominal` / `localized` / `blanket`) attached to the degradation event. Into `FR-05` as **spatial trust**: `1.0` when the source itself is not degrading (`nominal`), `0.6` when it degrades and every neighbour in radius is healthy (`localized`), `0.3` when it degrades and ≥ 1 neighbour in radius degrades too (`blanket`). A healthy source is never penalised for a neighbour's degradation. |
 | **Acceptance** | Demo: Unit B degrades; A and C (240m from B) remain healthy → side panel renders *"Degradation directional, vicinity B's flank corridor. Neighbors A, C unaffected."* |
 | **Traces to** | `UR-04`, `B-1:05` |
 | **Demo-scope** | Yes — Beat 1:05 |

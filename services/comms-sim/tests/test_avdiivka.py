@@ -6,7 +6,10 @@ in order.
 
 from __future__ import annotations
 
+import math
+
 from comms_sim.scenarios.avdiivka import (
+    SOURCE_POSITIONS,
     avdiivka_beats,
     initial_state,
     render_telemetry,
@@ -70,13 +73,42 @@ def test_render_telemetry_serializes_three_payloads() -> None:
     assert by_id["unit_b"].rf is not None
     wire_b = by_id["unit_b"].to_wire()
     assert wire_b["rf"]["time_domain_pattern"] == "barrage"
-    assert wire_b["degrading"] is True
+    # The engine measures degradation; the sim must not self-report it.
+    assert "degrading" not in wire_b
     # No unknown keys — Rust side has deny_unknown_fields
     assert set(wire_b.keys()) <= {
         "source_id",
+        "lat",
+        "lon",
         "inter_arrival_seconds",
         "crc_error_rate",
         "duplicate_rate",
         "rf",
-        "degrading",
     }
+
+
+def _distance_m(a: tuple[float, float], b: tuple[float, float]) -> float:
+    """Haversine, same formula as the engine's spatial detector."""
+    r = 6_371_000.0
+    lat1, lat2 = math.radians(a[0]), math.radians(b[0])
+    dlat = math.radians(b[0] - a[0])
+    dlon = math.radians(b[1] - a[1])
+    h = math.sin(dlat / 2) ** 2 + math.cos(lat1) * math.cos(lat2) * math.sin(dlon / 2) ** 2
+    return 2 * r * math.asin(math.sqrt(h))
+
+
+def test_payloads_carry_real_positions() -> None:
+    payloads = render_telemetry(initial_state())
+    for p in payloads:
+        wire = p.to_wire()
+        assert (wire["lat"], wire["lon"]) == SOURCE_POSITIONS[p.source_id]
+        assert (wire["lat"], wire["lon"]) != (0.0, 0.0)
+
+
+def test_neighbors_within_spatial_radius_of_b() -> None:
+    """Storyboard: C ~240 m from B, A within 500 m (FR-03 radius)."""
+    b = SOURCE_POSITIONS["unit_b"]
+    d_a = _distance_m(SOURCE_POSITIONS["unit_a"], b)
+    d_c = _distance_m(SOURCE_POSITIONS["unit_c"], b)
+    assert 200 < d_c < 280
+    assert d_a <= 500

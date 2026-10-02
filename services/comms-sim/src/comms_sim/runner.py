@@ -100,11 +100,12 @@ def _jittered(
         jittered.append(
             TelemetryPayload(
                 source_id=p.source_id,
+                lat=p.lat,
+                lon=p.lon,
                 inter_arrival_seconds=max(0.05, p.inter_arrival_seconds + ia_jitter),
                 crc_error_rate=min(1.0, max(0.0, p.crc_error_rate + crc_jitter)),
                 duplicate_rate=p.duplicate_rate,
                 rf=p.rf,
-                degrading=p.degrading,
             )
         )
     return jittered

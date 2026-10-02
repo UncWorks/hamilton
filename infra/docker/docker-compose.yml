@@ -39,6 +39,7 @@ services:
     environment:
       MQTT_BROKER_URL: mqtt://mosquitto:1883
       TRUST_ENGINE_HTTP_PORT: 8080
+      TRUST_ENGINE_SPATIAL_RADIUS_M: ${TRUST_ENGINE_SPATIAL_RADIUS_M:-500}
       RUST_LOG: hamilton=info,trust_engine=debug
     ports:
       - "8080:8080"

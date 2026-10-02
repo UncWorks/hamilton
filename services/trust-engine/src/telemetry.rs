@@ -1,8 +1,9 @@
 //! Telemetry MQTT subscriber.
 //!
 //! Listens to `telemetry/+/raw`, deserializes wire-format TelemetryPayload,
-//! updates the per-source state, and logs a stability transition event when
-//! a source first reports degradation.
+//! updates the per-source state (including its reported position), and logs a
+//! stability transition event when the engine's stability detector first
+//! measures degradation on a source.
 
 use std::sync::Arc;
 use std::time::Duration;
@@ -13,7 +14,11 @@ use hamilton_contracts::{self as wire, DetectionEvent, DetectionKind};
 use rumqttc::{AsyncClient, Event, EventLoop, MqttOptions, Packet, QoS};
 use tokio::sync::RwLock;
 use tracing::{debug, info, warn};
-use trust_detectors::{stability::StabilityWindow, temporal::InterArrival};
+use trust_detectors::{
+    spatial::Position,
+    stability::{detect_stability, StabilityWindow},
+    temporal::InterArrival,
+};
 use trust_transport::{parse_broker_url, AfterActionLog};
 
 use crate::state::{rf_from_wire, EngineState, SourceState};
@@ -71,7 +76,12 @@ async fn apply(
     let entry = guard
         .sources
         .entry(payload.source_id.clone())
-        .or_insert_with(|| SourceState::new(&payload.source_id, 0.0, 0.0));
+        .or_insert_with(|| SourceState::new(&payload.source_id, payload.lat, payload.lon));
+    // Sources may move: always take the latest reported position.
+    entry.location.position = Position {
+        lat: payload.lat,
+        lon: payload.lon,
+    };
 
     entry.recent_arrivals.push_back(InterArrival {
         seconds: payload.inter_arrival_seconds,
@@ -81,6 +91,7 @@ async fn apply(
     }
 
     let prev_crc = entry.stability.crc_error_rate;
+    let was_degraded = detect_stability(&entry.stability).degraded;
     entry.stability = StabilityWindow {
         crc_error_rate: payload.crc_error_rate,
         duplicate_rate: payload.duplicate_rate,
@@ -92,10 +103,8 @@ async fn apply(
     // fingerprint trust at 0.0 after the source has recovered.
     entry.last_rf = payload.rf.as_ref().map(rf_from_wire);
 
-    let was_degrading = entry.degrading;
-    entry.degrading = payload.degrading;
-
-    if !was_degrading && payload.degrading {
+    // Measured, not self-reported: log when the stability detector flips.
+    if !was_degraded && detect_stability(&entry.stability).degraded {
         let event = DetectionEvent {
             source_id: payload.source_id.clone(),
             kind: DetectionKind::Stability,

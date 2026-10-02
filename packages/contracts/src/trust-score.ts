@@ -20,6 +20,9 @@ export const TrustScorePayloadSchema = z.object({
   score: z.number().min(0).max(1),
   components: TrustComponentsSchema,
   timestamp: z.string().datetime(),
+  /** Last reported source position (WGS-84), echoed from telemetry. */
+  lat: z.number().min(-90).max(90).optional(),
+  lon: z.number().min(-180).max(180).optional(),
 });
 
 export type TrustComponents = z.infer<typeof TrustComponentsSchema>;

@@ -21,8 +21,9 @@ from comms_sim.payloads import RfObservation, TelemetryPayload
 AVDIIVKA_LAT = 48.140
 AVDIIVKA_LON = 37.745
 
-# Three units in the FDC's COP. Spacing ~240m so neighbors A,C are within
-# the spatial discriminator's 500m radius (FRS §2.3 acceptance).
+# Three units in the FDC's COP, published on every telemetry payload. A and C
+# sit ~245 m north/south of B, inside the spatial discriminator's 500 m radius
+# (FRS §2.3 acceptance). Must match apps/web/app/page.tsx SEED_TRACKS.
 SOURCE_POSITIONS = {
     "unit_a": (AVDIIVKA_LAT + 0.0022, AVDIIVKA_LON),
     "unit_b": (AVDIIVKA_LAT, AVDIIVKA_LON),
@@ -47,6 +48,8 @@ class SourceTelemetryState:
     crc: float = 0.002
     duplicate_rate: float = 0.0
     rf: RfObservation | None = None
+    # Scenario-internal: selects the simulator's jitter profile only. Never
+    # sent on the wire; the engine measures degradation itself.
     degrading: bool = False
 
 
@@ -113,11 +116,12 @@ def render_telemetry(
     return [
         TelemetryPayload(
             source_id=source_id,
+            lat=SOURCE_POSITIONS[source_id][0],
+            lon=SOURCE_POSITIONS[source_id][1],
             inter_arrival_seconds=s.inter_arrival,
             crc_error_rate=s.crc,
             duplicate_rate=s.duplicate_rate,
             rf=s.rf,
-            degrading=s.degrading,
         )
         for source_id, s in state.items()
     ]
