@@ -48,9 +48,6 @@ class SourceTelemetryState:
     crc: float = 0.002
     duplicate_rate: float = 0.0
     rf: RfObservation | None = None
-    # Scenario-internal: selects the simulator's jitter profile only. Never
-    # sent on the wire; the engine measures degradation itself.
-    degrading: bool = False
 
 
 @dataclass(frozen=True)
@@ -62,16 +59,31 @@ class ScenarioBeat:
     apply: Callable[[dict[str, SourceTelemetryState]], None]
 
 
+# Gate timing (docs/plans/fix-spatial-trust-and-gate-timing.md, FIX 2).
+# The engine's temporal detector maps 1σ → 1.0 and 6σ → 0.0 with baseline
+# 1.0 s ± 0.05 s, so anything ≥ 1.30 s scores 0 and, through the 0.4·min term,
+# alone drags B below the 0.60 ROE floor. The storyboard wants B in the
+# WATCH band (0.60–0.85) from 0:45 to 1:15 and below the floor at the 1:20
+# gate, so the jammer ramps up: cadence stretches just past 3σ at 0:45, CRC
+# just past the 5% FR-02 threshold at 0:55, and the full 6.1 s gap, 14% CRC
+# and the RF fingerprint all land together at 1:15.
+WATCH_CADENCE_S = 1.17  # 3.4σ: FR-01 anomaly fires, temporal trust 0.52
+WATCH_CRC = 0.06  # > 5%: FR-02 flag fires, stability trust 0.72
+JAMMED_CADENCE_S = 6.1
+JAMMED_CRC = 0.14
+
+
 def _set_unit_b_temporal_anomaly(state: dict[str, SourceTelemetryState]) -> None:
-    state["unit_b"].inter_arrival = 6.1
-    state["unit_b"].degrading = True
+    state["unit_b"].inter_arrival = WATCH_CADENCE_S
 
 
 def _set_unit_b_stability_fault(state: dict[str, SourceTelemetryState]) -> None:
-    state["unit_b"].crc = 0.14
+    state["unit_b"].crc = WATCH_CRC
 
 
-def _set_unit_b_jammer_fingerprint(state: dict[str, SourceTelemetryState]) -> None:
+def _set_unit_b_jammer_full_power(state: dict[str, SourceTelemetryState]) -> None:
+    state["unit_b"].inter_arrival = JAMMED_CADENCE_S
+    state["unit_b"].crc = JAMMED_CRC
     state["unit_b"].rf = JAMMER_RF
 
 
@@ -84,7 +96,6 @@ def _complete_unit_b_recovery(state: dict[str, SourceTelemetryState]) -> None:
     state["unit_b"].inter_arrival = 1.0
     state["unit_b"].crc = 0.002
     state["unit_b"].rf = None
-    state["unit_b"].degrading = False
 
 
 def avdiivka_beats() -> list[ScenarioBeat]:
@@ -97,9 +108,15 @@ def avdiivka_beats() -> list[ScenarioBeat]:
 
     return [
         ScenarioBeat(0.0, "B-0:00 — three healthy units", lambda _: None),
-        ScenarioBeat(45.0, "B-0:45 — Unit B temporal anomaly", _set_unit_b_temporal_anomaly),
-        ScenarioBeat(55.0, "B-0:55 — Unit B stability fault", _set_unit_b_stability_fault),
-        ScenarioBeat(75.0, "B-1:15 — Unit B jammer fingerprint", _set_unit_b_jammer_fingerprint),
+        ScenarioBeat(
+            45.0, "B-0:45 — Unit B cadence 1.0s → 1.17s (WATCH)", _set_unit_b_temporal_anomaly
+        ),
+        ScenarioBeat(55.0, "B-0:55 — Unit B CRC 0.2% → 6% (WATCH)", _set_unit_b_stability_fault),
+        ScenarioBeat(
+            75.0,
+            "B-1:15 — jammer at full power: 6.1s gap, 14% CRC, RF fingerprint",
+            _set_unit_b_jammer_full_power,
+        ),
         ScenarioBeat(110.0, "B-1:50 — Unit B recovery initiates", _start_unit_b_recovery),
         ScenarioBeat(135.0, "B-2:15 — Unit B fully recovered", _complete_unit_b_recovery),
     ]

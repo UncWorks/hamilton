@@ -57,7 +57,7 @@ The system is a **comms-integrity evaluation layer** that consumes per-source te
 | **Statement** | The system shall flag a per-source temporal anomaly when inter-arrival time exceeds 3σ above the source's baseline cadence. |
 | **Input** | Per-source message timestamp stream from MQTT ingest |
 | **Output** | Anomaly event published to trust engine; contributes to source's trust score |
-| **Acceptance** | Demo: Unit B inter-arrival jumps from ~1.0s baseline to 6.1s → temporal anomaly fires within 1 frame; trust score begins to decay |
+| **Acceptance** | Demo: Unit B inter-arrival stretches from ~1.0s baseline to 1.17s (3.4σ) → temporal anomaly fires within 1 frame; trust score begins to decay (≈0.70, WATCH band, above the ROE floor). The gap widens to 6.1s at `B-1:15` |
 | **Traces to** | `UR-02`, `UR-03`, `B-0:45` |
 | **Demo-scope** | Yes — Beat 0:45 |
 
@@ -69,7 +69,7 @@ The system is a **comms-integrity evaluation layer** that consumes per-source te
 | **Statement** | The system shall flag a per-source network-stability degradation when CRC error rate exceeds threshold (>5% rolling window) or duplicate-frame rate climbs above baseline. |
 | **Input** | Per-source CRC counters + duplicate-frame counters from comms simulator |
 | **Output** | Stability event into trust engine; further trust-score decay |
-| **Acceptance** | Demo: Unit B CRC rises 0.2% → 14% in <10s; trust trace updates with *"B-link: 14% corrupted frames, 6.2s gap"* |
+| **Acceptance** | Demo: Unit B CRC rises 0.2% → 6% (past the 5% threshold); trust trace updates with *"B-link: 6% corrupted frames, cadence 1.17s"*; trust ≈0.65, still above the ROE floor. CRC peaks at 14% at `B-1:15` |
 | **Traces to** | `UR-03`, `B-0:55` |
 | **Demo-scope** | Yes — Beat 0:55 |
 
@@ -145,7 +145,7 @@ The system is a **comms-integrity evaluation layer** that consumes per-source te
 | **Statement** | The system shall render each track icon with opacity proportional to its source's current trust score, with a pulsing halo at `score < 0.6` and full fade at `score < 0.3`. |
 | **Input** | MQTT trust-score stream (`FR-05`) |
 | **Output** | MapLibre layer updates per frame; same payload feeds the conditional AIP secondary surface |
-| **Acceptance** | Demo: Unit B icon visibly fades during 0:45 → 1:50; snaps back to full opacity at 2:15 recovery |
+| **Acceptance** | Demo: Unit B icon visibly fades during 0:45 → 1:50 (≈0.70 at 0:45, ≈0.65 at 0:55, 0.13 at 1:15, 0.22 at 1:50); snaps back to full opacity (1.00) at 2:15 recovery. A and C stay at 1.00 throughout |
 | **Traces to** | `UR-01`, `UR-02`, `B-0:45` through `B-2:15` |
 | **Demo-scope** | Yes — load-bearing visual |
 
@@ -157,7 +157,7 @@ The system is a **comms-integrity evaluation layer** that consumes per-source te
 | **Statement** | The system shall attach a 3-bullet trust trace to every AI kill-chain recommendation, and shall **interrupt** the recommendation flow with a modal when any source's trust score falls below the configured ROE floor for the action class (e.g., GPS-dependent fires). |
 | **Input** | Trust-score stream + AI recommendation event |
 | **Output** | (a) Trust-trace UI element beside the recommendation; (b) modal with three named options: `delay <N>s`, `shift to non-GPS munition`, `confirm via alt channel` |
-| **Acceptance** | Demo: Beat 1:20 — AI declines to recommend GPS-guided strike; modal renders three options; operator picks (b); decision logged with full trust state for after-action |
+| **Acceptance** | Demo: B first crosses below the 0.60 ROE floor at 1:15 (0.13) when the jammer lands. Beat 1:20 — AI declines to recommend GPS-guided strike; modal renders three options; operator picks (b); decision logged with full trust state for after-action |
 | **Traces to** | `UR-05`, `UR-06`, `UR-07`, `B-1:20`, `B-1:50` |
 | **Demo-scope** | **Yes — load-bearing beat. The 30 seconds that win the demo (1:15 → 1:50).** |
 

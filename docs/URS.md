@@ -86,7 +86,7 @@ This counterfactual is the operational basis for every UR below. It is **one Fir
 |---|---|
 | **ID** | `UR-03` |
 | **Statement** | *"As Adam, I need to read why a track is degrading without needing to be a comms engineer — cadence, error rate, gap duration — so I can decide, not just observe."* |
-| **Success criterion** | Trust trace beside the affected track reads like an operator brief, not a log line. Demo example: *"B-link cadence degraded 18s ago — investigating"* → *"B-link: 14% corrupted frames, 6.2s gap."* |
+| **Success criterion** | Trust trace beside the affected track reads like an operator brief, not a log line. Demo example: *"B-link cadence degraded 18s ago — investigating"* → *"B-link: 6% corrupted frames, cadence 1.17s."* (WATCH band, before the 1:15 jammer peak of 6.1s gap / 14% CRC) |
 | **Satisfied by** | `FR-01`, `FR-02`, `FR-08` |
 | **Demo beat** | `B-0:45`, `B-0:55` |
 | **Priority** | P0 |
@@ -109,7 +109,7 @@ This counterfactual is the operational basis for every UR below. It is **one Fir
 |---|---|
 | **ID** | `UR-05` |
 | **Statement** | *"As Adam, I need the system to refuse to recommend a kill-chain action when sensor confidence is below the rules-of-engagement floor for that action class — and to interrupt me with a modal — so a confident-looking icon never causes a confident-looking commit."* |
-| **Success criterion** | At `B-1:20`, AI **declines** to recommend the GPS-guided strike. Modal renders three options: `delay 60s`, `shift to non-GPS munition`, `confirm via alt channel`. |
+| **Success criterion** | B stays above the 0.60 ROE floor through 0:45–1:05 (WATCH) and first crosses it at `B-1:15` (0.13). At `B-1:20`, AI **declines** to recommend the GPS-guided strike. Modal renders three options: `delay 60s`, `shift to non-GPS munition`, `confirm via alt channel`. |
 | **Satisfied by** | `FR-07` |
 | **Demo beat** | `B-1:20` (the load-bearing beat) |
 | **Priority** | P0 — **the 30 seconds that win the demo are 1:15 → 1:50** |

@@ -30,26 +30,39 @@ def test_initial_state_has_three_healthy_units() -> None:
     for s in state.values():
         assert s.inter_arrival == 1.0
         assert s.crc < 0.005
-        assert s.degrading is False
         assert s.rf is None
 
 
-def test_b_0_45_unit_b_inter_arrival_jumps_to_6_1() -> None:
+# Engine temporal baseline: 1.0 s ± 0.05 s → 3σ = 1.15 s, 6σ = 1.30 s.
+THREE_SIGMA_S = 1.15
+SIX_SIGMA_S = 1.30
+
+
+def test_b_0_45_unit_b_cadence_stretches_past_three_sigma() -> None:
+    """WATCH band: anomaly fires (> 3σ) but temporal trust is not zeroed."""
     state = _state_after_beats_up_to(45.0)
-    assert state["unit_b"].inter_arrival == 6.1
-    assert state["unit_b"].degrading is True
+    assert THREE_SIGMA_S < state["unit_b"].inter_arrival < SIX_SIGMA_S
+    assert state["unit_b"].inter_arrival == 1.17
+    assert state["unit_b"].rf is None
     assert state["unit_a"].inter_arrival == 1.0
     assert state["unit_c"].inter_arrival == 1.0
 
 
-def test_b_0_55_unit_b_crc_climbs_to_14_percent() -> None:
+def test_b_0_55_unit_b_crc_crosses_five_percent() -> None:
     state = _state_after_beats_up_to(55.0)
-    assert state["unit_b"].crc == 0.14
+    assert 0.05 < state["unit_b"].crc < 0.14
+    assert state["unit_b"].crc == 0.06
     assert state["unit_a"].crc < 0.005
 
 
-def test_b_1_15_unit_b_rf_matches_jammer_profile() -> None:
+def test_b_1_05_nothing_new_before_jammer_peak() -> None:
+    assert _state_after_beats_up_to(65.0) == _state_after_beats_up_to(55.0)
+
+
+def test_b_1_15_jammer_full_power_lands_together() -> None:
     state = _state_after_beats_up_to(75.0)
+    assert state["unit_b"].inter_arrival == 6.1
+    assert state["unit_b"].crc == 0.14
     rf = state["unit_b"].rf
     assert rf is not None
     assert rf.gps_l1_overlap is True
@@ -57,12 +70,27 @@ def test_b_1_15_unit_b_rf_matches_jammer_profile() -> None:
     assert rf.time_domain_pattern == "barrage"
 
 
+def test_jitter_keeps_watch_band_cadence_inside_engine_band() -> None:
+    """Seeded jitter must not push B's 0:45–1:15 cadence under 3σ (flicker
+    to healthy) or over 6σ (temporal 0 → early gate)."""
+    import numpy as np
+
+    from comms_sim.runner import _jittered
+
+    rng = np.random.default_rng(42)
+    state = _state_after_beats_up_to(55.0)
+    for _ in range(30):
+        by_id = {p.source_id: p for p in _jittered(render_telemetry(state), rng)}
+        assert THREE_SIGMA_S < by_id["unit_b"].inter_arrival_seconds < 1.20
+        assert by_id["unit_b"].crc_error_rate > 0.05
+        assert by_id["unit_a"].inter_arrival_seconds < THREE_SIGMA_S
+
+
 def test_b_2_15_unit_b_returns_to_nominal() -> None:
     state = _state_after_beats_up_to(135.0)
     assert state["unit_b"].inter_arrival == 1.0
     assert state["unit_b"].crc < 0.005
     assert state["unit_b"].rf is None
-    assert state["unit_b"].degrading is False
 
 
 def test_render_telemetry_serializes_three_payloads() -> None:

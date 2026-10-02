@@ -551,16 +551,28 @@ mod tests {
         }
     }
 
+    // Storyboard gate timing (System Design §2, Branding §10): WATCH band
+    // (0.60–0.85) from 0:45, first crossing below the ROE floor when the
+    // jammer lands at 1:15 (modal at 1:20), still gated at 1:50, recovered
+    // (≥ 0.85) at 2:15. A and C stay at full trust throughout.
     #[test]
     fn avdiivka_beats_end_to_end() {
         use avdiivka::{print, tick, Tel, HEALTHY, ROE_FLOOR};
+        const WATCH_TOP: f64 = 0.85;
 
+        // comms-sim scenarios/avdiivka.py beat values (jitter-free).
+        let watch = Tel(1.17, 0.002, false);
+        let watch_crc = Tel(1.17, 0.06, false);
+        let jammed = Tel(6.1, 0.14, true);
+        let recovering = Tel(1.8, 0.04, true);
         let beats = [
             ("B-0:00", tick([HEALTHY, HEALTHY, HEALTHY])),
-            ("B-0:45", tick([HEALTHY, Tel(6.1, 0.002, false), HEALTHY])),
-            ("B-0:55", tick([HEALTHY, Tel(6.1, 0.14, false), HEALTHY])),
-            ("B-1:15", tick([HEALTHY, Tel(6.1, 0.14, true), HEALTHY])),
-            ("B-1:50", tick([HEALTHY, Tel(1.8, 0.04, true), HEALTHY])),
+            ("B-0:45", tick([HEALTHY, watch, HEALTHY])),
+            ("B-0:55", tick([HEALTHY, watch_crc, HEALTHY])),
+            ("B-1:05", tick([HEALTHY, watch_crc, HEALTHY])),
+            ("B-1:15", tick([HEALTHY, jammed, HEALTHY])),
+            ("B-1:20", tick([HEALTHY, jammed, HEALTHY])),
+            ("B-1:50", tick([HEALTHY, recovering, HEALTHY])),
             ("B-2:15", tick([HEALTHY, HEALTHY, HEALTHY])),
         ];
         for (label, abc) in &beats {
@@ -574,21 +586,28 @@ mod tests {
             assert!((a.score - 1.0).abs() < 1e-12, "{label} A {}", a.score);
             assert!((c.score - 1.0).abs() < 1e-12, "{label} C {}", c.score);
         }
-        // Healthy B idles at 1.0 and recovers to 1.0.
+        // 0:00 healthy.
         assert!((score(0) - 1.0).abs() < 1e-12);
-        assert!((score(5) - 1.0).abs() < 1e-12);
-        // Degrading B is localized (A, C healthy): spatial 0.6.
-        for i in 1..=4 {
-            assert!((b(i).components.spatial - 0.6).abs() < f64::EPSILON);
+        // 0:45..1:05: WATCH band, investigating, not gated. Localized.
+        for (label, [_, b, _]) in &beats[1..=3] {
+            assert!(
+                (ROE_FLOOR..WATCH_TOP).contains(&b.score),
+                "{label} B {} not in WATCH band",
+                b.score
+            );
+            assert!((b.components.spatial - 0.6).abs() < f64::EPSILON);
+            assert!((b.components.fingerprint - 1.0).abs() < f64::EPSILON);
         }
-        // Fingerprinting the jammer adds evidence: trust drops further at 1:15.
-        assert!(b(3).components.fingerprint.abs() < 1e-10);
-        assert!(score(3) < score(2));
-        assert!(score(3) < ROE_FLOOR);
-        // Monotonic down through degradation, up through recovery.
         assert!(score(1) < score(0) && score(2) < score(1));
-        assert!(score(4) > score(3) && score(5) > score(4));
-        assert!((b(5).components.fingerprint - 1.0).abs() < f64::EPSILON);
+        // 1:15: jammer lands; FIRST crossing below the floor, held at 1:20.
+        assert!(b(4).components.fingerprint.abs() < 1e-10);
+        assert!(score(4) < ROE_FLOOR && score(5) < ROE_FLOOR);
+        let first_below = beats.iter().position(|(_, abc)| abc[1].score < ROE_FLOOR);
+        assert_eq!(first_below, Some(4), "B must first cross at 1:15");
+        // 1:50: recovering but still gated; 2:15: recovered.
+        assert!(score(6) > score(5) && score(6) < ROE_FLOOR);
+        assert!(score(7) >= WATCH_TOP);
+        assert!((b(7).components.fingerprint - 1.0).abs() < f64::EPSILON);
     }
 
     #[test]
