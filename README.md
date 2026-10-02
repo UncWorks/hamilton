@@ -66,7 +66,7 @@ make demo-fallback
 | `B-0:45` | Unit B's icon begins to fade (temporal anomaly fires) |
 | `B-0:55` | Trust trace: "B-link: 14% corrupted frames" (stability fault) |
 | `B-1:05` | Side panel: "Degradation directional, vicinity B's flank corridor. Neighbors A, C unaffected." |
-| `B-1:15` | Top-3 candidate cards reveal — `ground_based_gps_uhf_barrage (0.81)` → Excalibur, JDAM-ER, Switchblade 300 |
+| `B-1:15` | Top-3 candidate cards reveal — `ground_based_gps_uhf_barrage (1.00)` → Excalibur, JDAM-ER, Switchblade 300, GMLRS-U |
 | `B-1:20` | **Kill-chain modal**. Subtitle: ***"Kill-chain gated below ROE floor."*** Three options: delay 60s / shift to non-GPS munition / confirm via alt channel |
 | `B-1:50 → B-2:15` | Operator selects (b); icon recovers; brand-bar hairline rule stays on |
 

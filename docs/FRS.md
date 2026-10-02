@@ -92,8 +92,8 @@ The system is a **comms-integrity evaluation layer** that consumes per-source te
 | **ID** | `FR-04` |
 | **Statement** | The system shall match the active degradation pattern against a **deterministic threshold-based fingerprint library** (noise-floor band + frequency-hop spread + GPS L1/L2 overlap booleans), emitting a match score and named profile when threshold criteria are met. |
 | **Input** | Composite of `FR-01`, `FR-02`, `FR-03` outputs + RF telemetry from comms simulator |
-| **Output** | Named jammer profile (e.g., `ground_based_gps_uhf_barrage`) + match score |
-| **Acceptance** | Demo: Unit B's pattern matches `ground_based_gps_uhf_barrage` profile at score 0.81; banner reads *"Suspected ground-based GPS+UHF barrage jammer, vicinity B's corridor."* |
+| **Output** | Named jammer profile (e.g., `ground_based_gps_uhf_barrage`) + match score (**match strength**: higher = more like that jammer; only matches ≥ 0.5 count). Into `FR-05` it enters as **fingerprint trust** = `1 − match strength`, or `1.0` when nothing matches. |
+| **Acceptance** | Demo: Unit B's pattern matches `ground_based_gps_uhf_barrage` profile at match strength 1.00 (6/6 dimensions), so fingerprint trust = 0.00; banner reads *"Suspected ground-based GPS+UHF barrage jammer, vicinity B's corridor."* |
 | **Traces to** | `UR-04`, `UR-05`, `B-1:15` |
 | **Demo-scope** | Yes — Beat 1:15. **NOT** ML classification. R14 mitigation: if a judge probes, answer is *"deterministic threshold detection — Army's data-volume problem on time-series ML informed this choice"* |
 | **Path-forward** | ML-based fingerprint classification — explicitly out-of-scope for the demo (§6, §7) |
@@ -107,7 +107,7 @@ The system is a **comms-integrity evaluation layer** that consumes per-source te
 | **Wedge framing** | FR-04 answers *"what is jamming us?"* — a single named profile. FR-04a answers *"and which rounds in our inventory does that jammer deny?"* — the operator-actionable next step. The two are siblings sharing one input stream. |
 | **Input** | Same degradation-pattern stream consumed by `FR-04` (composite of `FR-01..03` + RF telemetry) + the static fingerprint library described below |
 | **Fingerprint-library schema (per entry)** | `method_id` (e.g., `ground_based_gps_uhf_barrage`); `named_systems[]` (e.g., `R-330Zh Zhitel`, `Pole-21`); `frequency_band_mhz` (range or set); `hop_spread_hz` (threshold); `gps_l1_overlap` (boolean threshold); `gps_l2_overlap` (boolean threshold); `time_domain_pattern` (enum: `continuous` \| `pulsed` \| `barrage` \| `swept`); `effective_range_km` (threshold); `munitions_affected[]` (e.g., `Excalibur`, `JDAM-ER`, `Switchblade 300`, `GMLRS-U`, `Lancet`, `Shahed`, `ATAK position-share`, `FPV C2 link`); `source_citation` (e.g., `Bronk RUSI 2024`, `JAPCC 2023`, `WaPo 2024`) |
-| **Match function (R14-safe)** | `score = (count of fingerprint-dimension threshold booleans matched) / (total fingerprint dimensions for that entry)`. Each dimension is a discrete threshold check; scores sorted descending; top 3 returned. **No training, no softmax, no learned weights.** Pure function — same input → same output. |
+| **Match function (R14-safe)** | `score = (count of fingerprint-dimension threshold booleans matched) / (total fingerprint dimensions for that entry)`. Each dimension is a discrete threshold check; with the 6-dimension schema, scores are `k/6` (0, 0.17, 0.33, 0.50, 0.67, 0.83, 1.00). Scores sorted descending; top 3 returned. Avdiivka demo jammer: `ground_based_gps_uhf_barrage` 1.00, `pulsed_uhf_wide` 0.50, `cellular_uhf_barrage` 0.17. **No training, no softmax, no learned weights.** Pure function — same input → same output. |
 | **Output** | `{ "candidates": [ { "method_id", "named_systems[]", "score", "munitions_affected[]", "source_citation" }, …×3 ] }` published on MQTT topic `integrity/fingerprint/candidates` |
 | **Inventory scope** | US/NATO **and** adversary munitions (Excalibur, JDAM-ER, Switchblade, GMLRS, Lancet, Shahed, FPV, ATAK CoT, etc.) — proves the layer is sensor-/munition-class-agnostic; R15 discipline preserved because the *seat* (FDC) does not change. |
 | **Acceptance** | Demo: at Beat 1:15, side panel renders three ranked candidates with normalized scores and per-candidate munitions-affected lists; per-candidate `source_citation` is visible on hover. Reinforces the Beat 1:20 modal — Adam picks (b) *"shift to non-GPS munition"* with grounded knowledge of which rounds are denied. |
@@ -128,7 +128,7 @@ The system is a **comms-integrity evaluation layer** that consumes per-source te
 | **ID** | `FR-05` |
 | **Statement** | The system shall publish a continuous trust score in `[0.0, 1.0]` per source, updated at least once per second per active source, on MQTT topic `integrity/trust/{source_id}`. |
 | **Input** | Aggregated outputs of `FR-01..04` |
-| **Output** | JSON payload `{source_id, score, components: [temporal, stability, spatial, fingerprint], timestamp}` to MQTT |
+| **Output** | JSON payload `{source_id, score, components: [temporal, stability, spatial, fingerprint], timestamp}` to MQTT. Every component is a **trust** value in `[0.0, 1.0]` (1 = healthy, 0 = bad); `fingerprint` = `1 − match strength` of the best `FR-04` match, `1.0` when nothing matches (inverse of the `FR-04a` candidate `score`). |
 | **Acceptance** | Demo: numeric score visible on hover (≤10-min UI label sharpening per v5.1.1); score behavior is monotonic-down during degradation, monotonic-up during recovery |
 | **Traces to** | `UR-01`, `UR-06`, all demo beats |
 | **Demo-scope** | Yes — engine already publishing in 80%-built state |

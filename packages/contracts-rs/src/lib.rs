@@ -27,7 +27,11 @@ pub mod topics {
 }
 
 /// Per-detector breakdown that feeds the LLM narrator (FR-08). Each component
-/// is in `[0.0, 1.0]`.
+/// is a trust value in `[0.0, 1.0]` where 1.0 = healthy, 0.0 = bad.
+///
+/// `fingerprint` is fingerprint TRUST = `1 - match_strength` of the best
+/// library match (>= 0.5 threshold), or 1.0 when nothing matches. It is the
+/// inverse of the FR-04a candidate `score`, which is match strength.
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub struct TrustComponents {
     pub temporal: f64,
@@ -46,9 +50,10 @@ pub struct TrustScorePayload {
     pub timestamp: DateTime<Utc>,
 }
 
-/// One ranked candidate jamming method (FR-04a). `score` is a deterministic
-/// overlap ratio (matched threshold booleans / total dimensions). Not a
-/// probability, not a model output.
+/// One ranked candidate jamming method (FR-04a). `score` is match strength: a
+/// deterministic overlap ratio (matched threshold booleans / total dimensions,
+/// so k/6), higher = more like this jammer. Not a probability, not a model
+/// output, and not a trust value (see `TrustComponents::fingerprint`).
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FingerprintCandidate {
     pub method_id: String,

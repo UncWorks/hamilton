@@ -486,10 +486,10 @@ Slide 4 → live demo. The transition is:
 ### 10.4 1:15 — the candidate reveal (FR-04a)
 
 - **Enters viewport:** side panel reveals top-3 candidate jamming methods, **staggered**:
-  - Candidate 1: `ground_based_gps_uhf_barrage (0.81)` → affected: `Excalibur, JDAM-ER, Switchblade 300` (60ms in)
-  - Candidate 2: `cellular_uhf_barrage (0.42)` → affected: `ATAK position-share, FPV C2 link` (120ms in)
-  - Candidate 3: `swept_uhf_low_power (0.18)` → affected: *(none in inventory)* (180ms in)
-- **Active tokens:** the trust score readout for each candidate uses the gradient — 0.81 reads in `--trust-nominal`-adjacent (this is *fingerprint match strength*, repurposing the gradient to mean "deterministic overlap"), 0.42 in `--trust-degraded`, 0.18 in `--trust-failed`. Per-candidate citations rendered in `--text-citation`.
+  - Candidate 1: `ground_based_gps_uhf_barrage (1.00)` → affected: `Excalibur, JDAM-ER, Switchblade 300, GMLRS-U` (60ms in)
+  - Candidate 2: `pulsed_uhf_wide (0.50)` → affected: `FPV C2 link, Switchblade 300` (120ms in)
+  - Candidate 3: `cellular_uhf_barrage (0.17)` → affected: `ATAK position-share, FPV C2 link` (180ms in)
+- **Active tokens:** the score readout for each candidate uses the gradient — 1.00 reads in `--trust-nominal` (this is *fingerprint match strength*, repurposing the gradient to mean "deterministic overlap"; it is NOT the trust component, which is `1 − match strength`), 0.50 in `--trust-degraded`, 0.17 in `--trust-failed`. Per-candidate citations rendered in `--text-citation`.
 - **Motion:** `fingerprint-candidate-reveal` primitive — left-to-right `clip-path: inset()` reveal, staggered 60ms.
 - **Verbatim text:** the candidate strings above, exactly as they appear in `[[Specs/FRS|FRS]]` §2.4a acceptance.
 - **Composition:** **the side panel takes the floor.** The map B-icon continues fading silently in the periphery. The operator's eye is being trained for the modal arrival 5 seconds later.

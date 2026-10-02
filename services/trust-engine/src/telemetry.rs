@@ -87,9 +87,10 @@ async fn apply(
         baseline_duplicate_rate: entry.stability.baseline_duplicate_rate,
     };
 
-    if let Some(rf) = payload.rf.as_ref() {
-        entry.last_rf = Some(rf_from_wire(rf));
-    }
+    // An absent `rf` means no current RF observation. Clearing it (rather than
+    // keeping the last one) stops a stale jammer match from pinning
+    // fingerprint trust at 0.0 after the source has recovered.
+    entry.last_rf = payload.rf.as_ref().map(rf_from_wire);
 
     let was_degrading = entry.degrading;
     entry.degrading = payload.degrading;

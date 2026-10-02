@@ -47,7 +47,7 @@ The 5-minute demo flow Adam triggers, beat by beat:
 2. **`B-0:45`** — Unit B's inter-arrival time jumps from ~1.0s to 6.1s. Temporal anomaly fires; B's icon begins to fade; trust trace beside it reads *"B-link cadence degraded 18s ago — investigating."* *(`UR-02`, `UR-03`, `FR-01`, `FR-06`, `FR-08`)*
 3. **`B-0:55`** — CRC error rate climbs 0.2% → 14% in <10s. Trust trace updates: *"B-link: 14% corrupted frames, 6.2s gap."* *(`UR-03`, `FR-02`, `FR-08`)*
 4. **`B-1:05`** — Spatial discrimination clears blanket-EMI hypothesis. Side panel: *"Degradation directional, vicinity B's flank corridor. Neighbors A, C unaffected."* *(`UR-04`, `FR-03`)*
-5. **`B-1:15`** — Fingerprint matcher names the candidate jammer profiles, ranked: `ground_based_gps_uhf_barrage (0.81) → affected: Excalibur, JDAM-ER, Switchblade 300`. Two more candidates shown with their munitions-affected lists; per-candidate citations on hover. *(`UR-04`, `UR-09`, `FR-04`, `FR-04a`)*
+5. **`B-1:15`** — Fingerprint matcher names the candidate jammer profiles, ranked: `ground_based_gps_uhf_barrage (1.00) → affected: Excalibur, JDAM-ER, Switchblade 300, GMLRS-U`. Two more candidates shown with their munitions-affected lists; per-candidate citations on hover. *(`UR-04`, `UR-09`, `FR-04`, `FR-04a`)*
 6. **`B-1:20` (the wedge)** — AI **declines** the GPS-guided strike. Modal: *"Kill-chain gated below ROE floor."* Three options: `delay 60s` / `shift to non-GPS munition` / `confirm via alt channel.` Adam picks (b); decision logged with full trust state. *(`UR-05`, `UR-06`, `UR-07`, `FR-07`)*
 
 The **30 seconds that win the demo are 1:15 → 1:50.** Everything else is setup or recovery.
@@ -147,20 +147,23 @@ flowchart LR
 ```json
 {
   "source_id": "unit_b",
-  "score": 0.42,
+  "score": 0.13,
   "components": {
-    "temporal": 0.65,
+    "temporal": 0.00,
     "stability": 0.31,
-    "spatial": 0.78,
-    "fingerprint": 0.19
+    "spatial": 0.60,
+    "fingerprint": 0.00
   },
   "timestamp": "2026-05-03T18:42:14.221Z"
 }
 ```
 
+*(Engine output for Unit B at `B-1:15`: 6.1 s gap, 14% CRC, localized, jammer matched 6/6.)*
+
 **Properties:**
 - Publication rate ≥1Hz per active source
 - `score` ∈ `[0.0, 1.0]`
+- Every component is **trust-oriented**: 1.0 = healthy, 0.0 = bad. `fingerprint` = `1 − match strength` of the best `FR-04` match (≥ 0.5), `1.0` when nothing matches. Do not confuse it with the §5.2 candidate `score`, which is match strength.
 - Monotonic-down during degradation; monotonic-up during recovery
 - `components` is the per-detector breakdown that feeds the LLM narrator (`FR-08`) — judges may probe the per-detector contribution; this surface is the answer
 
@@ -175,23 +178,23 @@ flowchart LR
     {
       "method_id": "ground_based_gps_uhf_barrage",
       "named_systems": ["R-330Zh Zhitel", "Pole-21"],
-      "score": 0.81,
-      "munitions_affected": ["Excalibur", "JDAM-ER", "Switchblade 300"],
+      "score": 1.0,
+      "munitions_affected": ["Excalibur", "JDAM-ER", "Switchblade 300", "GMLRS-U"],
       "source_citation": "Bronk RUSI 2024"
     },
     {
-      "method_id": "cellular_uhf_barrage",
-      "named_systems": ["..."],
-      "score": 0.42,
-      "munitions_affected": ["ATAK position-share", "FPV C2 link"],
+      "method_id": "pulsed_uhf_wide",
+      "named_systems": ["Lorandit"],
+      "score": 0.5,
+      "munitions_affected": ["FPV C2 link", "Switchblade 300"],
       "source_citation": "JAPCC 2023"
     },
     {
-      "method_id": "swept_uhf_low_power",
-      "named_systems": ["..."],
-      "score": 0.18,
-      "munitions_affected": [],
-      "source_citation": "WaPo 2024"
+      "method_id": "cellular_uhf_barrage",
+      "named_systems": ["R-934B Sinitsa"],
+      "score": 0.16666666666666666,
+      "munitions_affected": ["ATAK position-share", "FPV C2 link"],
+      "source_citation": "JAPCC 2023"
     }
   ],
   "timestamp": "2026-05-03T18:42:14.221Z"
@@ -200,7 +203,7 @@ flowchart LR
 
 **Properties:**
 - Top-3 always; pad with score 0.0 entries if matcher returns fewer
-- `score = (count of fingerprint-dimension threshold booleans matched) / (total fingerprint dimensions)` — **deterministic overlap ratio, no model**
+- `score = (count of fingerprint-dimension threshold booleans matched) / (total fingerprint dimensions)` — **deterministic overlap ratio, no model**. With 6 dimensions, values are `k/6`. This is **match strength** (higher = more like that jammer), not trust; see §5.1 `components.fingerprint`
 - `source_citation` rendered on hover — reinforces R14 public-characterization defense
 
 ### 5.3 Consumer contracts
