@@ -26,8 +26,14 @@ import {
   RELIABILITY,
   ROE_FLOOR,
   STALE_AFTER_S,
+  STABILITY_CRC,
+  TEMPORAL_BASELINE,
+  TEMPORAL_SIGMA,
   WORST_BLEND,
   aggregateTrust,
+  cadenceForTemporalTrust,
+  cadenceSigma,
+  crcForStabilityTrust,
   exportAmplifiers,
   formatDtg,
   rateLinkTrust,
@@ -217,37 +223,61 @@ export function MilSymbolPrimeSvg({ margin = 8, ...p }: MilSymbolPrimeProps & { 
 // mappings (services/trust-engine/crates/detectors/src/*.rs).
 // ---------------------------------------------------------------------------
 
-/** Illustrative baseline for the cadence string: mean 1.0 s, σ 1.5 s. */
-const CADENCE_MEAN_S = 1.0;
-const CADENCE_STD_S = 1.5;
+/** "1.0", "1.17", "6.1" — at least one decimal, at most two. */
+const fmtS = (x: number) => {
+  const t = x.toFixed(2);
+  return t.endsWith('0') ? x.toFixed(1) : t;
+};
+/** "0.2", "6", "14" — CRC as a percentage, integer when it is one. */
+const fmtPct = (frac: number) => {
+  const pct = Math.round(frac * 1000) / 10;
+  return Number.isInteger(pct) ? pct.toFixed(0) : pct.toFixed(1);
+};
+const fmtSigma = (s: number) => (s >= 10 ? s.toFixed(0) : s.toFixed(1));
 
 export interface EvidenceContext {
   /** e.g. "neighbours A, C". */
   neighbours?: string | undefined;
   topCandidate?: FingerprintCandidate | undefined;
+  /**
+   * Raw telemetry behind the components (comms-sim avdiivka.py), when known.
+   * Needed for exact strings where the trust mapping saturates (temporal 0 at
+   * ≥ 6σ hides whether the gap is 1.3 s or 6.1 s).
+   */
+  telemetry?: { cadenceS: number; crc: number } | undefined;
 }
 
+/**
+ * Evidence line per factor, derived through the engine's own detector mappings
+ * (temporal.rs baseline 1.0 s ± 0.05 s, 1σ → 1.0, 6σ → 0.0; stability.rs
+ * 0.5 % → 1.0, 20 % → 0.0) — e.g. temporal 0.52 ⇔ 1.17 s (3.4σ), stability
+ * 0.72 ⇔ 6 % CRC, 0.31 ⇔ 14 %.
+ */
 export function evidenceFor(f: TrustFactor, c: number, ctx: EvidenceContext = {}): string {
   const healthy = c >= 0.999;
+  const base = fmtS(TEMPORAL_BASELINE.meanS);
   switch (f) {
     case 'temporal': {
-      // temporal.rs: score 1.0 at ≤1σ, 0.0 at ≥6σ, linear between.
-      if (healthy) return `Message cadence ${CADENCE_MEAN_S.toFixed(1)}s, within 1σ of baseline`;
-      const sigma = 1 + 5 * (1 - c);
-      const observed = CADENCE_MEAN_S + sigma * CADENCE_STD_S;
-      return `Message cadence ${CADENCE_MEAN_S.toFixed(1)}s → ${observed.toFixed(1)}s (${sigma.toFixed(1)}σ above baseline${sigma > 3 ? ', >3σ' : ''})`;
+      if (healthy && !ctx.telemetry) return `Message cadence ${base}s, within 1σ of baseline`;
+      const observed = ctx.telemetry?.cadenceS ?? (c > 0 ? cadenceForTemporalTrust(c) : undefined);
+      if (observed === undefined) {
+        const atZero = TEMPORAL_BASELINE.meanS + TEMPORAL_SIGMA.zero * TEMPORAL_BASELINE.stdS;
+        return `Message cadence ${base}s → ≥ ${fmtS(atZero)}s (≥ ${TEMPORAL_SIGMA.zero}σ above baseline, >3σ)`;
+      }
+      const sigma = cadenceSigma(observed);
+      if (sigma <= TEMPORAL_SIGMA.full) return `Message cadence ${fmtS(observed)}s, within 1σ of baseline`;
+      return `Message cadence ${base}s → ${fmtS(observed)}s (${fmtSigma(sigma)}σ above baseline${sigma > TEMPORAL_SIGMA.anomaly ? ', >3σ' : ''})`;
     }
     case 'stability': {
-      // stability.rs: 1.0 at CRC ≤ 0.5 %, 0.0 at ≥ 20 %, linear between.
-      if (healthy) return 'CRC errors 0.2% (baseline)';
-      const crc = 0.5 + 19.5 * (1 - c);
-      return `CRC errors 0.2% → ${crc.toFixed(1)}%${crc > 5 ? ' (>5% degraded threshold)' : ''}`;
+      const crc = ctx.telemetry?.crc ?? (c > 0 ? crcForStabilityTrust(c) : undefined);
+      if (healthy && (crc === undefined || crc <= STABILITY_CRC.full)) return 'CRC errors 0.2% (baseline)';
+      if (crc === undefined) return `CRC errors 0.2% → ≥ ${fmtPct(STABILITY_CRC.zero)}%`;
+      return `CRC errors 0.2% → ${fmtPct(crc)}%${crc > STABILITY_CRC.degraded ? ' (>5% degraded threshold)' : ''}`;
     }
     case 'spatial': {
-      // Trust-oriented spatial, mirroring the engine (PR #1 follow-up):
-      // 1.0 not degrading, 0.6 localized, 0.3 blanket.
+      // spatial.rs (PR #1): Nominal 1.0 (not degrading), Localized 0.6, Blanket 0.3.
       const n = ctx.neighbours ?? 'neighbours';
-      if (healthy) return 'No correlated degradation';
+      if (healthy) return 'Nominal — link not degrading (no FR-01 / FR-02 flag)';
       return c >= 0.6 ? `Localized — ${n} within 500 m unaffected` : `Blanket — ${n} also degrading`;
     }
     case 'fingerprint': {
@@ -554,12 +584,19 @@ export function FireMissionPopup({
   observer,
   rating,
   dtg,
+  requested = true,
+  requestedAt,
 }: {
   target: string;
   observer: string;
   rating: LinkTrustRating;
   dtg: string;
+  /** False until the call for fire arrives; the gate is evaluated only then. */
+  requested?: boolean;
+  /** Scenario clock of the call for fire, e.g. "1:20". */
+  requestedAt?: string;
 }) {
+  const hold = requested && rating.roeGated;
   const row: CSSProperties = { display: 'flex', justifyContent: 'space-between', gap: 'var(--space-3)', fontSize: 12 };
   return (
     <section
@@ -588,14 +625,21 @@ export function FireMissionPopup({
       </div>
       <div
         role="status"
+        data-testid="fire-mission-gate"
         style={{
           padding: 'var(--space-2)',
-          border: `1px solid ${rating.roeGated ? 'var(--gating-primary)' : 'var(--surface-panel)'}`,
-          color: rating.roeGated ? 'var(--gating-primary)' : 'var(--text-secondary)',
+          border: `1px solid ${hold ? 'var(--gating-primary)' : 'var(--surface-panel)'}`,
+          color: hold ? 'var(--gating-primary)' : 'var(--text-secondary)',
           fontSize: 12,
         }}
       >
-        {rating.roeGated ? (
+        {!requested ? (
+          <>
+            <strong style={mono}>AWAITING CALL FOR FIRE.</strong> ROE gate evaluates when the mission arrives
+            {requestedAt ? ` (${requestedAt})` : ''}. Observer link {rating.score.toFixed(2)} {rating.roeGated ? '<' : '≥'} floor{' '}
+            {ROE_FLOOR.toFixed(2)}.
+          </>
+        ) : hold ? (
           <>
             <strong style={mono}>ROE GATE — HOLD.</strong> Observer link {rating.score.toFixed(2)} &lt; floor {ROE_FLOOR.toFixed(2)} → GPS-guided fires gated.
             <div style={{ marginTop: 4, color: 'var(--text-secondary)' }}>Options: delay 60 s · shift to non-GPS · confirm on alternate channel</div>
@@ -683,7 +727,7 @@ export function LegendPrime() {
         </Swatch>
         <Swatch label={<><strong>Hamilton link-trust overlay (non-2525)</strong> — centred halo below 0.60, trust tokens only, toggleable, stripped on export</>}>
           <g transform="translate(20 14)">
-            <HaloSvg score={0.31} iconRadius={8} reducedMotion />
+            <HaloSvg score={0.45} iconRadius={8} reducedMotion />
           </g>
           <path d={FRAME_PATH.friend} transform="translate(12 6) scale(0.5)" fill="var(--sym-plate)" stroke="var(--sym-ink)" strokeWidth={3} />
         </Swatch>
@@ -691,7 +735,7 @@ export function LegendPrime() {
           <path d={FRAME_PATH.friend} transform="translate(4 -2)" fill="none" stroke="var(--sym-ink-stale)" strokeWidth={1.5} />
         </Swatch>
         <Swatch label="Right (J line): rating name + score, then the 2525 J code (export value). Shown below 0.60, when stale, or on hover/focus">
-          <text x={0} y={18} fill={rateLinkTrust(0.31).bandToken} style={{ ...mono, fontSize: 9, fontWeight: 600 }}>
+          <text x={0} y={18} fill={rateLinkTrust(0.45).bandToken} style={{ ...mono, fontSize: 9, fontWeight: 600 }}>
             DEGR.
           </text>
           <text x={30} y={18} fill="var(--text-tertiary)" style={{ ...mono, fontSize: 9 }}>

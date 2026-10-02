@@ -42,23 +42,29 @@ type Story = StoryObj<typeof meta>;
 /** No tracks in the store yet. */
 export const AwaitingTelemetry: Story = {};
 
-/** 0:00 — all three units nominal; focuses the lowest (tie → first). */
+/** 0:00 — all three units at 1.00 (engine); focuses the lowest (tie → first). */
 export const Nominal: Story = { parameters: { hamilton: { tracks: PHASE_TRACKS.nominal } } };
 
-/** 0:45 — B watching, first trace bullet. */
+/** 0:45 — B WATCH 0.70 (cadence 1.0 s → 1.17 s, 3.4σ), first trace bullet; A and C 1.00. */
 export const Watching: Story = { parameters: { hamilton: { tracks: PHASE_TRACKS.watching } } };
 
-/** 1:15 — B degraded below ROE floor, full trace + candidate reveal. */
+/** 1:05 — B WATCH 0.65 (CRC 6%), spatial localized, all three trace bullets; no candidates yet. */
+export const Localized: Story = { parameters: { hamilton: { tracks: PHASE_TRACKS.localized } } };
+
+/**
+ * 1:15 — B 0.65 → 0.13, first crossing below the ROE floor: 6.1 s gap, 14% CRC and the jammer
+ * fingerprint (6/6) land together; full trace + candidate reveal.
+ */
 export const DegradedWithCandidates: Story = {
   parameters: { hamilton: { tracks: PHASE_TRACKS.degraded, candidates: candidatesForB } },
 };
 
-/** 1:50 — B failed. */
+/** 1:50 — recovery initiates, B 0.22 (cadence 1.8 s, CRC 4%, jammer still matched) — still gated. */
 export const Failed: Story = {
   parameters: { hamilton: { tracks: PHASE_TRACKS.failed, candidates: candidatesForB } },
 };
 
-/** 2:15 — recovered. */
+/** 2:15 — recovered, B 1.00. */
 export const Recovered: Story = { parameters: { hamilton: { tracks: PHASE_TRACKS.recovered } } };
 
 /** Operator clicked Unit A — candidates for B are hidden because they belong to another source. */
@@ -73,7 +79,7 @@ export const EnemyTrack: Story = {
   parameters: {
     hamilton: {
       tracks: tracksRecord({
-        ...track('unit_b', 0.33),
+        ...track('unit_b', 0.33), // synthetic, engine-reachable (componentsFor)
         source_id: 'hostile_ew_1',
         affiliation: 'enemy',
         sensor_type: 'recon_mobile',
@@ -92,7 +98,7 @@ interface PlaygroundArgs {
 
 /** Drive Unit B's score, trace depth and candidates from Controls. */
 export const Playground: StoryObj<PlaygroundArgs> = {
-  args: { score: BAND_SAMPLES.degraded, bullets: 3, showCandidates: true, roeFloor: 0.6 },
+  args: { score: BAND_SAMPLES.failed, bullets: 3, showCandidates: true, roeFloor: 0.6 },
   argTypes: {
     score: { control: { type: 'range', min: 0, max: 1, step: 0.01 } },
     bullets: { control: { type: 'range', min: 0, max: 3, step: 1 } },
@@ -103,9 +109,9 @@ export const Playground: StoryObj<PlaygroundArgs> = {
       seed={{
         roeFloor,
         tracks: tracksRecord(
-          track('unit_a', 0.97),
+          track('unit_a', 1),
           track('unit_b', score, { trace_bullets: TRACE_BULLETS.slice(0, bullets) }),
-          track('unit_c', 0.95),
+          track('unit_c', 1),
         ),
         candidates: showCandidates ? candidatesForB : null,
       }}

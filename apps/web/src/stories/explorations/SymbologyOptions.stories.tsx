@@ -15,8 +15,19 @@ import {
   type MilSymbolProps,
   type SymbologyOption,
 } from '@/stories/support/MilSymbol';
-import { BAND_SAMPLES, CANDIDATES, JAMMER_LOCATION, PHASE_TRACKS, at, componentsFor } from '@/stories/fixtures/avdiivka';
-import { STALE_AFTER_S, formatDtg, rateLinkTrust } from '@/lib/link-trust-rating';
+import {
+  BAND_SAMPLES,
+  BAND_SAMPLE_SOURCE,
+  CANDIDATES,
+  JAMMER_LOCATION,
+  PHASE_TRACKS,
+  at,
+  beatAt,
+  clockIso,
+  componentsFor,
+  telemetryFor,
+} from '@/stories/fixtures/avdiivka';
+import { ROE_FLOOR, STALE_AFTER_S, firstCrossingClock, formatDtg, rateLinkTrust } from '@/lib/link-trust-rating';
 import {
   FireMissionPopup,
   LegendPrime,
@@ -591,7 +602,14 @@ interface PrimeCol {
   score: number;
   stale?: boolean;
 }
-const PRIME_COLS: PrimeCol[] = [{ score: 0.95 }, { score: 0.72 }, { score: 0.45 }, { score: 0.2 }, { score: 0.72, stale: true }];
+/** Band samples (fixtures BAND_SAMPLES): engine beats 0:00 / 0:45 / 1:15 + the synthetic DEGRADED 0.45. */
+const PRIME_COLS: PrimeCol[] = [
+  { score: BAND_SAMPLES.nominal },
+  { score: BAND_SAMPLES.watching },
+  { score: BAND_SAMPLES.degraded },
+  { score: BAND_SAMPLES.failed },
+  { score: BAND_SAMPLES.watching, stale: true },
+];
 const STALE_AGE_S = STALE_AFTER_S + 4;
 
 function explanationFor(title: string, score: number, stale = false, neighbours = 'neighbours'): ExplanationProps {
@@ -603,6 +621,7 @@ function explanationFor(title: string, score: number, stale = false, neighbours 
     nowIso: NOW_ISO,
     neighbours,
     topCandidate: CANDIDATES[0],
+    telemetry: telemetryFor(score),
   };
 }
 
@@ -685,12 +704,12 @@ export const OptionBPrimeMatrix: Story = {
   ),
 };
 
-const TOOLTIP_STATES: { key: string; score: number; stale?: boolean }[] = [
-  { key: 'nominal', score: 0.95 },
-  { key: 'watch', score: 0.72 },
-  { key: 'degraded', score: BAND_SAMPLES.degraded },
-  { key: 'unreliable', score: BAND_SAMPLES.failed },
-  { key: 'stale', score: BAND_SAMPLES.degraded, stale: true },
+const TOOLTIP_STATES: { key: string; score: number; stale?: boolean; source: string }[] = [
+  { key: 'nominal', score: BAND_SAMPLES.nominal, source: BAND_SAMPLE_SOURCE.nominal },
+  { key: 'watch', score: BAND_SAMPLES.watching, source: BAND_SAMPLE_SOURCE.watching },
+  { key: 'degraded', score: BAND_SAMPLES.degraded, source: BAND_SAMPLE_SOURCE.degraded },
+  { key: 'unreliable', score: BAND_SAMPLES.failed, source: BAND_SAMPLE_SOURCE.failed },
+  { key: 'stale', score: BAND_SAMPLES.degraded, stale: true, source: `${BAND_SAMPLE_SOURCE.degraded}, last good update ${STALE_AGE_S} s old` },
 ];
 
 /**
@@ -717,16 +736,19 @@ export const OptionBPrimeRatingTooltip: Story = {
           sizePx={32}
           designation="B"
           echelon="battery"
-          score={BAND_SAMPLES.degraded}
+          score={BAND_SAMPLES.failed}
           dtg={formatDtg(at(40))}
           overlay={overlay}
           reducedMotion={reducedMotion}
-          explanation={explanationFor('B · FA battery', BAND_SAMPLES.degraded, false, 'neighbours A, C')}
+          explanation={explanationFor('B · FA battery', BAND_SAMPLES.failed, false, 'neighbours A, C')}
         />
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(620px, 1fr))', gap: 'var(--space-4)' }}>
         {TOOLTIP_STATES.map((st) => (
-          <div key={st.key} style={{ ...mapSurface, padding: 'var(--space-3)' }}>
+          <div key={st.key} data-testid={`tooltip-state-${st.key}`} style={{ ...mapSurface, padding: 'var(--space-3)', display: 'grid', gap: 'var(--space-2)' }}>
+            <span style={{ ...mono, fontSize: 11, color: 'var(--text-tertiary)' }}>
+              {st.score.toFixed(2)} — {st.source}
+            </span>
             <RatingCell
               forceOpen
               frame="friend"
@@ -756,9 +778,14 @@ export const OptionBPrimeRatingTooltip: Story = {
     await expect(tip).not.toBeVisible();
     await userEvent.hover(trigger);
     await waitFor(() => expect(tip).toBeVisible());
-    await expect(tip).toHaveTextContent('DEGRADED');
-    await expect(tip).toHaveTextContent('J D4');
-    await expect(within(tip).getByTestId('formula')).toHaveTextContent(/= 0\.310$/);
+    // Engine beat 1:15 (Unit B): components 0 / 0.308 / 0.6 / 0 → 0.127.
+    await expect(tip).toHaveTextContent('UNRELIABLE');
+    await expect(tip).toHaveTextContent('J E5');
+    await expect(within(tip).getByTestId('formula')).toHaveTextContent(/= 0\.127$/);
+    await expect(tip).toHaveTextContent('1.0s → 6.1s');
+    await expect(tip).toHaveTextContent('0.2% → 14%');
+    // Every fixture reproduces its payload score: no mismatch warning anywhere.
+    await expect(canvasElement.ownerDocument.querySelectorAll('[role="alert"]')).toHaveLength(0);
     await expect(tip).toHaveTextContent('Below ROE floor 0.60 → GPS-guided fires gated');
     await userEvent.unhover(trigger);
     await waitFor(() => expect(tip).not.toBeVisible());
@@ -780,38 +807,33 @@ export const OptionBPrimeRatingTooltip: Story = {
 // ---------------------------------------------------------------------------
 
 /**
- * Scenario clock (s) → B link-trust score, as the engine produces it (PR #1):
- * 0:45 spatial flags B localized-degrading (0.79), temporal slips through WATCH
- * to 0.72, then at 1:13 the jammer RF matches 6/6 → fingerprint trust 1 → 0 and
- * B drops below the ROE floor in one beat to DEGRADED 0.31 (BAND_SAMPLES).
- * Temporal and stability never improve along the timeline; candidates appear
- * at the same beat (clock ≥ 73).
+ * Scenario clock (s) → engine beat (fixtures AVDIIVKA_BEATS, PR #1 @ 6733817). The engine holds
+ * state between beats, so the clock steps:
+ * 0:45 B WATCH 0.70 (cadence 1.0 s → 1.17 s, 3.4σ) → 0:55 WATCH 0.65 (CRC 0.2% → 6%) → 1:05 0.65
+ * (localized, A and C 1.00) → 1:15 0.13: the 6.1 s gap, 14% CRC and the jammer fingerprint (6/6)
+ * land together, B's first crossing below the ROE floor; candidates and the bearing line appear
+ * (the web draws the directional vector when B < 0.60) → 1:20 call for fire: the fire-mission
+ * gate holds. A and C stay at 1.00 throughout.
  */
-const B_TIMELINE: [number, number][] = [
-  [45, 0.79],
-  [55, 0.76],
-  [64, 0.72],
-  [72, 0.72],
-  [73, BAND_SAMPLES.degraded],
-  [80, BAND_SAMPLES.degraded],
-];
-/** Scenario clock 1:20 = T0 + 41 s (fixture GATE_OPEN.triggered_at). */
-const CLOCK_TO_T0_S = 39;
-/** B's last frame that passed CRC — after this B goes silent → STALE at > STALE_AFTER_S. */
-const B_LAST_GOOD_CLOCK = 68;
-const OTHER_SCORES: Record<string, number> = { unit_a: 0.97, unit_c: 0.96 };
+const B_CROSSING_CLOCK = firstCrossingClock() ?? 75;
+/** Branding §10.5: the call for fire / kill-chain modal beat. */
+const FIRE_MISSION_CLOCK = 80;
+/** Fixed J1 shown with the call for fire. */
+const FIX_CLOCK = FIRE_MISSION_CLOCK;
+
+/**
+ * Clock of B's last frame before `clock`. Frames arrive at the beat's cadence (1.0 s, 1.17 s, then
+ * 6.1 s from 1:15) — every gap stays under STALE_AFTER_S, so B never goes STALE in the demo.
+ */
+function lastFrameClock(clock: number): number {
+  const beat = beatAt(clock);
+  const cadence = beat.telemetry.unit_b.cadenceS;
+  return beat.clockS + Math.floor((clock - beat.clockS) / cadence) * cadence;
+}
 const NEIGHBOURS: Record<string, string> = { unit_a: 'neighbours B, C', unit_b: 'neighbours A, C', unit_c: 'neighbours A, B' };
 const UNIT_TITLE: Record<string, string> = { unit_a: 'A · FA observer team', unit_b: 'B · FA battery', unit_c: 'C · FA target-acq radar platoon' };
 
-function bScoreAt(clock: number): number {
-  for (let i = 1; i < B_TIMELINE.length; i++) {
-    const [t1, s1] = B_TIMELINE[i]!;
-    const [t0, s0] = B_TIMELINE[i - 1]!;
-    if (clock <= t1) return Math.round((s0 + ((clock - t0) / (t1 - t0)) * (s1 - s0)) * 100) / 100;
-  }
-  return B_TIMELINE[B_TIMELINE.length - 1]![1];
-}
-const isoAt = (clock: number) => at(clock - CLOCK_TO_T0_S);
+const isoAt = clockIso;
 const fmtClock = (c: number) => `${Math.floor(c / 60)}:${String(Math.round(c % 60)).padStart(2, '0')}`;
 
 function CopScenePrime({ clock, size, reducedMotion, overlay }: Pick<SymbologyArgs, 'clock' | 'size' | 'reducedMotion' | 'overlay'>) {
@@ -820,17 +842,21 @@ function CopScenePrime({ clock, size, reducedMotion, overlay }: Pick<SymbologyAr
   const baseId = `cop-bprime-${useId().replace(/:/g, '')}`;
   const nowIso = isoAt(clock);
   const tracks = Object.values(PHASE_TRACKS.degraded);
+  const beat = beatAt(clock);
   const units = tracks.map((t) => {
-    const score = t.source_id === 'unit_b' ? bScoreAt(clock) : OTHER_SCORES[t.source_id]!;
-    const lastGoodClock = t.source_id === 'unit_b' && clock > B_LAST_GOOD_CLOCK ? B_LAST_GOOD_CLOCK : clock - 1;
+    const id = t.source_id as 'unit_a' | 'unit_b' | 'unit_c';
+    const out = beat.units[id];
+    const score = out.score;
+    const lastGoodClock = id === 'unit_b' ? lastFrameClock(clock) : clock - 1;
     const ex: ExplanationProps = {
       title: UNIT_TITLE[t.source_id]!,
-      components: componentsFor(score),
+      components: { ...out.components },
       payloadScore: score,
       lastGoodIso: isoAt(lastGoodClock),
       nowIso,
       neighbours: NEIGHBOURS[t.source_id],
-      topCandidate: clock >= 73 ? CANDIDATES[0] : undefined,
+      topCandidate: clock >= B_CROSSING_CLOCK ? CANDIDATES[0] : undefined,
+      telemetry: beat.telemetry[id],
     };
     return { t, score, ex, ...explainRating(ex) };
   });
@@ -847,9 +873,10 @@ function CopScenePrime({ clock, size, reducedMotion, overlay }: Pick<SymbologyAr
   const dy = JAMMER_LOCATION.lat - b.t.lat;
   const bearing = ((Math.atan2(dx, dy) * 180) / Math.PI + 360) % 360;
   const ordered = [...CANDIDATES].sort((p, q) => q.score - p.score);
-  const showBearing = clock >= 69;
-  const showCandidates = clock >= 73;
-  const showFix = clock >= 75;
+  const showBearing = b.score < ROE_FLOOR;
+  const showCandidates = clock >= B_CROSSING_CLOCK;
+  const showFix = clock >= FIX_CLOCK;
+  const missionRequested = clock >= FIRE_MISSION_CLOCK;
   const label: CSSProperties = { ...mono, fontSize: 11 };
   const outlined = { stroke: 'var(--surface-base)', strokeWidth: 3, paintOrder: 'stroke' as const };
 
@@ -860,6 +887,7 @@ function CopScenePrime({ clock, size, reducedMotion, overlay }: Pick<SymbologyAr
         Scenario clock <span style={{ color: 'var(--text-primary)' }}>{fmtClock(clock)}</span> · {formatDtg(nowIso)} · B{' '}
         <span style={{ color: b.rating.labelToken }}>{b.rating.label}</span> {b.rating.score.toFixed(2)} (J {b.rating.jCode}) — drag the
         <em> clock</em> control (0:45 → 1:20). Hover or Tab to a unit for its rating breakdown.
+        <span data-testid="cop-beat"> Engine beat: {beat.label}.</span>
       </div>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-3)', alignItems: 'flex-start' }}>
         <div ref={containerRef} style={{ position: 'relative', width: SCENE_W, maxWidth: '100%' }}>
@@ -871,7 +899,7 @@ function CopScenePrime({ clock, size, reducedMotion, overlay }: Pick<SymbologyAr
                   NAI 1 — JAMMER
                 </text>
                 <text x={cx} y={cy - ry - 6} textAnchor="middle" fill="var(--text-secondary)" style={{ ...label, fontSize: 10 }} {...outlined}>
-                  T FDC-1 · W {formatDtg(isoAt(73))}
+                  T FDC-1 · W {formatDtg(isoAt(B_CROSSING_CLOCK))}
                 </text>
               </g>
             )}
@@ -882,7 +910,7 @@ function CopScenePrime({ clock, size, reducedMotion, overlay }: Pick<SymbologyAr
                   BRG {bearing.toFixed(0).padStart(3, '0')}° — J
                 </text>
                 <text x={jPt[0] - 28} y={jPt[1] - 20} textAnchor="end" fill="var(--text-secondary)" style={{ ...label, fontSize: 10 }} {...outlined}>
-                  T FDC-1 · W {formatDtg(isoAt(69))}
+                  T FDC-1 · W {formatDtg(isoAt(B_CROSSING_CLOCK))}
                 </text>
               </g>
             )}
@@ -943,7 +971,14 @@ function CopScenePrime({ clock, size, reducedMotion, overlay }: Pick<SymbologyAr
             );
           })}
         </div>
-        <FireMissionPopup target="TGT AB1001 · J1" observer="B" rating={b.rating} dtg={formatDtg(b.ex.lastGoodIso)} />
+        <FireMissionPopup
+          target="TGT AB1001 · J1"
+          observer="B"
+          rating={b.rating}
+          dtg={formatDtg(b.ex.lastGoodIso)}
+          requested={missionRequested}
+          requestedAt="1:20"
+        />
       </div>
       <SidcTablePrime />
       <LegendPrime />
@@ -954,10 +989,10 @@ function CopScenePrime({ clock, size, reducedMotion, overlay }: Pick<SymbologyAr
 /**
  * Avdiivka scene with Option B′ (US 2525E). A, B, C; candidate sites (status 1,
  * dashed) inside the dashed NAI; confirmed fix J1; bearing line labelled with
- * T and W. The **clock** control drives B from 0:45 (WATCH 0.79) to 1:20
- * (DEGRADED 0.31 after the 1:13 jammer match; B goes silent after 1:08 → STALE / NRT from 1:19). The
- * fire-mission popup carries the ROE / Excalibur gate. CesiumSpine / MapSpine
- * are NOT changed.
+ * T and W. The **clock** control steps through the engine beats: B WATCH 0.70
+ * at 0:45, 0.65 at 0:55 / 1:05, first below the ROE floor at 1:15 (0.13), and
+ * the fire-mission gate holds at the 1:20 call for fire. A and C stay at 1.00.
+ * CesiumSpine / MapSpine are NOT changed.
  */
 export const OptionBPrimeCop: Story = {
   name: 'COP – Option B′',
@@ -967,12 +1002,18 @@ export const OptionBPrimeCop: Story = {
       description: {
         story:
           PRIME_DOCS +
-          '\n\nCandidate positions are mock (the fixture carries scores only). B timeline: 0:45 0.79 → 1:04 0.72 (WATCH) → 1:13 jammer fingerprint match 6/6, fingerprint trust 1 → 0 → 0.31 (DEGRADED, gated); ' +
-          'last good update frozen at 1:08, so B is STALE (AR NRT, grey frame, frozen overlay) from 1:19. Components for every score are ' +
-          'solved to reproduce it through the aggregator formula with engine-reachable values only (fingerprint 1 − k/6, spatial 1 / 0.6 / 0.3; ' +
-          'fixtures/avdiivka.ts componentsFor). Assumes PR #1 (fingerprint trust inversion) is merged.',
+          '\n\nCandidate positions are mock (the fixture carries scores only). Every value is the fixed engine\'s (PR #1 @ 6733817, ' +
+          '`avdiivka_beats_end_to_end` on comms-sim `scenarios/avdiivka.py` telemetry; fixtures AVDIIVKA_BEATS). B timeline: ' +
+          '0:00 1.00 → 0:45 0.70 WATCH (cadence 1.0 s → 1.17 s, 3.4σ; temporal 0.52, spatial localized 0.6) → 0:55 0.65 WATCH ' +
+          '(CRC 0.2% → 6%; stability 0.72) → 1:05 0.65 (localized; A, C 1.00) → 1:15 0.13: 6.1 s gap (temporal 0), 14% CRC ' +
+          '(stability 0.31) and the jammer fingerprint 6/6 (fingerprint trust 0) land together — first crossing below 0.60; ' +
+          'candidates, NAI and bearing line appear (the web draws the directional vector when B < 0.60) → 1:20 call for fire: ' +
+          'the fire-mission gate holds (ROE GATE — HOLD) and fix J1 is placed. B keeps reporting (6.1 s cadence < ' +
+          'STALE_AFTER_S), so it never goes STALE here. Tooltip components are the engine\'s, so the recomputed score always ' +
+          'matches the payload. Assumes PR #1 is merged.',
       },
     },
   },
+  args: { clock: FIRE_MISSION_CLOCK },
   render: ({ clock, size, reducedMotion, overlay }) => <CopScenePrime clock={clock} size={size} reducedMotion={reducedMotion} overlay={overlay} />,
 };

@@ -6,11 +6,12 @@ import {
   GATE_RESOLVED,
   PHASE_TRACKS,
   TERMINAL_EVENTS_API,
+  crescendoEventsAt,
+  terminalEventsUntil,
 } from '@/stories/fixtures/avdiivka';
 import { cesiumLoader } from '@/stories/support/cesium';
 
 const candidates = { source_id: 'unit_b', items: CANDIDATES };
-const eventsUpTo = (n: number) => TERMINAL_EVENTS_API.slice(TERMINAL_EVENTS_API.length - n);
 
 const meta = {
   title: 'Pages/COP',
@@ -33,30 +34,35 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
+const CRESCENDO_TICK_MS = 1500;
+
 /**
- * Live replay of the 0:45 → 1:20 crescendo: B decays 1.00 → 0.13 one tick per 1.5s, narration
- * bullets arrive, and the jammer fingerprint match (fingerprint trust 1 → 0) drops B from 0.72 to
- * 0.31 in one beat: FR-04a candidates reveal and the kill-chain gate fires on that 0.60 crossing.
+ * Live replay of the 0:00 → 1:20 crescendo, one engine beat per 1.5 s (PR #1 engine values):
+ * A and C hold 1.00; B goes 1.00 → 0.70 (0:45, WATCH, cadence 1.17 s) → 0.65 (0:55, CRC 6%) →
+ * 0.65 (1:05, localized) → 0.13 at 1:15, when the 6.1 s gap, 14% CRC and the jammer fingerprint
+ * (6/6, fingerprint trust 1 → 0) land together. That is B's first crossing below 0.60: FR-04a
+ * candidates reveal and the store raises the kill-chain gate on it (the storyboard's modal beat is
+ * 1:20). Narration bullets arrive at 0:45 / 0:55 / 1:05.
  */
 export const CrescendoReplay: Story = {
   parameters: {
-    mqtt: { script: 'crescendo', tickMs: 1500 },
-    engineApi: { events: TERMINAL_EVENTS_API, stream: true },
+    mqtt: { script: 'crescendo', tickMs: CRESCENDO_TICK_MS },
+    engineApi: { eventsAt: crescendoEventsAt(CRESCENDO_TICK_MS) },
   },
 };
 
 /** 0:00 — seeded from the page's own SEED_TRACKS (store empty on mount). */
 export const SessionStart: Story = { parameters: { mqtt: { script: 'silent' }, engineApi: { events: [] } } };
 
-/** 1:15 — candidate reveal, just before the gate. */
+/** 1:15 — candidate reveal; B 0.65 → 0.13, its first crossing below the ROE floor. */
 export const CandidateReveal: Story = {
   parameters: {
     hamilton: { tracks: PHASE_TRACKS.degraded, candidates, llmStatus: 'active' },
-    engineApi: { events: eventsUpTo(4) },
+    engineApi: { events: terminalEventsUntil(75) },
   },
 };
 
-/** 1:20 — the gate is up over the COP (spec asks for an 8px COP blur; not implemented — see audit). */
+/** 1:20 — the gate is up over the COP (B 0.13) (spec asks for an 8px COP blur; not implemented — see audit). */
 export const Gated: Story = {
   parameters: {
     hamilton: {
@@ -66,7 +72,7 @@ export const Gated: Story = {
       gateHistory: [GATE_OPEN],
       llmStatus: 'active',
     },
-    engineApi: { events: eventsUpTo(5) },
+    engineApi: { events: terminalEventsUntil(80) },
   },
 };
 

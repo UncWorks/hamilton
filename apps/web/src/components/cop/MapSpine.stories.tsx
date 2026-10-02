@@ -41,13 +41,13 @@ export const Nominal: Story = { parameters: { hamilton: { tracks: PHASE_TRACKS.n
 
 export const Watching: Story = { parameters: { hamilton: { tracks: PHASE_TRACKS.watching } } };
 
-/** B degraded — pulsing halo + directional vector. */
+/** 1:15 — B 0.13, first below the ROE floor: pulsing halo + directional vector (drawn when B < 0.60). */
 export const DirectionalVector: Story = {
   args: { directionalFrom: { lat: unitB.lat, lon: unitB.lon }, directionalTo: JAMMER_LOCATION },
   parameters: { hamilton: { tracks: PHASE_TRACKS.degraded } },
 };
 
-/** B failed — fastest halo period. */
+/** 1:50 — B 0.22, still gated — fastest halo period. */
 export const Failed: Story = {
   args: { directionalFrom: { lat: unitB.lat, lon: unitB.lon }, directionalTo: JAMMER_LOCATION },
   parameters: { hamilton: { tracks: PHASE_TRACKS.failed } },

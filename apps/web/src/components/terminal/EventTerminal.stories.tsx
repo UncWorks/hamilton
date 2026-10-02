@@ -31,7 +31,7 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-/** Avdiivka crescendo — `[18:42:14] unit_b · temporal_anomaly · cadence 1.0s → 6.1s` onward. */
+/** Avdiivka crescendo (engine beats, PR #1) — `[18:42:06] unit_b · temporal_anomaly · cadence 1.0s → 1.17s (3.4σ)` at 0:45, CRC 6% at 0:55, 6.1 s gap + 14% CRC + fingerprint at 1:15, gate at 1:20. */
 export const Crescendo: Story = { parameters: { engineApi: { events: TERMINAL_EVENTS_API } } };
 
 /** Lines arrive one per poll (tail-following live). Hover to pause. */

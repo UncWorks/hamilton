@@ -68,8 +68,9 @@ test('isStale uses STALE_AFTER_S', () => {
 test('aggregateTrust mirrors aggregator/src/lib.rs', () => {
   // lib.rs test: all-healthy → 1.0
   assert.equal(rating.aggregateTrust({ temporal: 1, stability: 1, spatial: 1, fingerprint: 1 }).score, 1);
-  // Engine output at Avdiivka B-1:15 after PR #1 (docs/plans/fix-fingerprint-trust-inversion.md §3):
-  // jammer matched 6/6 → fingerprint trust 0. 0.6·0.213 + 0.4·0 = 0.1278.
+  // Engine output at Avdiivka B-1:15 after PR #1, components rounded to 2 dp
+  // (docs/plans/fix-spatial-trust-and-gate-timing.md): jammer matched 6/6 →
+  // fingerprint trust 0. 0.6·0.213 + 0.4·0 = 0.1278 (exact beat: 0.1274).
   const demo = rating.aggregateTrust({ temporal: 0, stability: 0.31, spatial: 0.6, fingerprint: 0 });
   assert.ok(Math.abs(demo.weightedAvg - 0.213) < 1e-9);
   assert.ok(Math.abs(demo.score - 0.1278) < 1e-9);
@@ -98,17 +99,114 @@ test('solveComponents: engine-reachable components reproduce every 2-dp fixture 
   }
 });
 
-test('solveComponents: band samples sit in the expected regimes', () => {
-  // Fixture BAND_SAMPLES (stories/fixtures/avdiivka.ts).
-  const nominal = rating.solveComponents(0.97);
-  assert.deepEqual([nominal.spatial, nominal.fingerprint], [1, 1]);
-  const watching = rating.solveComponents(0.72);
-  assert.deepEqual([watching.spatial, watching.fingerprint], [0.6, 1]);
-  const degraded = rating.solveComponents(0.31);
-  assert.deepEqual([degraded.spatial, degraded.fingerprint], [0.6, 0]);
-  // Same link one beat later: temporal/stability do not improve across the jammer match.
-  assert.ok(degraded.temporal <= watching.temporal && degraded.stability <= watching.stability);
-  const failed = rating.solveComponents(0.13);
-  assert.deepEqual([failed.temporal, failed.spatial, failed.fingerprint], [0, 0.6, 0]);
-  assert.ok(Math.abs(failed.stability - 0.3222) < 1e-3);
+// ---------------------------------------------------------------------------
+// Engine beats — SOURCE OF TRUTH: the Rust end-to-end test
+// services/trust-engine/crates/aggregator/src/lib.rs `avdiivka_beats_end_to_end`
+// on branch fix/fingerprint-trust-inversion (PR #1) @ 6733817. The constants
+// below are copied from its `--nocapture` output
+// (`cargo test -p trust-aggregator avdiivka_beats_end_to_end -- --nocapture`):
+// score printed to 3 dp, components (temporal / stability / spatial /
+// fingerprint) to 2 dp. If the engine or comms-sim scenarios/avdiivka.py
+// changes, re-run that test and update these rows.
+// ---------------------------------------------------------------------------
+
+type Row = readonly [score: number, t: number, s: number, sp: number, fp: number];
+const HEALTHY_ROW: Row = [1.0, 1.0, 1.0, 1.0, 1.0];
+const RUST_BEATS: readonly { clockS: number; a: Row; b: Row; c: Row }[] = [
+  { clockS: 0, a: HEALTHY_ROW, b: [1.0, 1.0, 1.0, 1.0, 1.0], c: HEALTHY_ROW }, // B-0:00
+  { clockS: 45, a: HEALTHY_ROW, b: [0.702, 0.52, 1.0, 0.6, 1.0], c: HEALTHY_ROW }, // B-0:45
+  { clockS: 55, a: HEALTHY_ROW, b: [0.652, 0.52, 0.72, 0.6, 1.0], c: HEALTHY_ROW }, // B-0:55
+  { clockS: 65, a: HEALTHY_ROW, b: [0.652, 0.52, 0.72, 0.6, 1.0], c: HEALTHY_ROW }, // B-1:05
+  { clockS: 75, a: HEALTHY_ROW, b: [0.127, 0.0, 0.31, 0.6, 0.0], c: HEALTHY_ROW }, // B-1:15
+  { clockS: 80, a: HEALTHY_ROW, b: [0.127, 0.0, 0.31, 0.6, 0.0], c: HEALTHY_ROW }, // B-1:20
+  { clockS: 110, a: HEALTHY_ROW, b: [0.22, 0.0, 0.82, 0.6, 0.0], c: HEALTHY_ROW }, // B-1:50
+  { clockS: 135, a: HEALTHY_ROW, b: [1.0, 1.0, 1.0, 1.0, 1.0], c: HEALTHY_ROW }, // B-2:15
+];
+
+test('fixture beat table (AVDIIVKA_BEATS) equals the engine end-to-end beat values', () => {
+  assert.deepEqual(
+    rating.AVDIIVKA_BEATS.map((b) => b.clockS),
+    RUST_BEATS.map((r) => r.clockS),
+  );
+  rating.AVDIIVKA_BEATS.forEach((beat, i) => {
+    const want = RUST_BEATS[i]!;
+    for (const [unit, row] of [['unit_a', want.a], ['unit_b', want.b], ['unit_c', want.c]] as const) {
+      const got = beat.units[unit];
+      const at = `${beat.label} ${unit}`;
+      assert.ok(Math.abs(got.score - row[0]) <= 5e-4, `${at} score ${got.score} ≠ ${row[0]}`);
+      const comps = [got.components.temporal, got.components.stability, got.components.spatial, got.components.fingerprint];
+      comps.forEach((v, k) => assert.ok(Math.abs(v - row[k + 1]!) <= 5e-3, `${at} component ${k} ${v} ≠ ${row[k + 1]}`));
+      // The payload score is exactly the aggregate of its components (tooltip mismatch stays silent).
+      assert.equal(rating.aggregateTrust(got.components).score, got.score);
+    }
+  });
+});
+
+test('engine beats: exact values from the detector mappings + avdiivka.py telemetry', () => {
+  const b = (clockS: number) => rating.beatAt(clockS).units.unit_b;
+  const close = (x: number, y: number, msg: string) => assert.ok(Math.abs(x - y) < 1e-12, `${msg}: ${x} ≠ ${y}`);
+  // 0:45 — 1.17 s = 3.4σ → temporal 1 − 2.4/5 = 0.52; localized 0.6. 0.6·0.824 + 0.4·0.52 = 0.7024.
+  close(rating.cadenceSigma(1.17), 3.4, 'σ @ 1.17 s');
+  close(b(45).components.temporal, 0.52, 'temporal 0:45');
+  close(b(45).score, 0.7024, 'B 0:45');
+  // 0:55 — CRC 6 % → stability 1 − 0.055/0.195.
+  close(b(55).components.stability, 1 - 0.055 / 0.195, 'stability 0:55');
+  // 1:15 — 6.1 s (102σ) → temporal 0; CRC 14 % → 1 − 0.135/0.195; jammer 6/6 → fingerprint 0.
+  close(b(75).components.stability, 1 - 0.135 / 0.195, 'stability 1:15');
+  close(b(75).score, 0.6 * (0.3 * (1 - 0.135 / 0.195) + 0.2 * 0.6), 'B 1:15');
+  // Storyboard checks (System Design §2, Branding §10): WATCH from 0:45 to 1:05, first crossing at 1:15.
+  for (const t of [45, 55, 65]) {
+    assert.equal(rating.rateLinkTrust(b(t).score).name, 'WATCH', `B @ ${t}`);
+    assert.equal(b(t).components.spatial, rating.ENGINE_SPATIAL_TRUST.localized);
+  }
+  assert.equal(rating.firstCrossingClock(), 75);
+  assert.equal(rating.rateLinkTrust(b(75).score).name, 'UNRELIABLE');
+  assert.ok(b(110).score > b(80).score && b(110).score < rating.ROE_FLOOR, '1:50 recovering but gated');
+  // A and C never leave Nominal spatial: no false blanket.
+  for (const beat of rating.AVDIIVKA_BEATS) {
+    for (const u of ['unit_a', 'unit_c'] as const) assert.equal(beat.units[u].score, 1, `${beat.label} ${u}`);
+  }
+  // Positions: avdiivka.py SOURCE_POSITIONS, A and C inside B's 500 m radius.
+  assert.deepEqual(rating.AVDIIVKA_POSITIONS.unit_b, { lat: 48.14, lon: 37.745 });
+});
+
+test('engineTick: all-degraded gives the blanket penalty (aggregator all_degraded_gives_blanket_penalty)', () => {
+  const d = { cadenceS: 1.2, crc: 0.08, rfMatch: 0 };
+  const out = rating.engineTick({ unit_a: d, unit_b: d, unit_c: d });
+  for (const u of rating.AVDIIVKA_UNITS) assert.equal(out[u].components.spatial, rating.ENGINE_SPATIAL_TRUST.blanket);
+});
+
+test('ENGINE_SPATIAL_TRUST mirrors spatial.rs Nominal / Localized / Blanket', () => {
+  assert.deepEqual(rating.ENGINE_SPATIAL_TRUST, { nominal: 1, localized: 0.6, blanket: 0.3 });
+});
+
+// Fixture BAND_SAMPLES (stories/fixtures/avdiivka.ts), copied: engine beats
+// 0:00 / 0:45 / 1:15 for B, plus the synthetic DEGRADED sample.
+const BAND_SAMPLES = { nominal: 1, watching: 0.7024, degraded: 0.45, failed: 0.6 * (0.3 * (1 - 0.135 / 0.195) + 0.12) } as const;
+
+test('band samples: reachable, in their band, reproduced exactly by the solver', () => {
+  const names = { nominal: 'NOMINAL', watching: 'WATCH', degraded: 'DEGRADED', failed: 'UNRELIABLE' } as const;
+  for (const [k, score] of Object.entries(BAND_SAMPLES) as [keyof typeof BAND_SAMPLES, number][]) {
+    assert.equal(rating.rateLinkTrust(score).name, names[k], k);
+    const c = rating.solveComponents(score);
+    assert.ok(Math.abs(rating.aggregateTrust(c).score - score) < 1e-9, `${k} reproduced`);
+  }
+  // Engine-beat samples solve back to the engine's own components.
+  type Comps = import('./link-trust-rating').TrustComponentsLike;
+  const near = (got: Comps, want: Comps, k: string) => {
+    for (const f of ['temporal', 'stability', 'spatial', 'fingerprint'] as const) {
+      assert.ok(Math.abs(got[f] - want[f]) < 1e-9, `${k}.${f} ${got[f]} ≠ ${want[f]}`);
+    }
+  };
+  near(rating.solveComponents(BAND_SAMPLES.nominal), rating.beatAt(0).units.unit_b.components, 'nominal');
+  near(rating.solveComponents(BAND_SAMPLES.watching), rating.beatAt(45).units.unit_b.components, 'watching');
+  near(rating.solveComponents(BAND_SAMPLES.failed), rating.beatAt(75).units.unit_b.components, 'failed');
+  assert.ok(Math.abs(rating.beatAt(75).units.unit_b.score - BAND_SAMPLES.failed) < 1e-12);
+  // Synthetic DEGRADED: 0:45 cadence (temporal 0.52), localized, no RF match, CRC ~15.4 %.
+  const degraded = rating.solveComponents(BAND_SAMPLES.degraded);
+  assert.deepEqual([degraded.spatial, degraded.fingerprint], [0.6, 1]);
+  assert.ok(Math.abs(degraded.temporal - 0.52) < 1e-9);
+  assert.ok(Math.abs(rating.crcForStabilityTrust(degraded.stability) - 0.1544) < 1e-3);
+  // No engine beat sits in the DEGRADED band.
+  assert.ok(rating.AVDIIVKA_BEATS.every((b) => rating.rateLinkTrust(b.units.unit_b.score).name !== 'DEGRADED'));
 });

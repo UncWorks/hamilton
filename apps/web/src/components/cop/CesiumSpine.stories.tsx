@@ -42,19 +42,23 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-/** 0:00 — A/B/C nominal over Avdiivka. */
+/** 0:00 — A/B/C at 1.00 over Avdiivka (engine). */
 export const Nominal: Story = { parameters: { hamilton: { tracks: PHASE_TRACKS.nominal } } };
 
-/** 0:45 — B in the watching band. */
+/** 0:45 — B WATCH 0.70 (cadence 1.17 s); A and C 1.00. */
 export const Watching: Story = { parameters: { hamilton: { tracks: PHASE_TRACKS.watching } } };
 
-/** 1:05 — B degraded with halo + directional vector toward the suspected jammer. */
+/**
+ * 1:15 — B 0.13, first below the ROE floor: halo + directional vector toward the suspected jammer.
+ * The web draws the vector when B < 0.60, i.e. from 1:15; Branding §10.3 places it at 1:05 (open UX
+ * item, Branding Audit F02).
+ */
 export const DirectionalVector: Story = {
   args: { directionalFrom: { lat: unitB.lat, lon: unitB.lon }, directionalTo: JAMMER_LOCATION },
   parameters: { hamilton: { tracks: PHASE_TRACKS.degraded } },
 };
 
-/** 1:15+ — jammer overlay labelled with the top FR-04a method. */
+/** 1:50 — B 0.22, still gated; jammer overlay labelled with the top FR-04a method. */
 export const JammerOverlay: Story = {
   args: {
     directionalFrom: { lat: unitB.lat, lon: unitB.lon },

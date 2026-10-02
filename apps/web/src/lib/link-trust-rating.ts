@@ -91,9 +91,61 @@ export function aggregateTrust(
 }
 
 // ---------------------------------------------------------------------------
+// Detector mirrors — the per-detector trust mappings of the fixed engine
+// (PR #1, fix/fingerprint-trust-inversion @ 6733817). Used by the Storybook
+// fixtures to turn comms-sim telemetry (scenarios/avdiivka.py) into the exact
+// components the engine emits, and by the tooltip evidence strings.
+// ---------------------------------------------------------------------------
+
+/** Engine temporal baseline (services/trust-engine/src/state.rs): 1.0 s ± 0.05 s. */
+export const TEMPORAL_BASELINE = { meanS: 1.0, stdS: 0.05 } as const;
+/** temporal.rs: anomaly fires above 3σ; trust 1.0 at ≤ 1σ, 0.0 at ≥ 6σ, linear between. */
+export const TEMPORAL_SIGMA = { anomaly: 3, full: 1, zero: 6 } as const;
+/** stability.rs: degraded flag above 5 % CRC; trust 1.0 at ≤ 0.5 %, 0.0 at ≥ 20 %, linear between. */
+export const STABILITY_CRC = { degraded: 0.05, full: 0.005, zero: 0.2 } as const;
+
+/** σ above the engine baseline for an observed inter-arrival (temporal.rs detect_temporal). */
+export function cadenceSigma(cadenceS: number): number {
+  return (cadenceS - TEMPORAL_BASELINE.meanS) / TEMPORAL_BASELINE.stdS;
+}
+
+/** FR-01 temporal trust for an observed inter-arrival (temporal.rs compute_score). */
+export function temporalTrust(cadenceS: number): number {
+  const sigma = cadenceSigma(cadenceS);
+  if (sigma <= TEMPORAL_SIGMA.full) return 1;
+  if (sigma >= TEMPORAL_SIGMA.zero) return 0;
+  return 1 - (sigma - TEMPORAL_SIGMA.full) / (TEMPORAL_SIGMA.zero - TEMPORAL_SIGMA.full);
+}
+
+/** FR-02 stability trust for a CRC error rate in [0,1] (stability.rs compute_score). */
+export function stabilityTrust(crc: number): number {
+  if (crc <= STABILITY_CRC.full) return 1;
+  if (crc >= STABILITY_CRC.zero) return 0;
+  return 1 - (crc - STABILITY_CRC.full) / (STABILITY_CRC.zero - STABILITY_CRC.full);
+}
+
+/** Inverse of temporalTrust on its linear segment (0 < c < 1); exact inside (1σ, 6σ). */
+export function cadenceForTemporalTrust(c: number): number {
+  const sigma = TEMPORAL_SIGMA.full + (1 - c) * (TEMPORAL_SIGMA.zero - TEMPORAL_SIGMA.full);
+  return TEMPORAL_BASELINE.meanS + sigma * TEMPORAL_BASELINE.stdS;
+}
+
+/** Inverse of stabilityTrust on its linear segment (0 < c < 1). */
+export function crcForStabilityTrust(c: number): number {
+  return STABILITY_CRC.full + (1 - c) * (STABILITY_CRC.zero - STABILITY_CRC.full);
+}
+
+/**
+ * spatial.rs `is_degrading`: MEASURED degradation (FR-01 > 3σ anomaly or FR-02
+ * > 5 % CRC flag). Fingerprint does not count. Nothing is self-reported.
+ */
+export function isDegrading(cadenceS: number, crc: number): boolean {
+  return cadenceSigma(cadenceS) > TEMPORAL_SIGMA.anomaly || crc > STABILITY_CRC.degraded;
+}
+
+// ---------------------------------------------------------------------------
 // Engine-reachable components — used by the Storybook fixtures so every
 // payload they render is one the real trust engine could emit.
-// Assumes the fingerprint semantics of PR #1 (fix/fingerprint-trust-inversion).
 // ---------------------------------------------------------------------------
 
 /**
@@ -104,53 +156,73 @@ export function aggregateTrust(
 export const ENGINE_FINGERPRINT_TRUST = [1, 1 / 2, 1 / 3, 1 / 6, 0] as const;
 
 /**
- * FR-03 spatial TRUST. Mirrors the engine's trust-oriented spatial detector
- * (being changed on fix/fingerprint-trust-inversion, PR #1 follow-up):
- * 1.0 when the source is not degrading, 0.6 while degrading and localized,
- * 0.3 while degrading and blanket.
+ * FR-03 spatial TRUST — detectors/src/spatial.rs (PR #1 @ 6733817)
+ * `SpatialClassification`: Nominal 1.0 (target not degrading, whatever the
+ * neighbours do), Localized `LOCALIZED_TRUST` 0.6 (degrading, neighbours within
+ * 500 m healthy), Blanket `BLANKET_TRUST` 0.3 (degrading, ≥ 1 neighbour degrading).
  */
-export const ENGINE_SPATIAL_TRUST = { notDegrading: 1, localized: 0.6, blanket: 0.3 } as const;
+export const ENGINE_SPATIAL_TRUST = { nominal: 1, localized: 0.6, blanket: 0.3 } as const;
 
 export interface DiscreteComponents {
   spatial: number;
   fingerprint: number;
 }
 
+/** One (temporal, stability) knot on a regime's degradation path. */
+export type PathKnot = readonly [temporal: number, stability: number];
+
 /**
- * Discrete (spatial, fingerprint) regimes in preference order. A score takes
- * the first regime whose reachable range contains it, so scores the engine can
- * only reach with a jammer match get fingerprint 0 (6/6, the Avdiivka jammer).
+ * A discrete (spatial, fingerprint) regime plus the piecewise-linear path its
+ * continuous detectors follow as the link degrades. Paths are built from the
+ * engine's own beats so that solving a beat score returns the beat's components:
+ *
+ * - localized, no RF match: cadence breaks first (temporal 1 → 0.52, the 0:45
+ *   1.17 s value), then CRC climbs (stability 1 → 0, through 0.72 = 6 % at 0:55).
+ * - localized, jammer 6/6: temporal 1 → 0 first (cadence ≥ 1.30 s), then CRC
+ *   climbs (stability 1 → 0, through 0.82 at 1:50 and 0.31 at 1:15).
+ * - nominal, no RF match: only the sub-threshold range the engine still calls
+ *   "not degrading" (≤ 3σ → temporal ≥ 0.6, CRC ≤ 5 % → stability ≥ 0.769).
+ * - blanket, jammer 6/6: same order as localized-matched; fallback for scores
+ *   below every localized path.
  */
-export const FIXTURE_REGIMES: readonly DiscreteComponents[] = [
-  { spatial: ENGINE_SPATIAL_TRUST.localized, fingerprint: 0 },
-  { spatial: ENGINE_SPATIAL_TRUST.localized, fingerprint: 1 },
-  { spatial: ENGINE_SPATIAL_TRUST.notDegrading, fingerprint: 1 },
-  { spatial: ENGINE_SPATIAL_TRUST.blanket, fingerprint: 0 },
+export interface FixtureRegime extends DiscreteComponents {
+  path: readonly PathKnot[];
+}
+
+/** temporalTrust(WATCH_CADENCE_S = 1.17 s) — comms-sim scenarios/avdiivka.py. */
+const WATCH_TEMPORAL = temporalTrust(1.17);
+const NOMINAL_FLOOR_TEMPORAL = 1 - (TEMPORAL_SIGMA.anomaly - TEMPORAL_SIGMA.full) / (TEMPORAL_SIGMA.zero - TEMPORAL_SIGMA.full);
+const NOMINAL_FLOOR_STABILITY = stabilityTrust(STABILITY_CRC.degraded);
+
+/**
+ * Regimes in preference order: a score takes the first regime whose reachable
+ * range contains it, so scores the engine only reaches with a jammer match get
+ * fingerprint 0 (6/6, the Avdiivka jammer).
+ */
+export const FIXTURE_REGIMES: readonly FixtureRegime[] = [
+  { spatial: ENGINE_SPATIAL_TRUST.localized, fingerprint: 0, path: [[1, 1], [0, 1], [0, 0]] },
+  { spatial: ENGINE_SPATIAL_TRUST.localized, fingerprint: 1, path: [[1, 1], [WATCH_TEMPORAL, 1], [WATCH_TEMPORAL, 0], [0, 0]] },
+  { spatial: ENGINE_SPATIAL_TRUST.nominal, fingerprint: 1, path: [[1, 1], [NOMINAL_FLOOR_TEMPORAL, 1], [NOMINAL_FLOOR_TEMPORAL, NOMINAL_FLOOR_STABILITY]] },
+  { spatial: ENGINE_SPATIAL_TRUST.blanket, fingerprint: 0, path: [[1, 1], [0, 1], [0, 0]] },
 ];
 
-/**
- * Continuous detectors follow one degradation parameter p ≥ 0: temporal leads
- * (cadence breaks first), stability lags (CRC climbs late). Both are piecewise
- * linear in the engine (temporal.rs, stability.rs), so any value in [0,1] is reachable.
- */
-const DECAY_PROFILE = { temporal: 1.5, stability: 0.1 } as const;
-const P_MAX = 1 / Math.min(DECAY_PROFILE.temporal, DECAY_PROFILE.stability);
-
-function componentsAt(p: number, r: DiscreteComponents): TrustComponentsLike {
-  return {
-    temporal: Math.max(0, 1 - p * DECAY_PROFILE.temporal),
-    stability: Math.max(0, 1 - p * DECAY_PROFILE.stability),
-    spatial: r.spatial,
-    fingerprint: r.fingerprint,
-  };
+/** Components at path parameter p ∈ [0, path.length − 1] (piecewise linear between knots). */
+function componentsAt(p: number, r: FixtureRegime): TrustComponentsLike {
+  const last = r.path.length - 1;
+  const q = Math.min(Math.max(p, 0), last);
+  const i = Math.min(Math.floor(q), last - 1);
+  const f = q - i;
+  const [t0, s0] = r.path[i]!;
+  const [t1, s1] = r.path[i + 1]!;
+  return { temporal: t0 + f * (t1 - t0), stability: s0 + f * (s1 - s0), spatial: r.spatial, fingerprint: r.fingerprint };
 }
 
 /** [floor, ceiling] of composite scores a regime can produce. */
-export function regimeRange(r: DiscreteComponents): [number, number] {
-  return [aggregateTrust(componentsAt(P_MAX, r)).score, aggregateTrust(componentsAt(0, r)).score];
+export function regimeRange(r: FixtureRegime): [number, number] {
+  return [aggregateTrust(componentsAt(r.path.length - 1, r)).score, aggregateTrust(componentsAt(0, r)).score];
 }
 
-export function regimeFor(score: number): DiscreteComponents {
+export function regimeFor(score: number): FixtureRegime {
   return (
     FIXTURE_REGIMES.find((r) => {
       const [lo, hi] = regimeRange(r);
@@ -162,14 +234,15 @@ export function regimeFor(score: number): DiscreteComponents {
 /**
  * Components that reproduce `score` exactly through aggregateTrust, with
  * spatial and fingerprint restricted to engine-reachable values. Solved by
- * bisection on p (the composite is monotone in p). Below the lowest reachable
- * score (~0.036) it returns the floor; callers that need exactness check
- * aggregateTrust(result).score.
+ * bisection along the regime path (the composite is monotone along it). For a
+ * score the engine emits at an Avdiivka beat it returns that beat's components.
+ * Below the lowest reachable score (0.036) it returns the floor; callers that
+ * need exactness check aggregateTrust(result).score.
  */
-export function solveComponents(score: number, regime: DiscreteComponents = regimeFor(score)): TrustComponentsLike {
+export function solveComponents(score: number, regime: FixtureRegime = regimeFor(score)): TrustComponentsLike {
   if (score >= 0.999) return { temporal: 1, stability: 1, spatial: 1, fingerprint: 1 };
   let lo = 0;
-  let hi = P_MAX;
+  let hi = regime.path.length - 1;
   for (let i = 0; i < 100; i++) {
     const mid = (lo + hi) / 2;
     if (aggregateTrust(componentsAt(mid, regime)).score > score) lo = mid;
@@ -356,4 +429,133 @@ export interface ExportAmplifiers {
 /** Standard 2525 amplifiers for export (TAK / CoT). The halo overlay is never exported. */
 export function exportAmplifiers(rating: LinkTrustRating, lastGoodIso: string): ExportAmplifiers {
   return { J: rating.jCode, W: formatDtg(lastGoodIso), ...(rating.stale ? { AR: NRT } : {}) };
+}
+
+// ---------------------------------------------------------------------------
+// Avdiivka engine beats — what the fixed engine (PR #1 @ 6733817) emits for the
+// comms-sim scenario. Telemetry is copied from
+// services/comms-sim/src/comms_sim/scenarios/avdiivka.py (jitter-free); the
+// derivation mirrors the `avdiivka::tick` helper of the Rust end-to-end test
+// services/trust-engine/crates/aggregator/src/lib.rs `avdiivka_beats_end_to_end`
+// (measured degradation → spatial classification within 500 m → aggregate).
+// link-trust-rating.test.ts pins the result to that test's printed values.
+// ---------------------------------------------------------------------------
+
+export type AvdiivkaUnit = 'unit_a' | 'unit_b' | 'unit_c';
+export const AVDIIVKA_UNITS: readonly AvdiivkaUnit[] = ['unit_a', 'unit_b', 'unit_c'];
+
+/** avdiivka.py SOURCE_POSITIONS (= apps/web/app/page.tsx SEED_TRACKS): A/C ~245 m N/S of B. */
+export const AVDIIVKA_POSITIONS: Readonly<Record<AvdiivkaUnit, { lat: number; lon: number }>> = {
+  unit_a: { lat: 48.14 + 0.0022, lon: 37.745 },
+  unit_b: { lat: 48.14, lon: 37.745 },
+  unit_c: { lat: 48.14 - 0.0022, lon: 37.745 },
+};
+
+/** spatial.rs DEFAULT_RADIUS_M (TRUST_ENGINE_SPATIAL_RADIUS_M). */
+export const SPATIAL_RADIUS_M = 500;
+
+export interface UnitTelemetry {
+  /** inter_arrival_seconds. */
+  cadenceS: number;
+  /** crc_error_rate, fraction. */
+  crc: number;
+  /** Best fingerprint library match strength k/6 (0 = no RF observation / no match ≥ 0.5). */
+  rfMatch: number;
+}
+
+/** avdiivka.py constants: SourceTelemetryState defaults and the B ramp. */
+export const AVDIIVKA_TELEMETRY = {
+  healthy: { cadenceS: 1.0, crc: 0.002, rfMatch: 0 },
+  /** 0:45 WATCH_CADENCE_S 1.17 s (3.4σ). */
+  watch: { cadenceS: 1.17, crc: 0.002, rfMatch: 0 },
+  /** 0:55 + WATCH_CRC 6 %. */
+  watchCrc: { cadenceS: 1.17, crc: 0.06, rfMatch: 0 },
+  /** 1:15 JAMMED_CADENCE_S 6.1 s, JAMMED_CRC 14 %, JAMMER_RF (ground_based_gps_uhf_barrage 6/6). */
+  jammed: { cadenceS: 6.1, crc: 0.14, rfMatch: 1 },
+  /** 1:50 _start_unit_b_recovery: 1.8 s, 4 %, jammer still observed. */
+  recovering: { cadenceS: 1.8, crc: 0.04, rfMatch: 1 },
+} as const satisfies Record<string, UnitTelemetry>;
+
+function distanceM(a: { lat: number; lon: number }, b: { lat: number; lon: number }): number {
+  // spatial.rs haversine, R = 6 371 000 m.
+  const R = 6_371_000;
+  const rad = Math.PI / 180;
+  const dLat = (b.lat - a.lat) * rad;
+  const dLon = (b.lon - a.lon) * rad;
+  const h = Math.sin(dLat / 2) ** 2 + Math.cos(a.lat * rad) * Math.cos(b.lat * rad) * Math.sin(dLon / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(h));
+}
+
+export interface EngineUnitOutput {
+  components: TrustComponentsLike;
+  score: number;
+}
+
+/** One engine tick over A, B, C — mirrors `avdiivka::tick` in the Rust end-to-end test. */
+export function engineTick(
+  tel: Readonly<Record<AvdiivkaUnit, UnitTelemetry>>,
+  positions: Readonly<Record<AvdiivkaUnit, { lat: number; lon: number }>> = AVDIIVKA_POSITIONS,
+  radiusM = SPATIAL_RADIUS_M,
+): Record<AvdiivkaUnit, EngineUnitOutput> {
+  const degrading = Object.fromEntries(
+    AVDIIVKA_UNITS.map((u) => [u, isDegrading(tel[u].cadenceS, tel[u].crc)]),
+  ) as Record<AvdiivkaUnit, boolean>;
+  const out = {} as Record<AvdiivkaUnit, EngineUnitOutput>;
+  for (const u of AVDIIVKA_UNITS) {
+    const blanket = AVDIIVKA_UNITS.some(
+      (n) => n !== u && degrading[n] && distanceM(positions[u], positions[n]) <= radiusM,
+    );
+    const spatial = !degrading[u]
+      ? ENGINE_SPATIAL_TRUST.nominal
+      : blanket
+        ? ENGINE_SPATIAL_TRUST.blanket
+        : ENGINE_SPATIAL_TRUST.localized;
+    const components: TrustComponentsLike = {
+      temporal: temporalTrust(tel[u].cadenceS),
+      stability: stabilityTrust(tel[u].crc),
+      spatial,
+      // fingerprint.rs fingerprint_trust: 1 − match strength; matches below 0.5 do not count.
+      fingerprint: tel[u].rfMatch >= 0.5 ? 1 - tel[u].rfMatch : 1,
+    };
+    out[u] = { components, score: aggregateTrust(components).score };
+  }
+  return out;
+}
+
+export interface EngineBeat {
+  /** Scenario clock, seconds (comms-sim beat tick_seconds; 1:20 is the modal beat). */
+  clockS: number;
+  label: string;
+  telemetry: Readonly<Record<AvdiivkaUnit, UnitTelemetry>>;
+  units: Readonly<Record<AvdiivkaUnit, EngineUnitOutput>>;
+}
+
+const T = AVDIIVKA_TELEMETRY;
+const beat = (clockS: number, label: string, b: UnitTelemetry): EngineBeat => {
+  const telemetry = { unit_a: T.healthy, unit_b: b, unit_c: T.healthy };
+  return { clockS, label, telemetry, units: engineTick(telemetry) };
+};
+
+/** The beat table of `avdiivka_beats_end_to_end` (same beats, same order). */
+export const AVDIIVKA_BEATS: readonly EngineBeat[] = [
+  beat(0, '0:00 three healthy units', T.healthy),
+  beat(45, '0:45 B cadence 1.0 s → 1.17 s (WATCH)', T.watch),
+  beat(55, '0:55 B CRC 0.2 % → 6 % (WATCH)', T.watchCrc),
+  beat(65, '1:05 spatial: localized, A and C unaffected', T.watchCrc),
+  beat(75, '1:15 jammer at full power: 6.1 s gap, 14 % CRC, RF fingerprint 6/6', T.jammed),
+  beat(80, '1:20 modal beat (telemetry unchanged)', T.jammed),
+  beat(110, '1:50 B recovery initiates', T.recovering),
+  beat(135, '2:15 B fully recovered', T.healthy),
+];
+
+/** Latest beat at or before `clockS` (the engine holds state between beats). */
+export function beatAt(clockS: number): EngineBeat {
+  let current = AVDIIVKA_BEATS[0]!;
+  for (const b of AVDIIVKA_BEATS) if (b.clockS <= clockS) current = b;
+  return current;
+}
+
+/** Scenario clock of B's first score below ROE_FLOOR (1:15). */
+export function firstCrossingClock(): number | undefined {
+  return AVDIIVKA_BEATS.find((b) => b.units.unit_b.score < ROE_FLOOR)?.clockS;
 }

@@ -357,8 +357,23 @@ export const FINDINGS: Finding[] = [
       'RESOLVED. The Storybook workaround that read components.fingerprint as 1 − overlap is removed: stories now treat it directly as trust (1 − match strength, 1.0 = no match), and evidence strings derive the overlap ratio as 1 − trust, as the narrator does. Fixtures align with PR #1 (fix/fingerprint-trust-inversion) semantics, so the stories assume PR #1 is merged. ' +
       'Candidates are what the engine emits for the Avdiivka jammer: ground_based_gps_uhf_barrage 1.00 (6/6), pulsed_uhf_wide 0.50 (3/6), cellular_uhf_barrage 0.17 (1/6), with munitions and citations from assets/fingerprints/library.json (replacing the unreachable 0.81 / 0.42 / 0.18). ' +
       'Every fixture payload uses engine-reachable components (fingerprint ∈ {1, .5, .33, .17, 0}; spatial 1 / 0.6 / 0.3, mirroring the trust-oriented spatial detector) and reproduces its score exactly, so the B′ tooltip mismatch warning stays silent. ' +
-      'Band samples changed: degraded 0.42 → 0.31 (a 6/6 match caps a localized source at 0.372), failed 0.18 → 0.13 (the engine\'s B-1:15 output); B now crosses the ROE floor on the jammer match (0.72 → 0.31) instead of a gradual slide.',
+      'Band samples changed: degraded 0.42 → 0.31 (a 6/6 match caps a localized source at 0.372), failed 0.18 → 0.13 (the engine\'s B-1:15 output); B now crosses the ROE floor on the jammer match (0.72 → 0.31) instead of a gradual slide. ' +
+      'SUPERSEDED by F02: fixtures now carry the engine\'s per-beat values (PR #1 @ 6733817) instead of solved approximations.',
     spec: 'FRS FR-04 / FR-04a / FR-05 · PR #1',
+  },
+  {
+    id: 'F02',
+    severity: 'low',
+    area: 'Fixtures — engine beats (PR #1 @ 6733817), assumes PR #1 merged',
+    where: 'stories/fixtures/avdiivka.ts · lib/link-trust-rating.ts (AVDIIVKA_BEATS, engineTick, solveComponents) · .storybook/mocks/mqtt-client.ts · Explorations/Track Symbology → COP – Option B′',
+    finding:
+      'RESOLVED. Stories now mirror the PR #1 engine beats (fix/fingerprint-trust-inversion @ 6733817): the fixture beat table is derived from comms-sim scenarios/avdiivka.py telemetry through the engine\'s detector mappings and is unit-tested against the Rust end-to-end test avdiivka_beats_end_to_end. ' +
+      'A and C 1.00 throughout (idle is 1.00, not 0.97 / 0.79). Unit B: 0:00 1.00 → 0:45 0.70 WATCH (cadence 1.0 s → 1.17 s, 3.4σ) → 0:55 0.65 (CRC 0.2% → 6%) → 1:05 0.65 (localized) → 1:15 0.13, first below 0.60, as the 6.1 s gap, 14% CRC and the jammer fingerprint 6/6 land together → 1:20 0.13 (modal) → 1:50 0.22 → 2:15 1.00. ' +
+      'Spatial trust is the engine\'s Nominal 1.0 / Localized 0.6 / Blanket 0.3. Fixture trust payloads carry the optional lat/lon PR #1 adds to TrustScorePayload, from the comms-sim positions (mirrored locally, since this branch\'s contracts lack them). ' +
+      'Band samples: NOMINAL 1.00 (0:00), WATCH 0.70 (0:45), UNRELIABLE 0.13 (1:15) are engine beats; DEGRADED 0.45 is synthetic (the timeline never sits in 0.30–0.60) but engine-reachable. Every tooltip reproduces its payload score, so the mismatch warning stays silent. ' +
+      'OPEN UX ITEM: the directional vector appears at 1:15, because app/page.tsx draws it when B < 0.60, whereas Branding §10.3 puts it at 1:05 (B is still 0.65 then). Driving it from components.spatial (localized) would show it from 0:45; neither is 1:05 without a scripted timer. Web-owner decision. ' +
+      'Related: the store raises the kill-chain gate on the first crossing (1:15), while the storyboard modal beat is 1:20.',
+    spec: 'Branding §10.1–§10.5 · System Design §2 / §5.1 · FRS FR-01–FR-05 · PR #1',
   },
 ];
 

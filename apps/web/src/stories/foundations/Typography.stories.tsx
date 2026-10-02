@@ -43,7 +43,7 @@ function TypeScale() {
               <span style={{ fontSize: 'var(--text-micro)', color: 'var(--text-tertiary)' }}>{SCALE_ROLE[t.name] ?? ''}</span>
             </div>
             <div style={{ fontSize: `var(${t.name})`, color: 'var(--text-primary)', lineHeight: 1.15 }}>
-              {t.name === '--text-readout' ? <span className="trust-readout">0.31</span> : 'Trust on B-position below ROE floor.'}
+              {t.name === '--text-readout' ? <span className="trust-readout">0.13</span> : 'Trust on B-position below ROE floor.'}
             </div>
           </div>
         ))}
@@ -105,14 +105,14 @@ export const TabularNumerics: Story = {
   render: () => (
     <Page>
       <Section title=".trust-readout (tnum + zero)" note="Digits must not shift as the score ticks.">
-        {['1.00', '0.50', '0.31', '0.17', '0.13'].map((n) => (
+        {['1.00', '0.70', '0.65', '0.22', '0.13'].map((n) => (
           <div key={n} className="trust-readout" style={{ fontSize: 'var(--text-readout)', color: 'var(--text-primary)', lineHeight: 1.1 }}>
             {n}
           </div>
         ))}
       </Section>
       <Section title="Proportional sans (what to avoid for scores)">
-        {['1.00', '0.50', '0.31', '0.17', '0.13'].map((n) => (
+        {['1.00', '0.70', '0.65', '0.22', '0.13'].map((n) => (
           <div key={n} style={{ fontSize: 'var(--text-readout)', color: 'var(--text-tertiary)', lineHeight: 1.1 }}>
             {n}
           </div>

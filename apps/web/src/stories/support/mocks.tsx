@@ -48,6 +48,12 @@ export interface EngineApiMock {
   events?: DetectionEvent[];
   /** Grow the visible log by one row per poll, oldest first. */
   stream?: boolean;
+  /**
+   * Time-synced log: rows visible `elapsedMs` after the mock is installed
+   * (newest-first). Overrides `events` / `stream` — keeps the terminal in step
+   * with a scripted MQTT replay.
+   */
+  eventsAt?: (elapsedMs: number) => DetectionEvent[];
   /** Simulate the engine being down (HTTP 503). */
   unreachable?: boolean;
 }
@@ -60,13 +66,18 @@ export const modalSelections: unknown[] = [];
 export function installEngineApi(mock: EngineApiMock = {}): void {
   if (typeof window === 'undefined' || !realFetch) return;
   let polls = 0;
+  const installedAt = Date.now();
   window.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
     if (url.includes('/api/events')) {
       if (mock.unreachable) return new Response('engine offline', { status: 503 });
       const all = mock.events ?? [];
       polls += 1;
-      const rows = mock.stream ? all.slice(Math.max(0, all.length - polls)) : all;
+      const rows = mock.eventsAt
+        ? mock.eventsAt(Date.now() - installedAt)
+        : mock.stream
+          ? all.slice(Math.max(0, all.length - polls))
+          : all;
       return new Response(JSON.stringify(rows), {
         status: 200,
         headers: { 'Content-Type': 'application/json' },

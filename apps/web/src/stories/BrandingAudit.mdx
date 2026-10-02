@@ -15,7 +15,9 @@ render them exactly as they ship. Line numbers point at the tree as of the commi
 
 **Fixtures assume PR #1 (fix/fingerprint-trust-inversion) is merged:** `components.fingerprint` is read directly as
 trust (1 − match strength), candidates are the engine's 1.00 / 0.50 / 0.17 for the Avdiivka jammer, and the old
-`1 − overlap` story workaround is gone (F01).
+`1 − overlap` story workaround is gone (F01). Scores and components are the PR #1 engine's per-beat output
+(6733817): A and C hold 1.00, B is WATCH 0.70 → 0.65 from 0:45 to 1:05 and first crosses the ROE floor at 1:15
+(0.13), with the modal at 1:20 (F02). Open UX item: the directional vector appears at 1:15, not at 1:05 as §10.3 says.
 
 ## How to use this page
 
