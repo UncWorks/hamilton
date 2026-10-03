@@ -8,11 +8,11 @@ import { ScatterplotLayer, LineLayer } from '@deck.gl/layers';
 import { MapView } from '@deck.gl/core';
 import { affiliationRgb, symbolGeometry } from './track-symbol';
 import {
-  haloPeriodMs,
-  haloRadiusPx,
+  haloFrameAt,
   shouldHaloPulse,
   trustRgb,
 } from '@/lib/trust-gradient';
+import { usePrefersReducedMotion } from '@/hooks/usePrefersReducedMotion';
 import { useHamilton, type TrackState } from '@/store/hamilton';
 
 const INITIAL_VIEW = {
@@ -56,45 +56,64 @@ export function MapSpine({ directionalFrom, directionalTo }: MapSpineProps) {
   const tracks = useHamilton((s) => s.tracks);
   const selectSource = useHamilton((s) => s.selectSource);
   const trackList = useMemo(() => Object.values(tracks), [tracks]);
-  const [haloPhase, setHaloPhase] = useState(0);
+  const reducedMotion = usePrefersReducedMotion();
+  const haloTracks = useMemo(() => trackList.filter((t) => shouldHaloPulse(t.score)), [trackList]);
+  // Absolute clock (ms). Each halo takes its phase modulo its OWN period in
+  // haloFrameAt — the old `% 4000` wrap here made every halo jump mid-pulse
+  // whenever 4000 wasn't a multiple of its period.
+  const [haloClock, setHaloClock] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Single RAF for halo pulses — Branding §5.2.
+  // Single RAF for halo pulses — Branding §5.2. Idle when no track is below
+  // the ROE floor or the operator prefers reduced motion (static ring).
+  const animateHalos = haloTracks.length > 0 && !reducedMotion;
   useEffect(() => {
+    if (!animateHalos) return;
     let raf = 0;
-    const start = performance.now();
     const tick = (now: number) => {
-      setHaloPhase((now - start) % 4000);
+      setHaloClock(now);
       raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, []);
+  }, [animateHalos]);
 
+  // Halo = disc + edge ring at the SAME position and in the SAME pixel units
+  // as the icon layer, so it is concentric by construction. Outer radius is
+  // measured from the icon edge: ICON_RADIUS_PX + (1 - c) * 24 (Option 1 in
+  // Storybook Explorations/Halo Options).
   const haloLayer = useMemo(
     () =>
       new ScatterplotLayer({
         id: 'track-halo',
-        data: trackList.filter((t) => shouldHaloPulse(t.score)),
+        data: haloTracks,
         getPosition: (d: TrackState) => [d.lon, d.lat, 0],
-        getRadius: (d: TrackState) => {
-          const base = haloRadiusPx(d.score);
-          const period = haloPeriodMs(d.score);
-          const phase = (haloPhase % period) / period;
-          const pulse = 0.7 + 0.3 * Math.sin(phase * 2 * Math.PI);
-          return base * pulse;
-        },
+        getRadius: (d: TrackState) =>
+          haloFrameAt(d.score, ICON_RADIUS_PX, haloClock, reducedMotion).radiusPx,
         getFillColor: (d: TrackState) => {
           const [r, g, b] = trustRgb(d.score);
-          return [r, g, b, 90];
+          const { intensity } = haloFrameAt(d.score, ICON_RADIUS_PX, haloClock, reducedMotion);
+          return [r, g, b, Math.round((reducedMotion ? 0.12 : 0.28 * intensity) * 255)];
+        },
+        getLineColor: (d: TrackState) => {
+          const [r, g, b] = trustRgb(d.score);
+          const { intensity } = haloFrameAt(d.score, ICON_RADIUS_PX, haloClock, reducedMotion);
+          return [r, g, b, Math.round(0.9 * intensity * 255)];
         },
         radiusUnits: 'pixels',
-        stroked: false,
+        filled: true,
+        stroked: true,
+        getLineWidth: 2,
+        lineWidthUnits: 'pixels',
+        // billboard left at the default (false) to match the icon layer, so
+        // both project identically if the view is ever pitched.
         updateTriggers: {
-          getRadius: [haloPhase],
+          getRadius: [haloClock, reducedMotion],
+          getFillColor: [haloClock, reducedMotion],
+          getLineColor: [haloClock, reducedMotion],
         },
       }),
-    [trackList, haloPhase],
+    [haloTracks, haloClock, reducedMotion],
   );
 
   const iconLayer = useMemo(

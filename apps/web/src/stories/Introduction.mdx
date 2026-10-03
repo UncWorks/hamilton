@@ -1,0 +1,53 @@
+import { Meta } from '@storybook/blocks';
+
+<Meta title="Introduction" />
+
+# Hamilton — component library
+
+The commander's aide-de-camp for the comms channel. This Storybook renders **every frontend component in
+`apps/web`** with the app's real `global.css` (tokens, typography, motion) so the team can review and unify branding
+against **docs/Branding and Frontend Design.md**.
+
+## Run it
+
+```sh
+pnpm install
+pnpm --filter @hamilton/web storybook        # dev server on http://localhost:6006
+pnpm --filter @hamilton/web build-storybook  # static build → apps/web/storybook-static
+```
+
+Both scripts build `@hamilton/contracts` first (the web app imports its `dist/`).
+
+## Sections
+
+- **Foundations** — Colors, Trust Bands, Typography, Iconography, Spacing, Motion. Values are read live from
+  `tokens.css` / `typography.css`, so they cannot drift from code.
+- **Branding Audit** — the inconsistency list (file:line) and the uncwork → Hamilton component map. Start here.
+- **Decisions** — design decisions with their rationale and evidence:
+  - **Track Symbology** shows the decided track symbol (FM 1-02 / MCRP 5-12A filled frames, side gauge + J, J split,
+    2525E / 2525C / CoT codes, declutter stack). The production code is in `src/components/symbol`.
+  - **Evidence/At-a-Glance** keeps the measurements behind it auditable.
+- **Brand / Panel / Modal / Terminal / Toggle / COP** — one story file per component, co-located as
+  `*.stories.tsx` next to the component.
+- **Pages/COP** — the assembled single-screen COP, including a live replay of the 0:45 → 1:20 crescendo.
+- **Archive** — superseded explorations, kept for the record: Track Symbology options A/B/C/B′, Halo Options and the
+  At-a-Glance variants V0–V4.
+
+## How stories get data (no broker, no engine)
+
+- **Fixtures**: `src/stories/fixtures/avdiivka.ts` — units A/B/C, trust bands, the three FR-04a candidates, terminal
+  lines and gate events. Every payload is parsed through the real `@hamilton/contracts` zod schemas.
+- **Store**: a global `beforeEach` resets the Zustand store and applies `parameters.hamilton` (a partial state).
+  Args-driven stories use `<StoreSeed>`. Docs pages render each story in its own iframe because the store is a
+  module singleton.
+- **Engine HTTP** (`/api/events`, `/api/modal/selection`): `window.fetch` is intercepted per story via
+  `parameters.engineApi` (`events`, `stream`, `unreachable`).
+- **MQTT**: `src/lib/mqtt-client.ts` is swapped by a webpack alias for `.storybook/mocks/mqtt-client.ts`, which
+  replays a scripted timeline (`parameters.mqtt.script`: `silent` | `crescendo` | `unreachable`).
+- **Cesium**: loaded on demand from `/public/cesium` (staged on `pnpm install`) with no imagery or Ion token, so it
+  renders offline. Needs WebGL.
+
+## Toolbar
+
+**Surface** switches the canvas between `--surface-base`, `--surface-panel` and `--surface-elevated`. Hamilton is
+dark-only by spec (§3.1), so there is no light theme.

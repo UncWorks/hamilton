@@ -9,16 +9,24 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import type * as CesiumNs from 'cesium';
 import { waitForCesium } from '@/lib/cesium-env';
 import {
-  haloRadiusPx,
+  haloFrameAt,
   shouldHaloPulse,
   trustRgb,
 } from '@/lib/trust-gradient';
+import { usePrefersReducedMotion } from '@/hooks/usePrefersReducedMotion';
 import { affiliationRgb } from './track-symbol';
 import { useHamilton, type TrackState } from '@/store/hamilton';
 
 const AVDIIVKA_LON = 37.745;
 const AVDIIVKA_LAT = 48.14;
 const CAMERA_ALT_M = 4500;
+
+// Icon point: pixelSize 26 + outlineWidth 2 on both sides → 15px outer radius
+// (PointPrimitiveCollectionVS: totalSize = pixelSize + 2 * outlineWidth).
+const ICON_PIXEL_SIZE = 26;
+const ICON_OUTLINE_PX = 2;
+const ICON_RADIUS_PX = ICON_PIXEL_SIZE / 2 + ICON_OUTLINE_PX;
+const HALO_RING_PX = 2;
 
 interface CesiumSpineProps {
   jammerLocation?: { lat: number; lon: number; method_id: string };
@@ -33,6 +41,12 @@ export function CesiumSpine(props: CesiumSpineProps) {
   const trackEntitiesRef = useRef<Map<string, CesiumNs.Entity>>(new Map());
   const overlayEntitiesRef = useRef<Set<CesiumNs.Entity>>(new Set());
   const [ready, setReady] = useState(false);
+  // Latest score per halo'd track, read by the halo CallbackProperties each
+  // frame so the halo entity is created once instead of re-added per tick.
+  const haloScoresRef = useRef<Map<string, number>>(new Map());
+  const reducedMotion = usePrefersReducedMotion();
+  const reducedMotionRef = useRef(reducedMotion);
+  reducedMotionRef.current = reducedMotion;
 
   const tracks = useHamilton((s) => s.tracks);
   const selectSource = useHamilton((s) => s.selectSource);
@@ -140,10 +154,10 @@ export function CesiumSpine(props: CesiumSpineProps) {
           name: t.source_id,
           position: C.Cartesian3.fromDegrees(t.lon, t.lat, 0),
           point: {
-            pixelSize: 26,
+            pixelSize: ICON_PIXEL_SIZE,
             color: fillColor,
             outlineColor,
-            outlineWidth: 2,
+            outlineWidth: ICON_OUTLINE_PX,
             heightReference: C.HeightReference.CLAMP_TO_GROUND,
           },
           label: {
@@ -171,28 +185,56 @@ export function CesiumSpine(props: CesiumSpineProps) {
         }
       }
 
-      // Halo as separate ellipse entity, refreshed each tick when score < 0.6.
+      // Halo — Branding §5.2, Option 1 (Explorations/Halo Options). A
+      // screen-space `point` at the icon's exact position + heightReference,
+      // so it is concentric with the icon point by construction. (Previously a
+      // ground ellipse sized in metres: at the -55° camera pitch it projected
+      // as a foreshortened oval around a round screen-space icon, never
+      // pulsed, and was removed + re-added on every tick.)
       const haloId = `${t.source_id}-halo`;
-      const existingHalo = viewer.entities.getById(haloId);
-      if (existingHalo) viewer.entities.remove(existingHalo);
       if (shouldHaloPulse(t.score)) {
-        const haloRgba = trustRgb(t.score);
-        viewer.entities.add({
-          id: haloId,
-          position: C.Cartesian3.fromDegrees(t.lon, t.lat, 0),
-          ellipse: {
-            semiMajorAxis: haloRadiusPx(t.score) * 30,
-            semiMinorAxis: haloRadiusPx(t.score) * 30,
-            material: new C.Color(
-              haloRgba[0] / 255,
-              haloRgba[1] / 255,
-              haloRgba[2] / 255,
-              0.18,
-            ),
-            outline: false,
-            height: 0,
-          },
-        });
+        haloScoresRef.current.set(t.source_id, t.score);
+        const existingHalo = viewer.entities.getById(haloId);
+        if (existingHalo) {
+          existingHalo.position = C.Cartesian3.fromDegrees(t.lon, t.lat, 0) as never;
+        } else {
+          const sid = t.source_id;
+          const frame = () =>
+            haloFrameAt(
+              haloScoresRef.current.get(sid) ?? 0,
+              ICON_RADIUS_PX,
+              performance.now(),
+              reducedMotionRef.current,
+            );
+          const rgb = () => trustRgb(haloScoresRef.current.get(sid) ?? 0);
+          viewer.entities.add({
+            id: haloId,
+            position: C.Cartesian3.fromDegrees(t.lon, t.lat, 0),
+            point: {
+              // Outer diameter = pixelSize + 2 * outlineWidth.
+              pixelSize: new C.CallbackProperty(
+                () => Math.max(0, 2 * (frame().radiusPx - HALO_RING_PX)),
+                false,
+              ) as never,
+              color: new C.CallbackProperty(() => {
+                const [r, g, b] = rgb();
+                const f = frame();
+                const a = reducedMotionRef.current ? 0.12 : 0.28 * f.intensity;
+                return new C.Color(r / 255, g / 255, b / 255, a);
+              }, false) as never,
+              outlineColor: new C.CallbackProperty(() => {
+                const [r, g, b] = rgb();
+                return new C.Color(r / 255, g / 255, b / 255, 0.9 * frame().intensity);
+              }, false) as never,
+              outlineWidth: HALO_RING_PX,
+              heightReference: C.HeightReference.CLAMP_TO_GROUND,
+            },
+          });
+        }
+      } else {
+        haloScoresRef.current.delete(t.source_id);
+        const existingHalo = viewer.entities.getById(haloId);
+        if (existingHalo) viewer.entities.remove(existingHalo);
       }
     }
 
@@ -202,6 +244,7 @@ export function CesiumSpine(props: CesiumSpineProps) {
         trackEntitiesRef.current.delete(id);
         const halo = viewer.entities.getById(`${id}-halo`);
         if (halo) viewer.entities.remove(halo);
+        haloScoresRef.current.delete(id);
       }
     }
   }, [ready, trackList]);
