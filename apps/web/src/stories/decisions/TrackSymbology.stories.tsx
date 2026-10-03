@@ -602,7 +602,7 @@ function LiveSpineCop({ clock, s2Override }: Pick<Args, 'clock' | 's2Override'>)
         <div style={{ padding: 'var(--space-4)', background: 'var(--surface-panel)', display: 'grid', gap: 'var(--space-3)' }}>
           <div style={{ ...mono, fontSize: 12, color: 'var(--text-secondary)' }}>
             Scenario clock <span style={{ color: 'var(--text-primary)' }}>{fmtClock(clock)}</span> · engine beat {beat.label} · the production{' '}
-            <code>MapSpine</code> (CesiumSpine draws the same symbols as billboards) beside the fire-mission queue. Hover or Tab to a unit for its breakdown.
+            <code>MapSpine</code> on the offline basemap (CesiumSpine draws the same symbols as billboards) beside the fire-mission queue. Hover or Tab to a unit for its breakdown.
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 2fr) minmax(320px, 1fr)', gap: 'var(--space-3)' }}>
             <div style={{ position: 'relative', height: 560 }} data-testid="cop-live-spine">
@@ -636,7 +636,7 @@ export const CopLiveSpine: Story = {
           'the production symbols, declutter stacks and rating tooltips. From 1:15 the candidate sites (mock positions) appear as ' +
           'anticipated EW symbols; from 1:20 the fix J1. B is selected (double frame). The fire-mission queue beside it holds the calls ' +
           'for fire due by **clock**: AB1002 (OBS C, M795, from 0:30, never gated) and AB1001 (OBS B, M982, from 1:12) — TSS PASS at 1:12 ' +
-          '(B C3), TSS FAIL — RELIABILITY E5 (min C), rec. DO NOT LOAD from 1:15. No modal anywhere (Fires/Mission Row).',
+          '(B C3), TSS FAIL — RELIABILITY E5 (min C), rec. DO NOT LOAD from 1:15. No modal anywhere (Fires/Mission Row). The spine draws over the offline Protomaps basemap (`NEXT_PUBLIC_BASEMAP`, default offline once `make fetch-tiles` has provisioned `/public/tiles`; see **COP/MapSpine › Basemap off**).',
       },
     },
   },

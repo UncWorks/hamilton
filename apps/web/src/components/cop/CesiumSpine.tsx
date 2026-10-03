@@ -11,10 +11,28 @@
 // by symbolImageKey (band / gauge step, STALE, J, selection, hover). No
 // circular halo, no pulse. Declutter stacks, hover / keyboard rating
 // breakdowns and the fit control live in SpineOverlay (screen space).
+//
+// Imagery (System Design §6c "Basemap", lib/basemap.ts): offline, a 512 px
+// PNG pyramid at /tiles/raster rendered from the SAME Protomaps extract and
+// Hamilton dark style as the MapLibre spine (scripts/basemap/render-raster.mjs),
+// via UrlTemplateImageryProvider — still no Cesium ion, no network. Online
+// (dev only, not NFR-01): OSM raster tiles, dimmed with the imagery layer's
+// brightness / saturation so the symbols keep the contrast.
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type * as CesiumNs from 'cesium';
 import { waitForCesium } from '@/lib/cesium-env';
+import {
+  basemapMode,
+  CESIUM_IMAGERY_TUNING,
+  isRasterMeta,
+  ONLINE_ATTRIBUTION,
+  ONLINE_RASTER_URL,
+  RASTER_META_PATH,
+  RASTER_PATH,
+  type BasemapMode,
+} from '@/lib/basemap';
+import { BasemapAttribution } from './BasemapAttribution';
 import { usePrefersReducedMotion } from '@/hooks/usePrefersReducedMotion';
 import { useHamilton } from '@/store/hamilton';
 import {
@@ -65,9 +83,40 @@ interface CesiumSpineProps {
    * "Fit to tracks" (button or F).
    */
   initialRangeM?: number;
+  /** Basemap override (default: NEXT_PUBLIC_BASEMAP, see lib/basemap.ts). */
+  basemap?: BasemapMode;
+}
+
+/** Build the imagery provider for a mode, or null (none / assets not provisioned). */
+async function basemapProvider(C: typeof CesiumNs, mode: BasemapMode): Promise<CesiumNs.ImageryProvider | null> {
+  if (mode === 'online') {
+    return new C.UrlTemplateImageryProvider({
+      url: ONLINE_RASTER_URL,
+      maximumLevel: 19,
+      credit: new C.Credit(ONLINE_ATTRIBUTION),
+    });
+  }
+  if (mode !== 'offline') return null;
+  // tiles.json doubles as the "assets provisioned" probe: without it no tile is requested (no 404 storm).
+  const res = await fetch(RASTER_META_PATH).catch(() => null);
+  if (!res?.ok) return null;
+  const meta: unknown = await res.json().catch(() => null);
+  if (!isRasterMeta(meta)) return null;
+  const [w, s, e, n] = meta.bounds;
+  return new C.UrlTemplateImageryProvider({
+    url: RASTER_PATH,
+    tilingScheme: new C.WebMercatorTilingScheme(),
+    tileWidth: meta.tileSize,
+    tileHeight: meta.tileSize,
+    minimumLevel: meta.minzoom,
+    maximumLevel: meta.maxzoom,
+    rectangle: C.Rectangle.fromDegrees(w, s, e, n),
+    credit: new C.Credit(meta.attribution),
+  });
 }
 
 export function CesiumSpine(props: CesiumSpineProps) {
+  const mode = props.basemap ?? basemapMode();
   const containerRef = useRef<HTMLDivElement>(null);
   const viewerRef = useRef<CesiumNs.Viewer | null>(null);
   const cesiumRef = useRef<typeof CesiumNs | null>(null);
@@ -484,10 +533,34 @@ export function CesiumSpine(props: CesiumSpineProps) {
     props.directionalTo?.lon,
   ]);
 
+  // Basemap imagery layer (per mode; swapped in place when the mode changes).
+  const [imageryOn, setImageryOn] = useState(false);
+  useEffect(() => {
+    const C = cesiumRef.current;
+    const viewer = viewerRef.current;
+    if (!ready || !C || !viewer) return;
+    let cancelled = false;
+    let layer: CesiumNs.ImageryLayer | null = null;
+    basemapProvider(C, mode)
+      .then((provider) => {
+        if (cancelled || !provider || viewer.isDestroyed()) return;
+        layer = viewer.imageryLayers.addImageryProvider(provider, 0);
+        if (mode !== 'none') Object.assign(layer, CESIUM_IMAGERY_TUNING[mode]);
+        setImageryOn(true);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+      setImageryOn(false);
+      if (layer && !viewer.isDestroyed()) viewer.imageryLayers.remove(layer, true);
+    };
+  }, [ready, mode]);
+
   const { singles, stacks } = useMemo(() => placeSymbols(symbols, decl.result, decl.positions), [symbols, decl]);
 
   return (
     <div
+      data-basemap={imageryOn ? mode : 'none'}
       style={{
         position: 'relative',
         width: '100%',
@@ -496,6 +569,8 @@ export function CesiumSpine(props: CesiumSpineProps) {
       }}
     >
       <div ref={containerRef} style={{ position: 'absolute', inset: 0 }} />
+      {/* Cesium's own credit container is hidden (ion branding); this carries the basemap credit. */}
+      {imageryOn && <BasemapAttribution mode={mode} />}
       {ready && (
         <SpineOverlay
           singles={singles}

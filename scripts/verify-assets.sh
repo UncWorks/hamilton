@@ -34,8 +34,42 @@ warn_file() {
 warn_file "apps/web/public/fonts/InterTight-Variable.woff2" "Inter Tight (Söhne substitute)"
 warn_file "apps/web/public/fonts/JetBrainsMono-Regular.woff2" "JetBrains Mono (Berkeley Mono fallback)"
 
-# Phase 4+ — PMTiles
-warn_file "apps/web/public/tiles/avdiivka.pmtiles" "MapLibre PMTiles offline"
+# Basemap (System Design §6c, apps/web/src/lib/basemap.ts). Provisioned by
+# `make fetch-tiles` (gitignored). Required when NEXT_PUBLIC_BASEMAP=offline;
+# when unset the app resolves offline only if the PMTiles exist, else none.
+BASEMAP_FILES=(
+  "apps/web/public/tiles/avdiivka.pmtiles|MapLibre vector basemap (Protomaps extract)"
+  "apps/web/public/tiles/glyphs/Noto Sans Regular/0-255.pbf|basemap label glyphs (Regular)"
+  "apps/web/public/tiles/glyphs/Noto Sans Medium/0-255.pbf|basemap label glyphs (Medium)"
+  "apps/web/public/tiles/glyphs/Noto Sans Italic/0-255.pbf|basemap label glyphs (Italic)"
+  "apps/web/public/tiles/raster/tiles.json|Cesium raster imagery pyramid"
+)
+BASEMAP="${NEXT_PUBLIC_BASEMAP:-}"
+case "$BASEMAP" in
+  offline)
+    for entry in "${BASEMAP_FILES[@]}"; do
+      check_file "${entry%%|*}" "${entry#*|} — NEXT_PUBLIC_BASEMAP=offline; run make fetch-tiles"
+    done
+    ;;
+  online)
+    echo "WARN: NEXT_PUBLIC_BASEMAP=online — dev-only OSM tiles, NOT NFR-01 compliant"
+    ;;
+  none) ;;
+  "")
+    if [[ -e "$ROOT/apps/web/public/tiles/avdiivka.pmtiles" ]]; then
+      # Default resolves to offline: the rest of the set must be there too.
+      for entry in "${BASEMAP_FILES[@]}"; do
+        check_file "${entry%%|*}" "${entry#*|} — basemap defaults to offline; run make fetch-tiles"
+      done
+    else
+      echo "WARN: basemap assets not provisioned — COP renders without a basemap (run make fetch-tiles)"
+    fi
+    ;;
+  *)
+    echo "INVALID: NEXT_PUBLIC_BASEMAP=$BASEMAP (expected offline|online|none)"
+    errors=$((errors + 1))
+    ;;
+esac
 
 # Phase 5+ — Cesium 3D Tiles + glTF jammer models
 warn_file "apps/web/public/cesium/tileset.json" "Cesium 3D Tiles tileset"

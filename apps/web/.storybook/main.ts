@@ -1,3 +1,4 @@
+import { existsSync } from 'node:fs';
 import path from 'node:path';
 import type { StorybookConfig } from '@storybook/nextjs';
 
@@ -19,7 +20,8 @@ const config: StorybookConfig = {
     options: {},
   },
   // /public carries the self-hosted fonts (/fonts) and the staged Cesium
-  // build (/cesium, copied by scripts/stage-cesium.mjs on postinstall), so
+  // build (/cesium, copied by scripts/stage-cesium.mjs on postinstall) and
+  // the offline basemap (/tiles, provisioned by `make fetch-tiles`), so
   // stories resolve the same on-origin URLs as the app (NFR-01).
   staticDirs: ['../public'],
   docs: {
@@ -28,6 +30,14 @@ const config: StorybookConfig = {
   core: {
     disableTelemetry: true,
   },
+  // Same basemap default as next.config.mjs: offline when `make fetch-tiles`
+  // has provisioned /public/tiles, none otherwise (src/lib/basemap.ts).
+  env: (cfg) => ({
+    ...cfg,
+    NEXT_PUBLIC_BASEMAP:
+      process.env.NEXT_PUBLIC_BASEMAP ||
+      (existsSync(path.resolve(__dirname, '../public/tiles/avdiivka.pmtiles')) ? 'offline' : 'none'),
+  }),
   webpackFinal: async (cfg) => {
     // Swap the live MQTT client for a scripted, broker-free replay. Both the
     // alias request and the tsconfig-path-resolved absolute request are

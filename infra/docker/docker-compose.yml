@@ -91,6 +91,10 @@ services:
       NEXT_PUBLIC_MQTT_WS_URL: ws://localhost:9001
       NEXT_PUBLIC_RENDERER: ${NEXT_PUBLIC_RENDERER:-maplibre}
       ENGINE_HTTP_URL: http://trust-engine:8080
+      # offline | online | none. Empty = offline when apps/web/public/tiles is
+      # provisioned (`make fetch-tiles`, before going offline), else none.
+      # online is DEV ONLY (OSM tiles over the network) — not NFR-01.
+      NEXT_PUBLIC_BASEMAP: ${NEXT_PUBLIC_BASEMAP:-}
     ports:
       - "3000:3000"
     volumes:
