@@ -44,7 +44,7 @@ recommends a method of control and never issues a fire command.
 
 Other rules:
 
-- **Hysteresis.** A source fails as soon as it drops below the minimum. It passes again only after holding the minimum or better for **5 s continuously**. Unguided rows hold no memory.
+- **Hysteresis.** A source fails as soon as it drops below the minimum. It passes again only after holding the minimum or better for **5 s continuously**. Unguided rows hold no memory. A human decision — re-plan, risk acceptance or a received confirmation — re-runs TSS without the hold; the hold only damps the automatic rating near the minimum.
 - **Confirmation.** A report confirmed via alternate means (credibility 1) satisfies the reliability check (`alt_confirmation_clears`). It does not clear a stale report.
 - **Missing feed.** A source with no trust feed cannot be judged. It is rated F6 and fails.
 - **Env var removed.** `NEXT_PUBLIC_ROE_FLOOR` is gone. `ROE_FLOOR` is renamed `TSS_MIN_GPS_SCORE` and is kept only as the display/band edge for C.

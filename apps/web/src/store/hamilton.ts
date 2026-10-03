@@ -411,7 +411,10 @@ export const useHamilton = create<HamiltonState>((set, get) => ({
       initials: by.initials.trim().toUpperCase(),
       ...(branch === 'accept_risk' && opts.reason ? { reason: opts.reason.trim() } : {}),
     }, now);
-    const next = evaluateOne({ ...ms, mission, branches }, state.tracks, state.tssTable, now);
+    // A human decision (re-plan, risk acceptance) re-runs TSS without the 5 s
+    // recovery hold; the hold only damps the automatic rating near the minimum.
+    const hysteresis = branch === 'shift_munition' || branch === 'accept_risk' ? {} : ms.hysteresis;
+    const next = evaluateOne({ ...ms, mission, branches, hysteresis }, state.tracks, state.tssTable, now);
     set((s) => ({
       missions: { ...s.missions, [mission_id]: next },
       decisionLog: [...s.decisionLog, entry],
@@ -430,7 +433,8 @@ export const useHamilton = create<HamiltonState>((set, get) => ({
       ...ms.branches,
       confirmation: { ...ms.branches.confirmation, status: 'confirmed', confirmed_at: now, via },
     };
-    const next = evaluateOne({ ...ms, branches }, state.tracks, state.tssTable, now);
+    // Confirmation is a human-verified fact: no recovery hold.
+    const next = evaluateOne({ ...ms, branches, hysteresis: {} }, state.tracks, state.tssTable, now);
     const entry = logEntry(
       'confirmation',
       next,
