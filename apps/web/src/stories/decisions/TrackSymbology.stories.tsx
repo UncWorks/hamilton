@@ -19,10 +19,15 @@ import {
   type ExplanationProps,
   type SymbolTrack,
 } from '@/components/symbol';
+import { MapSpine } from '@/components/cop/MapSpine';
+import { StoreSeed } from '@/stories/support/mocks';
 import {
   BAND_SAMPLES,
   CANDIDATES,
+  CANDIDATE_SITES as CANDIDATE_SITES_FIXTURE,
   JAMMER_LOCATION,
+  beatTrack,
+  tracksRecord,
   PHASE_TRACKS,
   S2_OVERRIDE_B,
   S2_OVERRIDE_CLOCK,
@@ -400,12 +405,8 @@ const LAT0 = 48.1335;
 const LAT1 = 48.1485;
 const project = (lat: number, lon: number): [number, number] => [((lon - LON0) / (LON1 - LON0)) * SCENE_W, ((LAT1 - lat) / (LAT1 - LAT0)) * SCENE_H];
 
-/** Mock geolocations for the three FR-04a candidates (the fixture carries scores only). */
-const CANDIDATE_SITES = [
-  { lat: JAMMER_LOCATION.lat - 0.0012, lon: JAMMER_LOCATION.lon - 0.0035, label: 'C1' },
-  { lat: JAMMER_LOCATION.lat + 0.0022, lon: JAMMER_LOCATION.lon + 0.0035, label: 'C2' },
-  { lat: JAMMER_LOCATION.lat - 0.0024, lon: JAMMER_LOCATION.lon + 0.0045, label: 'C3' },
-];
+/** Mock geolocations for the three FR-04a candidates (fixtures: CANDIDATE_SITES; the engine publishes scores only). */
+const CANDIDATE_SITES = CANDIDATE_SITES_FIXTURE;
 const UNIT_META: Record<string, { designation: string; title: string; neighbours: string }> = {
   unit_a: { designation: 'A', title: 'A · FA observer team (COLT/FIST)', neighbours: 'neighbours B, C' },
   unit_b: { designation: 'B', title: 'B · FA battery', neighbours: 'neighbours A, C' },
@@ -565,6 +566,64 @@ export const Cop: Story = {
     await expect(c.getByTestId('cop-fix').querySelector('[data-fn]')?.getAttribute('data-fn')).toBe('ew-jamming');
     await expect(c.getByTestId('cop-candidate-0').querySelector('[data-sidc]')?.getAttribute('data-sidc')).toBe('13061010001505040000');
     await expect(c.getByTestId('cop-nai')).toBeTruthy();
+  },
+};
+
+// ---------------------------------------------------------------------------
+// COP — the same beats on the REAL spine (MapSpine, store-driven)
+// ---------------------------------------------------------------------------
+
+function LiveSpineCop({ clock, s2Override }: Pick<Args, 'clock' | 's2Override'>) {
+  const beat = beatAt(clock);
+  const tracks = tracksRecord(beatTrack('unit_a', beat.clockS), beatTrack('unit_b', beat.clockS), beatTrack('unit_c', beat.clockS));
+  const b = tracks.unit_b!;
+  const showCandidates = clock >= B_CROSSING_CLOCK;
+  const evaluations = {
+    ...UNIT_EVALUATION,
+    ...(s2Override && clock >= S2_OVERRIDE_CLOCK ? { unit_b: { jOverride: S2_OVERRIDE_B } } : {}),
+  };
+  return (
+    <StoreSeed seed={{ tracks, selectedSource: 'unit_b', candidates: showCandidates ? { source_id: 'unit_b', items: CANDIDATES } : null }}>
+      <div style={{ padding: 'var(--space-4)', background: 'var(--surface-panel)', display: 'grid', gap: 'var(--space-3)' }}>
+        <div style={{ ...mono, fontSize: 12, color: 'var(--text-secondary)' }}>
+          Scenario clock <span style={{ color: 'var(--text-primary)' }}>{fmtClock(clock)}</span> · engine beat {beat.label} · the production{' '}
+          <code>MapSpine</code> (CesiumSpine draws the same symbols as billboards). Hover or Tab to a unit for its breakdown.
+        </div>
+        <div style={{ position: 'relative', height: 560 }} data-testid="cop-live-spine">
+          <MapSpine
+            evaluations={evaluations}
+            {...(b.score < ROE_FLOOR ? { directionalFrom: { lat: b.lat, lon: b.lon }, directionalTo: JAMMER_LOCATION } : {})}
+            {...(showCandidates ? { candidateSites: CANDIDATE_SITES, candidateNai: JAMMER_LOCATION } : {})}
+            {...(clock >= FIX_CLOCK ? { jammerLocation: { ...JAMMER_LOCATION, method_id: CANDIDATES[0]!.method_id } } : {})}
+          />
+        </div>
+      </div>
+    </StoreSeed>
+  );
+}
+
+export const CopLiveSpine: Story = {
+  name: 'COP — live spine',
+  argTypes: { clock: shown, s2Override: shown },
+  parameters: {
+    // The spine reads the module-singleton store: render in its own iframe on the docs page.
+    docs: {
+      story: { inline: false, iframeHeight: 680 },
+      description: {
+        story:
+          'The COP story above, on the real renderer: the store is seeded with the PR #1 engine beat at **clock** and `MapSpine` draws ' +
+          'the production symbols, declutter stacks and rating tooltips. From 1:15 the candidate sites (mock positions) appear as ' +
+          'anticipated EW symbols; from 1:20 the fix J1. B is selected (double frame).',
+      },
+    },
+  },
+  render: ({ clock, s2Override }) => <LiveSpineCop clock={clock} s2Override={s2Override} />,
+  play: async ({ canvasElement }) => {
+    const c = within(canvasElement);
+    const bHit = await waitFor(() => c.getByTestId('cop-symbol-unit_b'), { timeout: 15_000 });
+    await expect(bHit.getAttribute('aria-label')).toMatch(/J E5/);
+    await expect(canvasElement.querySelector('[data-cop-symbol="unit_b"] [data-field="J"]')?.textContent).toBe('E5');
+    await waitFor(() => expect(canvasElement.querySelector('[data-symbol-id="__jammer"]')).toBeTruthy());
   },
 };
 

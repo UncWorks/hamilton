@@ -11,17 +11,14 @@ const meta = {
       story: { inline: true },
       description: {
         component:
-          'The map overlay icon + halo, rendered as SVG from `track-symbol.ts` (`symbolGeometry`, ' +
-          '`affiliationRgb`) and `trust-gradient.ts` (`haloRadiusPx`, `haloPeriodMs`, `shouldHaloPulse`). ' +
-          'This is the Branding §5.2 rule — side count = sensor type, 45° for enemy, opacity = score, pulsing ' +
-          'halo below 0.60. Both live renderers currently draw circles instead, so this story is the reference ' +
-          'for unifying them (see Branding Audit).\n\n' +
-          '**Superseded by Decisions/Track Symbology.** This is the n-gon scheme the live renderers are built from today. ' +
-          'It fails the at-a-glance test (Branding Audit G01). On **Decisions/Evidence/At-a-Glance** (V0 = this matrix): ' +
-          'affiliation silhouette soft-IoU is 0.97 at σ 1 px (pass ≤ 0.85), the halo raises pair similarity by +0.72 ' +
-          '(pass ≤ +0.05), and hexagon vs heptagon is sub-pixel at 16 px. The decided replacement is the FM 1-02 / MCRP 5-12A ' +
-          'symbol in `src/components/symbol`: filled frames, side gauge + J, no halo. It passes T1–T7. ' +
-          'Keep this story until CesiumSpine / MapSpine adopt the production symbol.',
+          '**RETIRED — no renderer draws this any more.** CesiumSpine and MapSpine now draw the decided FM 1-02 / MCRP 5-12A ' +
+          'symbol from `src/components/symbol` (see **Decisions/Track Symbology**, **COP/CesiumSpine**, **COP/MapSpine**): filled frames, ' +
+          'side gauge + J, no halo, no pulse.\n\n' +
+          'This is the Branding §5.2 n-gon overlay icon + pulsing halo (archived geometry in `src/stories/archive/track-symbol.ts` and ' +
+          '`src/stories/archive/halo.ts`), kept as the G01 reference: side count = sensor type, 45° for enemy, opacity = score, halo ' +
+          'below 0.60. It fails the at-a-glance test (Branding Audit G01) — on **Decisions/Evidence/At-a-Glance** (V0 = this matrix) ' +
+          'the affiliation silhouette soft-IoU is 0.97 at σ 1 px (pass ≤ 0.85), the halo raises pair similarity by +0.72 (pass ≤ +0.05), ' +
+          'and hexagon vs heptagon is sub-pixel at 16 px.',
       },
     },
   },

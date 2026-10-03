@@ -23,16 +23,17 @@ trust (1 − match strength), candidates are the engine's 1.00 / 0.50 / 0.17 for
 ## How to use this page
 
 - **Foundations/Colors → Renderer Mirrors / Hard-coded Literals** shows the color drift side by side with Δ values.
-- **Foundations/Trust Bands** shows score → color / halo / opacity as each renderer actually applies it.
+- **Foundations/Trust Bands** shows score → band → rating name, J and the side-gauge symbol the renderers draw.
 - **Foundations/Typography → Families** live-checks whether the self-hosted fonts loaded (they don't — A01).
 - **Decisions/Track Symbology** records the symbology decisions (base symbol, trust cue, J split, standards, radar
   glyph, declutter) and shows the production symbol in `src/components/symbol`. It resolves G01, S01–S06 and S10 by
-  decision, and supersedes the halo (A15, S05). The renderers still have to adopt it. S07–S09 hold in the decided
-  symbol.
+  decision, and supersedes the halo (A15, S05). Both live renderers now draw it (CesiumSpine billboards, MapSpine SVG
+  overlay) with no circle, halo or pulse — A02, A15, S01–S03, S05, S06 and G01 are fixed there; S04 (bearing-line styling)
+  stays open. S07–S09 hold in the decided symbol.
 - **Decisions/Evidence/At-a-Glance** holds the measurements behind the decision (T1–T8, the radar T7 sweep, MCRP vs
   2525E reference).
-- **COP/TrackSymbol (overlay)** is the §5.2 n-gon icon the live renderers are built from today. It fails the
-  at-a-glance test (G01) and is superseded by the decided symbol.
+- **COP/TrackSymbol (overlay)** is the retired §5.2 n-gon icon, kept as the G01 reference. No renderer draws it any
+  more.
 - **Archive** keeps the superseded explorations (Track Symbology A/B/C/B′, Halo Options, At-a-Glance variants V0–V4).
 
 ## High severity — the load-bearing look

@@ -6,20 +6,14 @@
 
 import { useId, type CSSProperties } from 'react';
 import type { Affiliation, SensorType } from '@hamilton/contracts';
-import { affiliationRgb, symbolGeometry } from '@/components/cop/track-symbol';
-import {
-  HALO_MIN_EXTENT,
-  haloOuterRadiusPx,
-  haloPeriodMs,
-  haloRadiusPx,
-  shouldHaloPulse,
-  trustBand,
-} from '@/lib/trust-gradient';
+import { affiliationRgb, symbolGeometry } from '@/stories/archive/track-symbol';
+import { trustBand } from '@/lib/trust-gradient';
+import { HALO_MIN_EXTENT, haloOuterRadiusPx, haloPeriodMs, haloRadiusPx, shouldHaloPulse } from '@/stories/archive/halo';
 
 /**
  * Halo treatments compared in Archive/Halo Options.
- * `pulse` (Option 1) is the LIVE treatment — MapSpine + CesiumSpine draw the
- * same thing via haloFrameAt().
+ * `pulse` (Option 1) was the live treatment until the spines adopted the
+ * decided symbol (no halo); archived with haloFrameAt() in stories/archive/halo.ts.
  */
 export type HaloVariant = 'pulse' | 'ping' | 'band' | 'glow' | 'none';
 

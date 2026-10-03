@@ -17,7 +17,7 @@
 //  - ROE / Excalibur gate lives in the fire-mission popup, not on the symbol.
 
 import type { CSSProperties, ReactNode } from 'react';
-import { haloOuterRadiusPx, shouldHaloPulse } from '@/lib/trust-gradient';
+import { haloOuterRadiusPx, shouldHaloPulse } from '@/stories/archive/halo';
 import { CREDIBILITY, J_CODE_CITATION, LINK_TRUST_SCALE, NRT, RELIABILITY, ROE_FLOOR, STALE_AFTER_S, rateLinkTrust, type LinkTrustRating } from '@/lib/link-trust-rating';
 import {
   RatingExplanation,

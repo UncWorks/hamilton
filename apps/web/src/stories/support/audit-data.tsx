@@ -30,6 +30,7 @@ export const FINDINGS: Finding[] = [
     area: 'Iconography',
     where: 'CesiumSpine.tsx:142-148 · MapSpine.tsx:100-126 · MapSpine.tsx:28-47',
     finding:
+      'FIXED IN THE LIVE RENDERERS (PR #3, symbol wiring): CesiumSpine draws the production symbol as billboards and MapSpine as a viewport-projected SVG overlay (src/components/symbol); no `point` circles or ScatterplotLayer remain. Original: ' +
       'DECIDED (Decisions/Track Symbology): the target is now the production MCRP 5-12A symbol (src/components/symbol), not the §5.2 polygons. ' +
       'Both renderers draw tracks as circles (Cesium `point`, deck.gl ScatterplotLayer). The §5.2 polygon rule (sides = sensor type, enemy 45°, neutral outlined, unknown dashed) exists in track-symbol.ts and buildIconPolygons() but is never used. Reference rendering: COP/TrackSymbol.',
     spec: '§5.2, FR-06',
@@ -145,11 +146,12 @@ export const FINDINGS: Finding[] = [
   {
     id: 'A15',
     severity: 'med',
-    area: 'Halo — FIXED, then superseded by decision',
+    area: 'Halo — removed from the live renderers',
     where:
       'was TrackGlyph.tsx:62-70 + motion.css:45-48 (off-centre) · MapSpine.tsx:59-98 · CesiumSpine.tsx:174-196 → now trust-gradient.ts haloFrameAt() + motion.css .halo',
     finding:
-      'SUPERSEDED BY DECISION (Decisions/Track Symbology, decision 2): the decided symbol has no halo. This fix still matters for the live renderers until they adopt the production symbol. ' +
+      'FIXED IN THE LIVE RENDERERS (PR #3, symbol wiring): no halo and no pulse anywhere in CesiumSpine / MapSpine; trust is the side gauge + J. haloFrameAt() and friends moved to src/stories/archive/halo.ts for the Archive stories only. ' +
+      'SUPERSEDED BY DECISION (Decisions/Track Symbology, decision 2): the decided symbol has no halo. ' +
       'FIXED. Root cause of the off-centre pulse: halo-pulse scaled an SVG <circle> with transform-origin: center but no transform-box, so it resolved against the SVG viewport (view-box) — origin (46px,46px) instead of the circle at (0,0); the halo slid ~8px up-left each pulse. Also: deck.gl wrapped its clock at 4000ms (mid-pulse jumps) and its halo radius (1−c)×24 was smaller than the 18px icon; Cesium drew a static metre-sized ground ellipse (foreshortened by the −55° pitch, re-added every tick). All three now share one concentric screen-space geometry (icon edge + (1−c)×24px, spec period, static ring under prefers-reduced-motion). Live treatment = Option 1 in Archive/Halo Options.',
     spec: '§5.2, §6.3, §6.4',
   },
@@ -245,6 +247,7 @@ export const FINDINGS: Finding[] = [
     area: 'COP framing',
     where: 'CesiumSpine.tsx:19-21, 76-88',
     finding:
+      'FIXED (PR #3): camera fit (lib/camera-fit.ts) + declutter stacks; the stacks now use the production DeclutterStack. Original: ' +
       'Fixed camera (4.5 km alt, 0.06° south of the AO, pitch −55°) puts units A/B/C at the very top edge of the Cesium view, and fully off-screen at wide aspect ratios (e.g. a 2:1 canvas). Observed while verifying COP/CesiumSpine; stories use a near-square canvas to keep tracks visible.',
     spec: '§7.2, §10.1 (B icon must be the focal point)',
   },
@@ -261,60 +264,60 @@ export const FINDINGS: Finding[] = [
   {
     id: 'S01',
     severity: 'high',
-    area: 'Symbology — resolved by decision (renderer wiring open)',
+    area: 'Symbology — resolved, wired into the live renderers',
     where: 'CesiumSpine.tsx:156-161 · MapSpine.tsx:119-145',
     finding:
-      'RESOLVED BY DECISION (Decisions/Track Symbology, decisions 1 + 4): MCRP 5-12A filled land-unit frames (Table 4-1) with enlarged Table 5-3 icons, 2525E numeric SIDC stored, 2525B/C letter + CoT exported — production component src/components/symbol. The live renderers still draw circles until they adopt it (separate change). Original: ' +
+      'RESOLVED BY DECISION (Decisions/Track Symbology, decisions 1 + 4): MCRP 5-12A filled land-unit frames (Table 4-1) with enlarged Table 5-3 icons, 2525E numeric SIDC stored, 2525B/C letter + CoT exported — production component src/components/symbol. FIXED IN THE LIVE RENDERERS (PR #3, symbol wiring): both spines draw it. Original: ' +
       'OPEN — pending option selection. Deviation: tracks are circles; in APP-6 a circle reads as the friend sea-surface frame. Options A/B/C/B′ in Archive/Track Symbology. B′: standard 2525E land-unit frames (monochrome --sym-ink, affiliation by shape), solid regardless of trust; SIDC stored as 2525E numeric, 2525C letter code for TAK export.',
     spec: 'APP-6(E) frames · §5.1, §5.2',
   },
   {
     id: 'S02',
     severity: 'med',
-    area: 'Symbology — resolved by decision (renderer wiring open)',
+    area: 'Symbology — resolved, wired into the live renderers',
     where: 'CesiumSpine.tsx · MapSpine.tsx (absent)',
     finding:
-      'RESOLVED BY DECISION (Decisions/Track Symbology, decision 1): echelon marks (Table 5-6, team Ø / platoon ••• / battery |) drawn at ≥ 28 px and hidden below with every amplifier but T; status-1 dash for candidates only; no AL bar. Original: ' +
+      'RESOLVED BY DECISION (Decisions/Track Symbology, decision 1): echelon marks (Table 5-6, team Ø / platoon ••• / battery |) drawn at ≥ 28 px and hidden below with every amplifier but T; status-1 dash for candidates only; no AL bar. FIXED IN THE LIVE RENDERERS (PR #3, symbol wiring): live symbols are 32 px (detail state), candidate sites (candidateSites prop) draw dashed. Original: ' +
       'OPEN — pending option selection. Missing: echelon marks, status (anticipated) dash, operational-condition bar. B′: echelon marks (team • / platoon ••• / battery |) and the status-1 dash for candidate sites are drawn; the AL operational-condition bar is deliberately NOT used — it is equipment-only and yellow/red reads as damaged/destroyed (see S08).',
     spec: 'APP-6(E) amplifiers B, status, AL',
   },
   {
     id: 'S03',
     severity: 'med',
-    area: 'Symbology — resolved by decision (renderer wiring open)',
+    area: 'Symbology — resolved, wired into the live renderers',
     where: 'Spine.tsx:37-40 · MapSpine.tsx',
     finding:
-      'RESOLVED BY DECISION (Decisions/Track Symbology → COP): confirmed fix J1 = hostile EW jamming (p 5-18, 150504 / UUMSEJ), candidates = status-1 dashed hostile EW inside the dashed NAI. MapSpine / Spine wiring still open. Original: ' +
+      'RESOLVED BY DECISION (Decisions/Track Symbology → COP): confirmed fix J1 = hostile EW jamming (p 5-18, 150504 / UUMSEJ), candidates = status-1 dashed hostile EW inside the dashed NAI. FIXED IN THE LIVE RENDERERS (PR #3, symbol wiring): both spines draw the jammer as J1 (hostile EW jamming, method as H) and candidateSites as status-1 EW; Spine passes jammerLocation to both. Original: ' +
       'OPEN — pending option selection. Missing: MapSpine has no jammer symbol; Spine.tsx drops jammerLocation before it reaches MapSpine. B′ (story mock): confirmed fix J1 as a solid hostile jammer, candidates as status-1 dashed hostile diamonds inside a dashed NAI labelled with T (controlling HQ) and W (DTG). Renderer wiring still open.',
     spec: 'SIDC 10065200001102002500',
   },
   {
     id: 'S04',
     severity: 'med',
-    area: 'Symbology — resolved by decision (renderer wiring open)',
+    area: 'Symbology — resolved by decision (bearing-line wiring open)',
     where: 'MapSpine.tsx (directional LineLayer) · CesiumSpine.tsx (directional polyline)',
     finding:
-      'RESOLVED BY DECISION (Decisions/Track Symbology → COP): bearing line drawn in ink with T / W at the far end. Renderer wiring still open. Original: ' +
+      'RESOLVED BY DECISION (Decisions/Track Symbology → COP): bearing line drawn in ink with T / W at the far end. Renderer wiring still open: the live bearing line is unchanged in this change (still the trust-degraded colour, unlabelled). Original: ' +
       'OPEN — pending option selection. Deviation: directional line uses the --trust-degraded colour and is not a standard graphic; should be "Bearing Line – Jammer" (25 220107) in ink with the label at the far end. B′: drawn as the bearing line in ink, labelled at the far end with T and W per FM 1-02.2 ¶5-42.',
     spec: 'SIDC 10032500002201070000',
   },
   {
     id: 'S05',
     severity: 'med',
-    area: 'Symbology — resolved by decision (halo removed)',
+    area: 'Symbology — halo removed (live renderers fixed)',
     where: 'MapSpine.tsx track-halo · CesiumSpine.tsx halo point',
     finding:
-      'RESOLVED BY DECISION (Decisions/Track Symbology, decision 2): the decided symbol has NO halo — trust is a side gauge + J outside the frame, so nothing covers T / J / W / AR (T2 +0.01 vs +0.72 for the halo). The live halo stays until the renderers adopt the symbol. Original: ' +
+      'RESOLVED BY DECISION (Decisions/Track Symbology, decision 2): the decided symbol has NO halo — trust is a side gauge + J outside the frame, so nothing covers T / J / W / AR (T2 +0.01 vs +0.72 for the halo). FIXED IN THE LIVE RENDERERS (PR #3, symbol wiring): the halo is gone from both spines. Original: ' +
       'OPEN — pending option selection. Deviation: the filled halo disc (now concentric, see A15) covers the amplifier slots (T, J). Option B replaces it with a frame-shaped outline halo. B′: keeps the live centred halo (Option 1) as the "Hamilton link-trust overlay (non-2525)" — trust tokens only, toggleable, stripped on export, frozen when stale — and pushes the text amplifiers outside its extent so it never covers T / J / W / AR.',
     spec: 'APP-6(E) amplifier layout',
   },
   {
     id: 'S06',
     severity: 'low',
-    area: 'Symbology — resolved by decision (renderer wiring open)',
+    area: 'Symbology — resolved, wired into the live renderers',
     where: 'CesiumSpine.tsx (label entity) · MapSpine.tsx (none)',
     finding:
-      'RESOLVED BY DECISION (Decisions/Track Symbology, decisions 1 + 3): T left in the V4 treatment (mono, ≥ 10 px, shown at every size); J right at ≥ 28 px when below 0.60, stale or overridden, AR NRT when stale; hover / focus opens the production RatingTooltip. Original: ' +
+      'RESOLVED BY DECISION (Decisions/Track Symbology, decisions 1 + 3): T left in the V4 treatment (mono, ≥ 10 px, shown at every size); J right at ≥ 28 px when below 0.60, stale or overridden, AR NRT when stale; hover / focus opens the production RatingTooltip. FIXED IN THE LIVE RENDERERS (PR #3, symbol wiring): the Cesium label entity is gone; T / J / AR / H are part of the symbol image, and every symbol has a focusable hit target with the RatingExplanation breakdown. Original: ' +
       'OPEN — pending option selection. Deviation: labels are Cesium-only and always on (raw source_id + score); spec wants T left, J (trust) right only below 0.60, with a dark text outline. B′: T left; right line = semantic rating + score + J code ("DEGRADED 0.31 D4") shown below 0.60, when stale, or on hover/focus; W (last-good DTG) and AR NRT when stale; hover/focus opens the factor-breakdown tooltip. Scale: src/lib/link-trust-rating.ts.',
     spec: 'APP-6(E) amplifiers T, J',
   },
@@ -394,7 +397,7 @@ export const FINDINGS: Finding[] = [
     area: 'Symbology — at-a-glance, resolved by decision',
     where: 'components/cop/track-symbol.ts · COP/TrackSymbol → ShapeMatrix · Decisions/Evidence/At-a-Glance',
     finding:
-      'RESOLVED BY DECISION (Decisions/Track Symbology): the decided symbol (FINAL, src/components/symbol) passes every automated test — T1 0.81 / F-H 0.62 / σ2 0.83, T2 +0.01, T3 0.315 (REF 0.243), T4 100 % at 16/24/32, T5 and T6 pass, T7 6.52 · 5.69 · 2.07 · 4.20 (condition iii fixed by enlarging the TA-radar glyph, 1.11 → 2.07). The n-gons remain only in the live renderers until they adopt it. Original: ' +
+      'RESOLVED BY DECISION (Decisions/Track Symbology): the decided symbol (FINAL, src/components/symbol) passes every automated test — T1 0.81 / F-H 0.62 / σ2 0.83, T2 +0.01, T3 0.315 (REF 0.243), T4 100 % at 16/24/32, T5 and T6 pass, T7 6.52 · 5.69 · 2.07 · 4.20 (condition iii fixed by enlarging the TA-radar glyph, 1.11 → 2.07). FIXED IN THE LIVE RENDERERS (PR #3, symbol wiring): the n-gons and circles are no longer drawn anywhere live. Original: ' +
       'The Branding §5.2 n-gon scheme (sides = sensor type, enemy +45°, colour/fill/dash = affiliation, one circular amber halo) fails the at-a-glance protocol (glance-symbology-research.md §5), measured in-browser on the exact rendered pixels: ' +
       'T1 affiliation silhouette soft-IoU 0.97 at σ 1 px and 0.985 at σ 2 (pass ≤ 0.85 / ≤ 0.92; friend–hostile ≤ 0.70); T2 the halo raises pair similarity by +0.72 (pass ≤ +0.05); ' +
       'recon_static vs recon_mobile (hexagon vs heptagon) soft-IoU 0.87 → indistinguishable; T7 salience R 0.51 for a hostile among friends with mixed trust (pass ≥ 2). ' +

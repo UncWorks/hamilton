@@ -1,8 +1,10 @@
 import type { Meta, StoryObj } from '@storybook/react';
-import { AffiliationSchema, SensorTypeSchema, sensorTypeSides } from '@hamilton/contracts';
-import { TrackGlyph } from '@/stories/support/TrackGlyph';
+import { AffiliationSchema, SensorTypeSchema } from '@hamilton/contracts';
+import { TrackSymbol } from '@/components/symbol';
+import { SENSOR_FUNCTION, SYMBOL_FUNCTIONS } from '@/lib/track-sidc';
 import { Wordmark } from '@/components/brand/Wordmark';
 import { Page, Section, mono } from '@/stories/support/foundation-ui';
+import { BAND_SAMPLES } from '@/stories/fixtures/avdiivka';
 
 const meta = {
   title: 'Foundations/Iconography',
@@ -12,26 +14,39 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-/** §5.2 — side count encodes sensor type; enemy rotates 45°. From contracts `sensorTypeSides`. */
+/**
+ * The decided track symbol (Decisions/Track Symbology) — what CesiumSpine and MapSpine draw. FM 1-02 / MCRP 5-12A
+ * frame + function icon; the contract sensor type picks the function. Replaces the §5.2 n-gons (archived, G01).
+ */
 export const TrackSymbology: Story = {
   render: () => (
     <Page>
-      <Section title="Sensor type → polygon (sensorTypeSides)" note="Rendered at score 1.0 with the CSS affiliation tokens.">
-        <div style={{ display: 'flex', gap: 'var(--space-6)', flexWrap: 'wrap' }}>
+      <Section title="Sensor type → function icon (track-sidc.ts SENSOR_FUNCTION)" note="Friendly frame, score 1.00, 32 px (detail state). Hostile EW sources use fn ew-jamming.">
+        <div style={{ display: 'flex', gap: 'var(--space-6)', flexWrap: 'wrap', alignItems: 'end' }}>
           {SensorTypeSchema.options.map((s) => (
             <div key={s} style={{ display: 'grid', justifyItems: 'center', gap: 'var(--space-1)' }}>
-              <TrackGlyph affiliation="friendly" sensorType={s} score={1} showLabel={false} />
+              <TrackSymbol track={{ affiliation: 'friendly', sensorType: s, score: 1 }} sizePx={32} margin={4} />
               <code style={{ ...mono, color: 'var(--text-primary)' }}>{s}</code>
-              <code style={{ ...mono, color: 'var(--text-tertiary)' }}>{sensorTypeSides[s]} sides</code>
+              <code style={{ ...mono, color: 'var(--text-tertiary)' }}>{SYMBOL_FUNCTIONS[SENSOR_FUNCTION[s]].name}</code>
             </div>
           ))}
+          <div style={{ display: 'grid', justifyItems: 'center', gap: 'var(--space-1)' }}>
+            <TrackSymbol track={{ affiliation: 'enemy', fn: 'ew-jamming', designation: 'J1' }} sizePx={32} margin={4} />
+            <code style={{ ...mono, color: 'var(--text-primary)' }}>jammer fix</code>
+            <code style={{ ...mono, color: 'var(--text-tertiary)' }}>{SYMBOL_FUNCTIONS['ew-jamming'].name}</code>
+          </div>
+          <div style={{ display: 'grid', justifyItems: 'center', gap: 'var(--space-1)' }}>
+            <TrackSymbol track={{ affiliation: 'enemy', fn: 'ew-jamming', status: 'anticipated', designation: 'C1' }} sizePx={32} margin={4} />
+            <code style={{ ...mono, color: 'var(--text-primary)' }}>candidate site</code>
+            <code style={{ ...mono, color: 'var(--text-tertiary)' }}>status 1 (anticipated) — dashed</code>
+          </div>
         </div>
       </Section>
-      <Section title="Affiliation treatment (§3.5)" note="Friendly / enemy filled; neutral outlined; unknown dashed outline.">
+      <Section title="Affiliation → frame (Table 4-1, p 4-3)" note="Filled frames, affiliation by shape and fill — distinguishable without colour.">
         <div style={{ display: 'flex', gap: 'var(--space-6)', flexWrap: 'wrap' }}>
           {AffiliationSchema.options.map((a) => (
             <div key={a} style={{ display: 'grid', justifyItems: 'center', gap: 'var(--space-1)' }}>
-              <TrackGlyph affiliation={a} sensorType="defense" score={1} showLabel={false} />
+              <TrackSymbol track={{ affiliation: a, sensorType: 'defense', score: 1 }} sizePx={32} margin={4} />
               <code style={{ ...mono, color: 'var(--text-primary)' }}>{a}</code>
             </div>
           ))}
@@ -41,14 +56,20 @@ export const TrackSymbology: Story = {
   ),
 };
 
-/** Halo behaviour below the ROE floor — icon edge + (1-c)·24px, period 1200 − (1-c)·600ms. */
-export const Halo: Story = {
+/**
+ * Trust cue below the ROE floor: the side gauge drains and J appears at rest. The pulsing halo this story used to show is
+ * retired (Decisions/Track Symbology, decision 2) and lives only in Archive/Halo Options.
+ */
+export const TrustCue: Story = {
   render: () => (
     <Page>
-      <Section title="Pulsing halo (§5.2, §6.3)" note="Option 1 (live): halo-pulse keyframe in motion.css, scaled about the icon centre (.halo → transform-box: fill-box). MapSpine + CesiumSpine draw the same geometry via haloFrameAt(). Alternatives: Archive/Halo Options. The decided track symbol drops the halo for a side gauge + J (Decisions/Track Symbology, decision 2).">
+      <Section title="Side gauge + J (decision 2)" note="Fill height = score in the band colour; J (evaluation rating) right of the gauge. No halo, no pulse, no blink — nothing to switch off under prefers-reduced-motion.">
         <div style={{ display: 'flex', gap: 'var(--space-6)', alignItems: 'end', flexWrap: 'wrap' }}>
-          {[0.65, 0.59, 0.45, 0.3, 0.13, 0.05].map((s) => (
-            <TrackGlyph key={s} affiliation="friendly" sensorType="offense" score={s} />
+          {[1, BAND_SAMPLES.watching, 0.59, BAND_SAMPLES.degraded, BAND_SAMPLES.failed, 0.05].map((s) => (
+            <div key={s} style={{ display: 'grid', justifyItems: 'center', gap: 'var(--space-1)' }}>
+              <TrackSymbol track={{ affiliation: 'friendly', sensorType: 'offense', designation: 'B', score: s }} sizePx={32} margin={4} />
+              <code style={{ ...mono, color: 'var(--text-tertiary)' }}>{s.toFixed(2)}</code>
+            </div>
           ))}
         </div>
       </Section>

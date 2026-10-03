@@ -42,7 +42,9 @@
   100% { transform: scaleX(1); }
 }
 
-/* Track halos — Branding §5.2. Geometry comes from trust-gradient.ts
+/* ARCHIVE ONLY — track halos (Branding §5.2), retired from the live COP by
+ * Decisions/Track Symbology decision 2. Used by Archive stories via
+ * src/stories/archive/halo.ts. Geometry comes from that module
  * (haloOuterRadiusPx / haloPeriodMs); these keyframes only scale + fade.
  *
  * Every halo element MUST carry `.halo` (transform-box: fill-box +

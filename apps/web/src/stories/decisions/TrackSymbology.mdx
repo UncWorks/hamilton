@@ -10,7 +10,9 @@ The COP's track symbol, as decided. Production code: **`src/components/symbol`**
 `toSidc2525C`, `toCotType`) and **`src/lib/link-trust-rating.ts`** (rating names, J split). Manual: **FM 1-02 / MCRP 5-12A,
 "Operational Terms and Graphics" (21 Sep 2004)**; page numbers are the manual's own. Bench numbers come from the At-a-Glance
 protocol (glance-symbology-research.md §5), measured in the browser on the production primitives.
-The live renderers (CesiumSpine / MapSpine) adopt the symbol separately.
+The live renderers draw it: CesiumSpine as billboards (the `trackSymbolSvg` image), MapSpine as an SVG overlay
+(`TrackSymbolG`), both with the production `DeclutterStack` and the rating tooltip — see
+[COP: live spine](?path=/story/decisions-track-symbology--cop-live-spine).
 
 <Canvas of={Stories.TrustBands} />
 

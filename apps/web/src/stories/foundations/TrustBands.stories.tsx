@@ -1,14 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react';
-import {
-  haloPeriodMs,
-  haloRadiusPx,
-  shouldHaloPulse,
-  trustBand,
-  trustOklch,
-  trustRgb,
-  trustVarForBand,
-} from '@/lib/trust-gradient';
-import { TrackGlyph } from '@/stories/support/TrackGlyph';
+import { trustBand, trustOklch, trustRgb, trustVarForBand } from '@/lib/trust-gradient';
+import { rateLinkTrust } from '@/lib/link-trust-rating';
+import { TrackSymbol } from '@/components/symbol';
 import { TrustReadout } from '@/components/panel/TrustReadout';
 import { BAND_SAMPLES, ROE_FLOOR } from '@/stories/fixtures/avdiivka';
 import { Page, Section, mono } from '@/stories/support/foundation-ui';
@@ -46,18 +39,16 @@ function MappingTable() {
               <th style={th}>token</th>
               <th style={th}>css</th>
               <th style={th}>trustRgb</th>
-              <th style={th}>halo</th>
-              <th style={th}>radius px</th>
-              <th style={th}>period ms</th>
-              <th style={th}>opacity spec</th>
-              <th style={th}>MapSpine α</th>
-              <th style={th}>Cesium α</th>
-              <th style={th}>glyph</th>
+              <th style={th}>rating</th>
+              <th style={th}>J</th>
+              <th style={th}>J at rest</th>
+              <th style={th}>map symbol (32 px)</th>
             </tr>
           </thead>
           <tbody>
             {ROWS.map((s) => {
               const band = trustBand(s);
+              const r = rateLinkTrust(s);
               return (
                 <tr key={s} style={{ borderTop: '1px solid var(--surface-elevated)' }}>
                   <td className="tabular" style={{ ...td, color: `var(--trust-${band})` }}>{s.toFixed(2)}</td>
@@ -69,14 +60,11 @@ function MappingTable() {
                   <td style={td}>
                     <span style={{ display: 'inline-block', width: 28, height: 16, background: `rgb(${trustRgb(s).join(' ')})` }} />
                   </td>
-                  <td style={td}>{shouldHaloPulse(s) ? 'pulse' : '—'}</td>
-                  <td className="tabular" style={td}>{haloRadiusPx(s).toFixed(1)}</td>
-                  <td className="tabular" style={td}>{shouldHaloPulse(s) ? haloPeriodMs(s).toFixed(0) : '—'}</td>
-                  <td className="tabular" style={td}>{s.toFixed(2)}</td>
-                  <td className="tabular" style={td}>{(Math.max(60, Math.round(s * 255)) / 255).toFixed(2)}</td>
-                  <td className="tabular" style={td}>{Math.max(0.25, s).toFixed(2)}</td>
+                  <td style={{ ...td, color: r.labelToken }}>{r.label}</td>
+                  <td style={td}>{r.jCode}</td>
+                  <td style={td}>{r.visibleAtRest ? 'yes' : 'hover'}</td>
                   <td style={td}>
-                    <TrackGlyph affiliation="friendly" sensorType="offense" score={s} radius={10} showLabel={false} />
+                    <TrackSymbol track={{ affiliation: 'friendly', sensorType: 'offense', designation: 'B', score: s }} sizePx={32} />
                   </td>
                 </tr>
               );
@@ -88,7 +76,7 @@ function MappingTable() {
   );
 }
 
-/** The full score → color / halo / opacity table. */
+/** The full score → color / rating / J / map-symbol table. */
 export const Mapping: Story = { render: () => <MappingTable /> };
 
 // ---------------------------------------------------------------------------

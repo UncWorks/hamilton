@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import type { CSSProperties, ReactNode } from 'react';
-import { haloOuterRadiusPx, haloPeriodMs, trustBand } from '@/lib/trust-gradient';
+import { trustBand } from '@/lib/trust-gradient';
+import { haloOuterRadiusPx, haloPeriodMs } from '@/stories/archive/halo';
 import { TrackGlyph, type HaloVariant } from '@/stories/support/TrackGlyph';
 import { mono } from '@/stories/support/foundation-ui';
 
@@ -31,7 +32,7 @@ const OPTIONS: Option[] = [
     name: 'Spec-faithful pulse (fixed)',
     live: true,
     rationale:
-      'Trust-coloured disc + edge ring, scaled FROM ITS CENTRE (transform-box: fill-box) between 35% and 100% of the halo extent while opacity breathes. Outer radius = icon edge + (1−c)×24px, period 1200 − (1−c)×600ms. This is what MapSpine and CesiumSpine draw (haloFrameAt).',
+      'Trust-coloured disc + edge ring, scaled FROM ITS CENTRE (transform-box: fill-box) between 35% and 100% of the halo extent while opacity breathes. Outer radius = icon edge + (1−c)×24px, period 1200 − (1−c)×600ms. MapSpine and CesiumSpine drew this (haloFrameAt) until they adopted the decided symbol, which has no halo.',
   },
   {
     n: 2,
@@ -174,7 +175,7 @@ const meta = {
           'Below-ROE-floor halo treatments (Branding §5.2 / §6.3) compared at trust 0.55 · 0.40 · 0.20 on the dark map ' +
           'surface. Colours are the real `--trust-degraded` / `--trust-failed` tokens.\n\n' +
           '**Live: Option 1 (spec-faithful pulse).** MapSpine (deck.gl) and CesiumSpine draw it from the shared ' +
-          '`haloFrameAt()` in `trust-gradient.ts`; the SVG reference uses the `halo-pulse` keyframe in `motion.css`.\n\n' +
+          '`haloFrameAt()` (now archived in `src/stories/archive/halo.ts`; no live renderer draws a halo); the SVG reference uses the `halo-pulse` keyframe in `motion.css`.\n\n' +
           '**Bug fixed (off-centre pulse):** the halo-pulse keyframe applied `transform: scale()` to an SVG `<circle>` ' +
           'with `transform-origin: center` but no `transform-box`. SVG elements default to `transform-box: view-box`, ' +
           'so "center" resolved to the middle of the SVG *viewport* measured from the user-space origin (46px, 46px), ' +
