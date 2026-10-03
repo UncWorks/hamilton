@@ -33,11 +33,17 @@ const meta = {
       story: { iframeHeight: 520 },
       description: {
         component:
-          '2D fallback renderer (deck.gl `MapView`, `NEXT_PUBLIC_RENDERER=maplibre`). No basemap ships yet ' +
-          '(PMTiles pending), so it renders offline against `--surface-base`. Requires WebGL.\n\n' +
+          '2D fallback renderer (`NEXT_PUBLIC_RENDERER=maplibre`): a MapLibre GL map with deck.gl layers on it ' +
+          '(`@deck.gl/mapbox` `MapboxOverlay`). Requires WebGL.\n\n' +
+          '**Basemap** (`lib/basemap.ts`, System Design §6c): `NEXT_PUBLIC_BASEMAP=offline` (the default once ' +
+          '`make fetch-tiles` has provisioned `/public/tiles`) is a Protomaps vector extract of the Avdiivka AO ' +
+          '(`/tiles/avdiivka.pmtiles`, `pmtiles://` protocol) in a dark style derived from the Protomaps "dark" ' +
+          'flavor and re-coloured with the Hamilton tokens; labels use self-hosted Noto Sans glyphs — no CDN, no ' +
+          'sprite. `none` is the old bare `--surface-base` (see **Basemap off**); `online` is a dev-only OSM raster. ' +
+          '© OpenStreetMap contributors, Protomaps.\n\n' +
           '**Symbols** — the decided track symbol (**Decisions/Track Symbology**): the same React component ' +
-          '(`TrackSymbolG`) drawn in an SVG overlay positioned by the deck.gl viewport in the same render as the ' +
-          'layers (the view state is controlled), so it never lags the map. Chosen over an `IconLayer` because ' +
+          '(`TrackSymbolG`) drawn in an SVG overlay. MapLibre owns the camera and each map move is mirrored ' +
+          'synchronously into the controlled view state, so the overlay is projected in the frame the map paints. Chosen over an `IconLayer` because ' +
           'it is pixel-identical to the decided symbol (web-font T / J, dashed anticipated frame), needs no async ' +
           'icon-atlas packing, and is in the DOM for hover / keyboard / screen readers. No circular halo, no pulse. ' +
           'The jammer is the hostile EW jamming symbol J1 inside its 120 m area ring; `candidateSites` draw as ' +
@@ -121,5 +127,22 @@ export const ZoomedOut: Story = {
     await userEvent.click(stack);
     await waitFor(() => expect(stack).toHaveAttribute('aria-expanded', 'true'));
     await expect(c.getAllByTestId('declutter-member')).toHaveLength(3);
+  },
+};
+
+/**
+ * Comparison: the Failed beat with `basemap="none"` — the pre-basemap COP, symbols on bare `--surface-base`.
+ * Put it next to **Failed** to judge what the offline basemap costs the symbols (it should cost nothing:
+ * the style keeps land within a few L of the surface and roads at L ≤ 40%; symbol ink is L 90%).
+ */
+export const BasemapOff: Story = {
+  name: 'Basemap off',
+  args: { ...Failed.args, basemap: 'none' },
+  parameters: { hamilton: { tracks: PHASE_TRACKS.failed } },
+  play: async ({ canvasElement }) => {
+    const c = within(canvasElement);
+    await waitFor(() => c.getByTestId('cop-symbol-unit_b'), { timeout: 15_000 });
+    await expect(canvasElement.querySelector('[data-basemap]')?.getAttribute('data-basemap')).toBe('none');
+    await expect(c.queryByTestId('basemap-attribution')).toBeNull();
   },
 };

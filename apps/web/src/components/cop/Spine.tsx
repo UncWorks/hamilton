@@ -10,6 +10,7 @@
 
 import dynamic from 'next/dynamic';
 import type { CandidateSite, Evaluations } from './spine-symbols';
+import type { BasemapMode } from '@/lib/basemap';
 
 const CesiumSpine = dynamic(
   () => import('./CesiumSpine').then((m) => m.CesiumSpine),
@@ -33,6 +34,8 @@ interface SpineProps {
   evaluations?: Evaluations;
   /** Symbol box, px (default 32). */
   symbolSizePx?: number;
+  /** Basemap override (default NEXT_PUBLIC_BASEMAP — lib/basemap.ts). */
+  basemap?: BasemapMode;
 }
 
 function pickRenderer(): 'cesium' | 'maplibre' {

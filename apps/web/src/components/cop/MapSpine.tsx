@@ -1,28 +1,43 @@
 'use client';
 
-// deck.gl 2D fallback spine (NEXT_PUBLIC_RENDERER=maplibre).
+// MapLibre 2D fallback spine (NEXT_PUBLIC_RENDERER=maplibre).
+//
+// Basemap: a maplibre-gl Map with the offline Protomaps vector extract
+// (/tiles/avdiivka.pmtiles via the `pmtiles` protocol, Hamilton dark style,
+// self-hosted glyphs — lib/basemap.ts, System Design §6c "Basemap"). The
+// area / line graphics (jammer ring, bearing line) are deck.gl layers drawn
+// on the map through @deck.gl/mapbox MapboxOverlay (overlaid: deck's canvas
+// rides on the map and re-renders in the map's own render pass, so it never
+// drifts from the basemap).
+//
+// Camera: MapLibre owns the camera (pan / zoom / keyboard), and every map
+// `move` is mirrored synchronously (flushSync) into the React viewState, so
+// the symbol overlay is projected in the same frame the map paints. The
+// camera fit (lib/camera-fit.ts) drives the map with jumpTo / easeTo; a move
+// carrying an originalEvent (pointer, wheel, key) is the operator navigating.
 //
 // Symbols: the production track symbol (src/components/symbol) as an SVG
-// overlay positioned by the deck.gl viewport — NOT an IconLayer. Why:
+// overlay positioned by the viewState — NOT an IconLayer. Why:
 //  - it is the same React component (TrackSymbolG) as Decisions/Track
 //    Symbology, so web-font J / T text, the dashed anticipated frame and the
 //    selection frame are pixel-identical, with no rasterisation step;
-//  - the viewport is controlled (viewState lives in React), so the overlay is
-//    projected in the same render as the deck layers — no lag, no async
-//    icon-atlas loads (IconLayer auto-packing fetches each data URL and would
-//    re-pack on every new key), no texture-size limits;
+//  - no async icon-atlas loads (IconLayer auto-packing fetches each data URL
+//    and would re-pack on every new key), no texture-size limits;
 //  - it is in the DOM: hover / keyboard / screen-reader access and Storybook
 //    play tests come for free.
-// The view is top-down (pitch 0), so screen-space symbols are exact. Track
-// counts are tens; if they reach thousands, switch to an IconLayer fed from
-// symbol-raster.ts (same keys as the Cesium billboards).
+// The view is top-down (pitch 0, rotation disabled), so screen-space symbols
+// are exact. Track counts are tens; if they reach thousands, switch to an
+// IconLayer fed from symbol-raster.ts (same keys as the Cesium billboards).
 
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import 'maplibre-gl';
-import DeckGL from '@deck.gl/react';
+import { flushSync } from 'react-dom';
+import maplibregl from 'maplibre-gl';
+import { Protocol as PmtilesProtocol } from 'pmtiles';
+import { MapboxOverlay } from '@deck.gl/mapbox';
 import { LineLayer, PolygonLayer } from '@deck.gl/layers';
-import { LinearInterpolator, MapView, WebMercatorViewport, type MapViewState } from '@deck.gl/core';
+import { WebMercatorViewport, type MapViewState } from '@deck.gl/core';
+import { basemapMode, maplibreStyle, type BasemapMode } from '@/lib/basemap';
 import { usePrefersReducedMotion } from '@/hooks/usePrefersReducedMotion';
 import { useHamilton } from '@/store/hamilton';
 import { boundsOf, fitMercator, isFitShortcut, needsRefit, type LatLon } from '@/lib/camera-fit';
@@ -30,6 +45,20 @@ import { declutter, DECLUTTER_THROTTLE_MS, throttle, type DeclutterItem, type De
 import { LIVE_SYMBOL_PX, declutterBoxFor } from '@/lib/cop-symbols';
 import { SpineOverlay, placeSymbols } from './SpineOverlay';
 import { useSpineSymbols, type CandidateSite, type Evaluations } from './spine-symbols';
+import { BasemapAttribution } from './BasemapAttribution';
+
+// One pmtiles:// protocol handler per page (maplibre's protocol registry is global).
+let pmtilesProtocolAdded = false;
+function ensurePmtilesProtocol() {
+  if (pmtilesProtocolAdded) return;
+  maplibregl.addProtocol('pmtiles', new PmtilesProtocol().tile);
+  pmtilesProtocolAdded = true;
+}
+
+function viewFromMap(map: maplibregl.Map): MapViewState {
+  const c = map.getCenter();
+  return { longitude: c.lng, latitude: c.lat, zoom: map.getZoom(), pitch: map.getPitch(), bearing: map.getBearing() };
+}
 
 // Fallback view until the first fit (lib/camera-fit.ts). Previously the only
 // view — fixed regardless of where the tracks were.
@@ -76,9 +105,12 @@ interface MapSpineProps {
    * operator had zoomed out — auto-fit stays off until "Fit to tracks".
    */
   initialZoom?: number;
+  /** Basemap override (default: NEXT_PUBLIC_BASEMAP, see lib/basemap.ts). */
+  basemap?: BasemapMode;
 }
 
-export function MapSpine({ directionalFrom, directionalTo, jammerLocation, candidateNai, candidateSites, evaluations, symbolSizePx, initialZoom }: MapSpineProps) {
+export function MapSpine({ directionalFrom, directionalTo, jammerLocation, candidateNai, candidateSites, evaluations, symbolSizePx, initialZoom, basemap }: MapSpineProps) {
+  const mode = basemap ?? basemapMode();
   const selectSource = useHamilton((s) => s.selectSource);
   const selectedId = useHamilton((s) => s.selectedSource);
   const { symbols, nowIso } = useSpineSymbols({ jammerLocation, candidateSites, evaluations });
@@ -108,6 +140,86 @@ export function MapSpine({ directionalFrom, directionalTo, jammerLocation, candi
   const viewStateRef = useRef(viewState);
   viewStateRef.current = viewState;
 
+  // --- MapLibre map + deck.gl overlay ----------------------------------------
+  const mapDivRef = useRef<HTMLDivElement>(null);
+  const mapRef = useRef<maplibregl.Map | null>(null);
+  const overlayRef = useRef<MapboxOverlay | null>(null);
+  const modeRef = useRef(mode);
+  /** Operator navigated (any map move with an originalEvent). Set below, read by the move handler. */
+  const onUserMoveRef = useRef<() => void>(() => {});
+  /** A camera call made from a React effect is running (its move events fire synchronously). */
+  const inEffectRef = useRef(false);
+  const fromEffect = useCallback((fn: () => void) => {
+    inEffectRef.current = true;
+    try {
+      fn();
+    } finally {
+      inEffectRef.current = false;
+    }
+  }, []);
+
+  useEffect(() => {
+    const el = mapDivRef.current;
+    if (!el) return;
+    ensurePmtilesProtocol();
+    const v = viewStateRef.current;
+    const map = new maplibregl.Map({
+      container: el,
+      style: maplibreStyle(modeRef.current, window.location.origin),
+      center: [v.longitude, v.latitude],
+      zoom: v.zoom,
+      pitch: 0,
+      bearing: 0,
+      maxPitch: 0,
+      dragRotate: false,
+      pitchWithRotate: false,
+      touchPitch: false,
+      renderWorldCopies: false,
+      attributionControl: false,
+      // Hamilton fades the fit itself; no inertia surprises for the overlay.
+      fadeDuration: 0,
+    });
+    map.touchZoomRotate.disableRotation();
+    map.keyboard.disableRotation();
+    // A missing tile / glyph range must not take the spine down; log once.
+    let warned = false;
+    map.on('error', (e) => {
+      if (warned) return;
+      warned = true;
+      console.warn('[MapSpine] basemap error (symbols unaffected):', e.error?.message ?? e);
+    });
+    map.on('move', (e) => {
+      if ((e as { originalEvent?: unknown }).originalEvent) onUserMoveRef.current();
+      const next = viewFromMap(map);
+      // Same frame as the map paints: the SVG symbol overlay never trails the
+      // basemap. Moves we trigger synchronously from a React effect (jumpTo,
+      // resize) are already inside React's commit — a plain update there.
+      if (inEffectRef.current) setViewState(next);
+      else flushSync(() => setViewState(next));
+    });
+    const overlay = new MapboxOverlay({ interleaved: false, layers: [] });
+    map.addControl(overlay as unknown as maplibregl.IControl);
+    mapRef.current = map;
+    overlayRef.current = overlay;    return () => {
+      overlayRef.current = null;
+      mapRef.current = null;
+      map.remove();
+    };
+  }, []);
+
+  // Basemap mode switch (stories / controls) without rebuilding the map.
+  useEffect(() => {
+    if (modeRef.current === mode) return;
+    modeRef.current = mode;
+    mapRef.current?.setStyle(maplibreStyle(mode, window.location.origin));
+  }, [mode]);
+
+  // Keep the map canvas sized with the container (same measurement as the overlay).
+  useEffect(() => {
+    const map = mapRef.current;
+    if (size && map) fromEffect(() => map.resize());
+  }, [size, fromEffect]);
+
   // --- Camera fit ------------------------------------------------------------
   const fitPoints = useMemo<FitPoint[]>(() => {
     const pts: FitPoint[] = symbols.filter((s) => s.kind === 'track').map((s) => ({ id: s.id, lat: s.lat, lon: s.lon }));
@@ -122,35 +234,33 @@ export function MapSpine({ directionalFrom, directionalTo, jammerLocation, candi
   const userMovedRef = useRef(initialZoom !== undefined);
   const [manual, setManual] = useState(initialZoom !== undefined);
   const initialZoomRef = useRef(initialZoom);
-  /** Our own fit transition is running — its view-state changes aren't the operator's. */
-  const fitTransitionRef = useRef(false);
+  // Operator navigation suspends auto-fit until "Fit to tracks". A move with
+  // an originalEvent is always the operator (our own fits never carry one),
+  // including a drag that interrupts a running fit.
+  onUserMoveRef.current = () => {
+    if (userMovedRef.current) return;
+    userMovedRef.current = true;
+    setManual(true);
+  };
 
   const fit = useCallback(
     (animate: boolean, zoomOverride?: number) => {
       const pts = fitPointsRef.current;
       const bounds = boundsOf(pts);
-      if (!size || !bounds) return;
+      const map = mapRef.current;
+      if (!size || !bounds || !map) return;
       const v = fitMercator({ bounds, width: size.width, height: size.height });
-      const next: MapViewState = { ...v, zoom: zoomOverride ?? v.zoom, pitch: 0, bearing: 0 };
+      const camera = { center: [v.longitude, v.latitude] as [number, number], zoom: zoomOverride ?? v.zoom, pitch: 0, bearing: 0 };
       fittedIdsRef.current = new Set(pts.map((p) => p.id));
+      map.stop();
       if (animate) {
-        fitTransitionRef.current = true;
-        const done = () => {
-          fitTransitionRef.current = false;
-        };
-        setViewState({
-          ...next,
-          transitionDuration: REFIT_DURATION_MS,
-          transitionInterpolator: new LinearInterpolator(['longitude', 'latitude', 'zoom']),
-          onTransitionEnd: done,
-          onTransitionInterrupt: done,
-        } as MapViewState);
+        // Linear, like the deck.gl LinearInterpolator it replaces; frames run in rAF.
+        fromEffect(() => map.easeTo({ ...camera, duration: REFIT_DURATION_MS, easing: (t) => t }));
       } else {
-        fitTransitionRef.current = false;
-        setViewState(next);
+        fromEffect(() => map.jumpTo(camera));
       }
     },
-    [size],
+    [size, fromEffect],
   );
 
   const fitToTracks = useCallback(() => {
@@ -263,12 +373,14 @@ export function MapSpine({ directionalFrom, directionalTo, jammerLocation, candi
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [directionalFrom?.lat, directionalFrom?.lon, directionalTo?.lat, directionalTo?.lon]);
 
-  const layers = [jammerLayer, directionalLayer].filter(Boolean);
-  const view = useMemo(() => new MapView({ repeat: false }), []);
+  useEffect(() => {
+    overlayRef.current?.setProps({ layers: [jammerLayer, directionalLayer].filter(Boolean) as never });
+  }, [jammerLayer, directionalLayer]);
 
   return (
     <div
       ref={containerRef}
+      data-basemap={mode}
       style={{
         position: 'relative',
         width: '100%',
@@ -276,31 +388,8 @@ export function MapSpine({ directionalFrom, directionalTo, jammerLocation, candi
         background: 'var(--surface-base)',
       }}
     >
-      <DeckGL
-        viewState={viewState}
-        onViewStateChange={({ viewState: next, interactionState: is }) => {
-          // An interaction outside our own fit transition = the operator
-          // navigated (drag, wheel, keyboard, pinch). Deck also emits
-          // interaction-free changes (e.g. on mount / resize) — those don't count.
-          const interacting = Boolean(is.isDragging || is.isPanning || is.isZooming || is.isRotating);
-          if (interacting && !fitTransitionRef.current && !userMovedRef.current) {
-            userMovedRef.current = true;
-            setManual(true);
-          }
-          setViewState(next as MapViewState);
-        }}
-        controller={true}
-        views={view}
-        layers={layers as never}
-        style={{ position: 'absolute', top: '0', left: '0', right: '0', bottom: '0' }}
-      >
-        {/*
-         * Phase 4 ships without a basemap — PMTiles bundle would land in
-         * /public/tiles/avdiivka.pmtiles (Phase 10 hardening). The trust
-         * layer reads cleanly against the dark base; the operator's eye
-         * lands on the symbols, not on cartography.
-         */}
-      </DeckGL>
+      <div ref={mapDivRef} data-testid="maplibre-map" style={{ position: 'absolute', inset: 0 }} />
+      <BasemapAttribution mode={mode} />
       {size && (
         <SpineOverlay
           singles={singles}

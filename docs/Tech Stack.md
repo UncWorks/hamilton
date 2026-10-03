@@ -22,6 +22,7 @@ sme-validation-2026-05-02: Confirmed local-first/laptop-only stack matches opera
 | **Frontend framework** | Next.js | Web-native, fast iteration, PWA-capable for the Android operator surface |
 | **Render spine — primary** | **CesiumJS** (local 3D Tiles + terrain server, no Cesium ion network calls) | True 3D globe + terrain-masked LOS for FR-03 spatial discriminator; `Cesium3DTileset` glTF jammer models for FR-04a candidates; CZML-driven scrubbable timeline hardens demo recovery; reads as defense-grade, not consumer-mapping. **Sunday 1100 gate per [[Specs/System Design]] §6c** |
 | **Render spine — fallback** | MapLibre GL + PMTiles (≈200MB bundle) | Verified-state held in reserve; activates only if §6c gate fails. Same MQTT subscription shape, only the renderer changes |
+| **Basemap (both spines)** | Protomaps vector extract of the AO (`avdiivka.pmtiles`, ~4 MB, OSM ODbL) + self-hosted Noto Sans glyphs; Hamilton dark style generated from `@protomaps/basemaps` "dark". Cesium gets a raster pyramid (~10 MB) rendered locally from the same extract + style with MapLibre Native. `NEXT_PUBLIC_BASEMAP=offline\|online\|none`; `make fetch-tiles` provisions. Details: [[Specs/System Design]] §6c.1 | Identical 2D / 3D map, no CDN, no ion, ~17 MB total instead of the planned ≈200 MB bundle. Runtime deps +1 (`pmtiles`); the style generator and renderer are build-time tools outside the app |
 | **3D assets / tiles** | Local Cesium 3D Tiles tileset + local terrain tile server (~2–4GB bundle); glTF stand-ins (or photoreal models) for R-330Zh Zhitel + Pole-21 jammer systems | Offline-safe per `NFR-01`; satisfies the "named system, geolocated" judge defense |
 | **Backend trust engine** | Rust async (Tokio + Axum) | Source of truth for FR-01..04 + FR-04a; deterministic detectors per R14 |
 | **Comms simulator** | Python module — link health, RSSI, packet loss, jamming events | CHAOS-owned differentiator |
@@ -108,6 +109,7 @@ sme-validation-2026-05-02: Confirmed local-first/laptop-only stack matches opera
 
 ## Render-spine swap — Sunday provisioning checklist (new 2026-05-03)
 - [ ] Cesium 3D Tiles tileset for Avdiivka AO bundled locally (terrain + imagery)
+- [x] Offline basemap for both spines — `make fetch-tiles` (vector PMTiles + glyphs + Cesium raster pyramid, ~17 MB); `make verify` fails if `NEXT_PUBLIC_BASEMAP=offline` and it is missing (2026-10-03)
 - [ ] Local terrain tile server running offline; `CesiumTerrainProvider` pointed at `localhost`
 - [ ] glTF stand-ins (or photoreal) for **R-330Zh Zhitel** + **Pole-21** on disk; geocoordinates set
 - [ ] Cesium viewer renders with **zero Cesium ion network calls** (verified by airplane-mode test)

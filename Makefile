@@ -1,4 +1,4 @@
-.PHONY: help demo demo-fallback up down build verify lint test clean
+.PHONY: help demo demo-fallback up down build verify lint test clean fetch-tiles basemap-style
 
 RENDERER ?= cesium
 NEXT_PUBLIC_RENDERER ?= $(RENDERER)
@@ -8,6 +8,8 @@ help:
 	@echo "Hamilton — make targets"
 	@echo "  make demo           Bring up full stack with primary renderer ($(RENDERER))"
 	@echo "  make demo-fallback  Force MapLibre renderer (Cesium-fail path)"
+	@echo "  make fetch-tiles    Provision the offline basemap in apps/web/public/tiles (online, once)"
+	@echo "  make basemap-style  Regenerate the committed basemap style layers"
 	@echo "  make up             docker compose up -d"
 	@echo "  make down           docker compose down"
 	@echo "  make build          Build all workspace members"
@@ -31,6 +33,16 @@ down:
 build:
 	pnpm -r build
 	cargo build --release --workspace
+
+# Offline basemap (System Design §6c): Protomaps vector extract + glyphs +
+# Cesium raster pyramid. Gitignored assets; this is their reproducible source.
+fetch-tiles:
+	bash scripts/fetch-tiles.sh
+
+# Re-render the raster pyramid too, so 2D and 3D stay in step with the style.
+basemap-style:
+	node scripts/basemap/build-style.mjs "$$(bash scripts/fetch-tiles.sh --tools-only | tail -1)"
+	node scripts/basemap/render-raster.mjs "$$(bash scripts/fetch-tiles.sh --tools-only | tail -1)"
 
 verify:
 	bash scripts/verify-assets.sh
