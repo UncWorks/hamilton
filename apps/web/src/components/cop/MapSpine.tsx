@@ -93,10 +93,14 @@ export function MapSpine({ directionalFrom, directionalTo, jammerLocation, candi
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
-    const ro = new ResizeObserver(() => {
+    const measure = () => {
       const r = el.getBoundingClientRect();
-      if (r.width > 0 && r.height > 0) setSize({ width: r.width, height: r.height });
-    });
+      if (r.width > 0 && r.height > 0) setSize((p) => (p && p.width === r.width && p.height === r.height ? p : { width: r.width, height: r.height }));
+    };
+    // Measure now too: ResizeObserver callbacks run with rendering, which a
+    // background / throttled tab may never do — the overlay must not wait on it.
+    measure();
+    const ro = new ResizeObserver(measure);
     ro.observe(el);
     return () => ro.disconnect();
   }, []);

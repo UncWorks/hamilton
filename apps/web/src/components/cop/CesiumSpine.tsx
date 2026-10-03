@@ -446,6 +446,8 @@ export function CesiumSpine(props: CesiumSpineProps) {
         ellipse: {
           semiMajorAxis: JAMMER_RING_M,
           semiMinorAxis: JAMMER_RING_M,
+          // Explicit height: outlines are unsupported on terrain-clamped ellipses.
+          height: 0,
           material: new C.Color(0.86, 0.7, 0.35, 0.18),
           outline: true,
           outlineColor: new C.Color(0.86, 0.7, 0.35, 0.6),

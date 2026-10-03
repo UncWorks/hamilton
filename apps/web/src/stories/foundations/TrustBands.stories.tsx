@@ -23,11 +23,13 @@ function MappingTable() {
   return (
     <Page>
       <Section
-        title="Score → band → visual mapping (live from trust-gradient.ts)"
+        title="Score → band → rating → map symbol (trust-gradient.ts + link-trust-rating.ts)"
         note={
           <>
             Bands: 1.00–0.85 nominal · 0.85–0.60 watching · 0.60–0.30 degraded · &lt;0.30 failed. ROE floor{' '}
-            {ROE_FLOOR.toFixed(2)}. Icon opacity columns show what each renderer actually applies vs. FR-06 (opacity = score).
+            {ROE_FLOOR.toFixed(2)}. The map symbol (both live renderers) shows trust as the side gauge (fill height = score, band
+            colour) and J right of the gauge: at rest below the floor, on hover above it. No halo, no pulse, no opacity change
+            (Decisions/Track Symbology, decision 2).
           </>
         }
       >
