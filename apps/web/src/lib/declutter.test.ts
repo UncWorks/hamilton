@@ -97,3 +97,13 @@ test('throttle: leading call, trailing call coalesced', async () => {
   assert.equal(n, 2);
   t.cancel();
 });
+
+test('minCount: clusters below it stay singles (decision 6: ≥ 3)', () => {
+  const pair = [box('a', 0, 0), box('b', 5, 5), box('far', 400, 400)];
+  assert.deepEqual(M.declutter(pair, { minCount: 3 }), { singles: ['a', 'b', 'far'], groups: [] });
+  const trio = [...pair, box('c', 10, 0)];
+  const r = M.declutter(trio, { minCount: 3 });
+  assert.equal(r.groups.length, 1);
+  assert.deepEqual(r.groups[0]!.ids, ['a', 'b', 'c']);
+  assert.deepEqual(r.singles, ['far']);
+});

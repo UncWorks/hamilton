@@ -3,9 +3,9 @@
 // a bracketed stack displaced from the location, tied back to it with an
 // offset locator (leader) line.
 //
-// Pure function from screen points + sizes to groups, renderer-agnostic, so
-// the production symbol component can plug in later by supplying its own
-// box sizes.
+// Pure function from screen points + sizes to groups, renderer-agnostic. The
+// live spines supply the production symbol's box (lib/cop-symbols.ts
+// declutterBoxFor) and draw groups with components/symbol DeclutterStack.
 
 export interface DeclutterItem {
   id: string;
@@ -43,6 +43,12 @@ export interface DeclutterOptions {
   /** Keep the stack inside this frame, with `edgePx` margin. */
   viewport?: { width: number; height: number };
   edgePx?: number;
+  /**
+   * Smallest cluster drawn as a stack (default 2). Smaller clusters stay
+   * singles. The production symbol uses 3 (Decisions/Track Symbology,
+   * decision 6: three or more symbols within 1.5·s).
+   */
+  minCount?: number;
 }
 
 export const DECLUTTER_MIN_SEPARATION_PX = 6;
@@ -109,11 +115,12 @@ export function declutter(items: readonly DeclutterItem[], opts: DeclutterOption
 
   const off = opts.offset ?? DECLUTTER_OFFSET;
   const edge = opts.edgePx ?? DECLUTTER_EDGE_PX;
+  const minCount = Math.max(2, opts.minCount ?? 2);
   const singles: string[] = [];
   const groups: DeclutterGroup[] = [];
   for (const members of buckets.values()) {
-    if (members.length === 1) {
-      singles.push(members[0]!.id);
+    if (members.length < minCount) {
+      for (const m of members) singles.push(m.id);
       continue;
     }
     const ordered = [...members].sort(
