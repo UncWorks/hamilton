@@ -15,7 +15,7 @@ related:
 
 # System Design — Stack Overview (Demo Bounding)
 
-> **Wedge:** continuous trust score → gates kill-chain action. Not link-health rendering (Lattice does that). Not ML classification (R14 forbids it in the demo path). Not cross-domain anomaly detection (R15 binds the FDC seat).
+> **Wedge:** continuous trust score → the live reliability and report-age terms of the target selection standards (TSS) on each fire mission. Not link-health rendering (Lattice does that). Not ML classification (R14 forbids it in the demo path). Not cross-domain anomaly detection (R15 binds the FDC seat).
 >
 > **Synthesis discipline:** this note **synthesizes** [[URS]] §3 + [[FRS]] §1 — it does not restate them. Authoritative architecture table lives in `[[FRS]]` §1; authoritative UR↔FR↔beat matrix lives in `[[FRS]]` §8. This doc adds the data-flow diagram, MQTT contract, build-state confidence, and the three-discipline annotation overlay that the source specs do not carry.
 >
@@ -25,13 +25,13 @@ related:
 
 ## 1. Thesis
 
-The system is a **comms-integrity evaluation layer** that drops onto any C2 surface. It produces a **continuous trust score in `[0.0, 1.0]` per inbound source**, updated ≥1Hz, published on MQTT, consumed by two parallel renderers (**CesiumJS primary 3D spine**; Palantir AIP conditional secondary; **MapLibre retained as Cesium-fail fallback per §6c gate**). When any source's score crosses the rules-of-engagement floor for a kill-chain action class, the system **interrupts** the recommendation flow with a 3-option modal — *delay, shift munition, confirm via alt channel.*
+The system is a **comms-integrity evaluation layer** that drops onto any C2 surface. It produces a **continuous trust score in `[0.0, 1.0]` per inbound source**, updated ≥1Hz, published on MQTT, consumed by two parallel renderers (**CesiumJS primary 3D spine**; Palantir AIP conditional secondary; **MapLibre retained as Cesium-fail fallback per §6c gate**). When a fire mission depends on a source that fails the TSS for its munition class, the system shows **TSS FAIL in that mission's row** with a recommended method of control (DO NOT LOAD) and pre-planned branches — *shift munition, confirm via alternate means, AT MY COMMAND, accept risk (FSO).* No modal; monitoring is never interrupted.
 
 Three architectural disciplines bind every component:
 
 - **R14 — deterministic boundary.** Detection (`FR-01..04`, `FR-04a`) is threshold-based deterministic matching. LLM (`FR-08`) is function-calling over structured detection events — no free-form generation about facts not in the input.
 - **R15 — FDC anchor.** The demo-scope rendering surface is the Battalion Fires Cell COP screen. AEGIS TAO, MSS, UAF, Force Employment are path-forward only.
-- **R16 — gradient + gating wedge.** The two load-bearing edges are (a) the continuous score on `integrity/trust/{source_id}` (gradient) and (b) the modal-interrupt at `FR-07` (gating). If those two edges aren't visible end-to-end on stage, the wedge isn't demonstrated.
+- **R16 — gradient + gating wedge.** The two load-bearing edges are (a) the continuous score on `integrity/trust/{source_id}` (gradient) and (b) the TSS mission check at `FR-07` (gating, in the mission row). If those two edges aren't visible end-to-end on stage, the wedge isn't demonstrated.
 
 > If a sentence in this doc could describe Lattice without modification, it's too generic — rewrite.
 
@@ -44,11 +44,11 @@ Three architectural disciplines bind every component:
 The 5-minute demo flow Adam triggers, beat by beat:
 
 1. **`B-0:00`** — COP renders Units A, B, C with full-opacity icons. Each carries a continuous trust score visible on hover. *(`UR-01`, `FR-05`, `FR-06`)*
-2. **`B-0:45`** — Unit B's inter-arrival time stretches from ~1.0s to 1.17s (3.4σ). Temporal anomaly fires; trust drops to ≈0.70 (WATCH band, still above the 0.60 ROE floor); B's icon begins to fade; trust trace beside it reads *"B-link cadence degraded 18s ago — investigating."* *(`UR-02`, `UR-03`, `FR-01`, `FR-06`, `FR-08`)*
+2. **`B-0:45`** — Unit B's inter-arrival time stretches from ~1.0s to 1.17s (3.4σ). Temporal anomaly fires; trust drops to ≈0.70 (WATCH band, still at/above the 0.60 GPS-guided TSS minimum, C); B's icon begins to fade; trust trace beside it reads *"B-link cadence degraded 18s ago — investigating."* *(`UR-02`, `UR-03`, `FR-01`, `FR-06`, `FR-08`)*
 3. **`B-0:55`** — CRC error rate climbs 0.2% → 6% (past the 5% threshold). Trust ≈0.65, still WATCH. Trust trace updates: *"B-link: 6% corrupted frames, cadence 1.17s."* *(`UR-03`, `FR-02`, `FR-08`)*
 4. **`B-1:05`** — Spatial discrimination clears blanket-EMI hypothesis. Side panel: *"Degradation directional, vicinity B's flank corridor. Neighbors A, C unaffected."* A and C hold at 1.00; B's spatial component reads localized (0.60). *(`UR-04`, `FR-03`)*
-5. **`B-1:15`** — The jammer reaches full power: cadence 1.0s → 6.1s gap, CRC 0.2% → 14%, and the fingerprint matcher names the candidate jammer profiles, ranked: `ground_based_gps_uhf_barrage (1.00) → affected: Excalibur, JDAM-ER, Switchblade 300, GMLRS-U`. Two more candidates shown with their munitions-affected lists; per-candidate citations on hover. B's trust falls to 0.13, its first crossing below the 0.60 ROE floor. *(`UR-04`, `UR-09`, `FR-04`, `FR-04a`)*
-6. **`B-1:20` (the wedge)** — With B at 0.13, AI **declines** the GPS-guided strike. Modal: *"Kill-chain gated below ROE floor."* Three options: `delay 60s` / `shift to non-GPS munition` / `confirm via alt channel.` Adam picks (b); decision logged with full trust state. *(`UR-05`, `UR-06`, `UR-07`, `FR-07`)*
+5. **`B-1:15`** — The jammer reaches full power: cadence 1.0s → 6.1s gap, CRC 0.2% → 14%, and the fingerprint matcher names the candidate jammer profiles, ranked: `ground_based_gps_uhf_barrage (1.00) → affected: Excalibur, JDAM-ER, Switchblade 300, GMLRS-U`. Two more candidates shown with their munitions-affected lists; per-candidate citations on hover. B's trust falls to 0.13, its first score below the 0.60 GPS-guided TSS minimum (C → E5). *(`UR-04`, `UR-09`, `FR-04`, `FR-04a`)*
+6. **`B-1:20` (the wedge) — call for fire at B fails TSS in-row.** At `B-1:12` OBS B (FO) sends a call for fire, AB1001, for M982 Excalibur (`fires/mission/AB1001`); it enters the mission queue as TSS PASS (B C3). At `B-1:15` B drops to E5 and the row — not the screen — changes: `FM AB1001 | OBS B (FO) | M982 (GPS) | TSS: FAIL — RELIABILITY E5 (min C) · AGE 1s OK`, `Rec. method of control: DO NOT LOAD (M982)`, branches `[1] Shift → M795 HE, adjust fire` / `[2] Confirm via alt channel` / `[3] AT MY COMMAND — re-rate in 60 s` / `[4] Accept risk… (FSO)`. No modal, no scrim, focus unchanged. Adam presses `1`: the mission re-plans to M795 HE, TSS PASS (unguided is not gated); the branch is logged with mission id, TSS result, J, report age, role and DTG. *(`HS-05`, `UR-06`, `UR-07`, `FR-07`)*
 
 The **30 seconds that win the demo are 1:15 → 1:50.** Everything else is setup or recovery.
 
@@ -81,7 +81,7 @@ flowchart LR
 
     subgraph SURFACE["Operator surface — FDC seat"]
         ADAM["Officer Adam — COP screen"]
-        MODAL["Kill-chain modal<br/>3 named options"]
+        ROW["Fire-mission row<br/>TSS verdict + branches (no modal)"]
     end
 
     CS -- "FR-01..04 inputs" --> RUST
@@ -97,20 +97,21 @@ flowchart LR
     CESIUM --> ADAM
     ML -. fallback surface .-> ADAM
     AIP -. additive surface .-> ADAM
-    T1 == "FR-07 — gating below ROE floor" ==> MODAL
-    MODAL --> ADAM
+    FM["fires/mission/{id}<br/>calls for fire"] --> ROW
+    T1 == "FR-07 — TSS check (reliability, report age)" ==> ROW
+    ROW --> ADAM
 ```
 
 **Legend:**
 - **Solid edges** — verified at authoring (~80%)
 - **Dashed edges** — conditional (AIP 1300 gate, LLM fallback path)
-- **Bold edges (`==>`)** — R16 wedge: continuous score (gradient) + kill-chain interrupt (gating)
+- **Bold edges (`==>`)** — R16 wedge: continuous score (gradient) + TSS mission check (gating)
 
 **Spine narration.** The Rust trust engine is the single source of truth. It consumes per-source telemetry from the comms simulator, runs four deterministic detectors plus the FR-04a overlap-ratio matcher, and publishes the continuous score on MQTT. **CesiumJS is the primary rendering spine** — chosen for true 3D terrain, line-of-sight on the Avdiivka counterfactual, geolocated glTF jammer-system models from `FR-04a` candidates, and a CZML-driven scrubbable timeline that hardens demo recovery. MapLibre + PMTiles is **retained as a verified fallback** per §6c — if the Sunday Cesium spike does not gate green, the demo falls back to MapLibre with no architecture change (the MQTT contract in §5 is renderer-agnostic by design). Storage is single-binary (RocksDB/DuckDB/SQLite); no external database in the demo path. `NFR-05` (something must render on stage) is satisfied by the Cesium-or-MapLibre dual path, not by Cesium alone.
 
 **Conditional wing.** Palantir AIP is an **additive secondary surface** that consumes the same MQTT trust score via a ~50-line REST/webhook shim. AIP renders the score on a Palantir ontology object representing each emitting unit. The AIP edge in the diagram is dashed because it is gated by the 1300 Saturday go/no-go (see §6a). The LLM narrator path has its own conditional fallback — Anthropic Claude function-calling primary, Llama 3.2 3B local fallback — gated by network reachability at demo time per `NFR-01`.
 
-**Where the disciplines live in the diagram.** R14 binds the `RUST` and `LLM` nodes — detection is deterministic, narration is function-calling-only over structured inputs. R15 binds the `SURFACE` subgraph — there is exactly one demo-scope operator seat, and it is FDC. R16 binds the two bold edges — `T1 → MODAL` is the gating; `RUST → T1` is the gradient. **The Cesium swap does not move any of these disciplines** — it changes the renderer node only. The MQTT contract is the discipline boundary, not the frontend.
+**Where the disciplines live in the diagram.** R14 binds the `RUST` and `LLM` nodes — detection is deterministic, narration is function-calling-only over structured inputs. R15 binds the `SURFACE` subgraph — there is exactly one demo-scope operator seat, and it is FDC. R16 binds the two bold edges — `T1 → ROW` (TSS evaluator → mission row) is the gating; `RUST → T1` is the gradient. **The Cesium swap does not move any of these disciplines** — it changes the renderer node only. The MQTT contract is the discipline boundary, not the frontend.
 
 ---
 
@@ -125,9 +126,9 @@ flowchart LR
 | `UR-03` plain-English degradation reason | `FR-01`, `FR-02`, `FR-08` | Rust detectors → MQTT → LLM narrator (function-calling) | Tech lead + LLM owner | verified | R14 narration drift |
 | `UR-04` localized vs. blanket; named jammer | `FR-03`, `FR-04` | Spatial correlation discriminator; threshold-based fingerprint matcher; **Cesium terrain-masked LOS overlay from candidate jammer site → Unit B's flank corridor** | Tech lead | scoped — detector verified, LOS overlay Sunday | R14 (must read as deterministic, not classifier) |
 | `UR-04`, `UR-09` ranked candidates + munitions affected | `FR-04a` | Overlap-ratio matcher; MQTT `integrity/fingerprint/candidates`; **Cesium `Cesium3DTileset` glTF models geolocated at candidate sites (R-330Zh Zhitel, Pole-21)** | Tech lead (UI: Joseph/Evan) | scoped — depends on FR-04 top-N + Sunday Cesium spike + glTF asset prep | R14 verbatim defense; R15 inventory-list discipline; **R-NEW glTF asset bundling** |
-| `UR-05` kill-chain interrupt below ROE | `FR-07` | ROE-floor comparator + DOM modal anchored over Cesium viewport (screen-space pin to Unit B); same modal on AIP secondary | Frontend + tech lead | scoped — Sunday verify on Cesium | R16 gating edge (load-bearing 30s); R18 on-screen subtitle |
+| `HS-05` (was `UR-05`) TSS FAIL in the mission row | `FR-07` | `lib/tss.ts` evaluator + versioned TSS table + `components/fires` mission queue/row in the side column (no modal) | Frontend | implemented (feat/tss-mission-row) | R16 gating edge; text-first status (R18) |
 | `UR-06` 3-bullet trust trace per AI rec | `FR-07`, `FR-08` | LLM function-calling over structured detection events | LLM owner | verified | R14 (no free-form generation) |
-| `UR-07` three named operator options | `FR-07` | Modal options: delay / shift / confirm-alt-channel | Frontend | verified | R16 (options must be concrete, not yes/no) |
+| `UR-07` (`HS-07`) pre-planned branches | `FR-07` | Row branches: shift → M795 / confirm via alternate means / AT MY COMMAND / accept risk (FSO) — keys 1–4 | Frontend | implemented | R16 (options must be concrete, not yes/no) |
 | `UR-08` offline single-laptop guarantee | `NFR-01..03` | docker compose; **local Cesium 3D Tiles + terrain server (~2–4GB bundle)**; Llama 3.2 3B local fallback; **MapLibre + PMTiles retained as Cesium-fail fallback (~200MB)** | Tech lead | scoped — bundle size + offline cold-start verification Sunday | R6 API rate limits; **R2 demo failure (raised by spine swap)**; **R-NEW demo-laptop SSD/RAM headroom** |
 | (all UR) AIP secondary surface | `FR-06` (same payload) | REST/webhook shim → Palantir AIP ontology object | Joseph or Evan (NOT Kristian) | conditional — 1300 Saturday gate | R13 AIP bandwidth; R19 vendor-neutral erosion |
 | (all UR) **MapLibre fallback spine** | `FR-06`, `FR-07` (same payload) | MapLibre + PMTiles renderer; activated only if §6c Cesium gate fails Sunday | Frontend | verified — held in reserve | R2 mitigation; preserves `NFR-05` |
@@ -206,11 +207,15 @@ flowchart LR
 - `score = (count of fingerprint-dimension threshold booleans matched) / (total fingerprint dimensions)` — **deterministic overlap ratio, no model**. With 6 dimensions, values are `k/6`. This is **match strength** (higher = more like that jammer), not trust; see §5.1 `components.fingerprint`
 - `source_citation` rendered on hover — reinforces R14 public-characterization defense
 
+### 5.2a Topic — `fires/mission/{mission_id}` (per `FR-07`)
+
+Calls for fire, **retained**, `FireMissionSchema` (`packages/contracts/src/fire-mission.ts`; TS only — the engine does not consume it): `mission_id` (e.g. `AB1001`), `observer {source_id, label}`, `target {grid, lat, lon, description, class: standard|hpt}`, `munition {designation, name, class: gps_guided|laser_guided|unguided}`, `firing_unit`, `dependencies [{source_id, role: observer_link|target_location|firing_unit_nav}]`, `status`, `method_of_control`, `received_at`. An empty retained payload closes the mission. Demo producer: comms-sim (`missions.py`) — AB1002 (OBS C, M795) at 0:30, AB1001 (OBS B, M982) at 1:12; each run clears the previous run's retained missions first. TSS is evaluated in the web client (`apps/web/src/lib/tss.ts`); see `docs/plans/tss-mission-row.md`.
+
 ### 5.3 Consumer contracts
 
 | Consumer | Subscribes to | Status | Notes |
 |---|---|---|---|
-| **CesiumJS renderer (`FR-06`, `FR-07`) — primary** | both topics | scoped — Sunday gate (§6c) | entity `color.alpha` binding via `CallbackProperty`; DOM modal anchored over viewport; `Cesium3DTileset` glTF jammer models from `integrity/fingerprint/candidates` |
+| **CesiumJS renderer (`FR-06`, `FR-07`) — primary** | both topics | scoped — Sunday gate (§6c) | entity `color.alpha` binding via `CallbackProperty`; fire-mission row beside the viewport (no modal); `Cesium3DTileset` glTF jammer models from `integrity/fingerprint/candidates` |
 | MapLibre renderer (`FR-06`, `FR-07`) — fallback | both topics | verified — held in reserve | activated only if §6c Cesium gate fails; preserves `NFR-05` |
 | Palantir AIP shim | `integrity/trust/{source_id}` only | conditional (1300 gate) | ~50 LOC REST/webhook bridge → AIP ontology object property |
 | LLM narrator (`FR-08`) | `integrity/trust/{source_id}` (uses `components`) | verified | function-calling input shape; **no free-form generation about facts not in payload** |
@@ -243,7 +248,7 @@ flowchart LR
 
 | Field | Value |
 |---|---|
-| **Trigger to commit** | All four conditions green by **1100 Sunday 2026-05-03**: (1) Cesium viewer rendering with local terrain + imagery offline (no Cesium ion network calls), (2) at least one entity's `color.alpha` bound to live MQTT trust score via `CallbackProperty` and visibly fading on jam event, (3) DOM kill-chain modal correctly anchored over Cesium viewport when score crosses ROE floor, (4) demo laptop disk + RAM headroom verified with full 3D Tiles bundle loaded |
+| **Trigger to commit** | All four conditions green by **1100 Sunday 2026-05-03**: (1) Cesium viewer rendering with local terrain + imagery offline (no Cesium ion network calls), (2) at least one entity's `color.alpha` bound to live MQTT trust score via `CallbackProperty` and visibly fading on jam event, (3) [historical; the modal is superseded by the TSS mission row] DOM modal anchored over the Cesium viewport, (4) demo laptop disk + RAM headroom verified with full 3D Tiles bundle loaded |
 | **Kill criterion** | If any condition red by 1100 Sunday → **fall back to MapLibre + PMTiles** (verified). No mid-stage swaps. Decision is final at 1100; no extending the gate |
 | **Owner** | Frontend (Joseph/Evan) on Cesium spike; tech lead on MQTT contract — unchanged either way |
 | **Why this gate exists** | Cesium swap was committed Sunday morning; the verified MapLibre path was the prior spine. NFR-05 ("something renders on stage") is satisfied by the dual-path option, not by Cesium alone. The MQTT contract (§5) is renderer-agnostic, so the fallback is a frontend swap, not an architecture change |
@@ -270,9 +275,9 @@ The demo-scope rendering surface is exactly one operator screen: the FDC COP. AE
 Two architecturally load-bearing edges, both rendered bold in §3's diagram:
 
 1. **Gradient** — `RUST → T1` (`integrity/trust/{source_id}`, ≥1Hz continuous score). Lattice surfaces sensor health binary; we surface the **gradient**, which is what makes "are you sure?" actionable.
-2. **Gating** — `T1 → MODAL` (`FR-07` ROE-floor interrupt). This is the *kill-chain action gating on the score*. The 30 seconds that win the demo are this edge firing on stage.
+2. **Gating** — `T1 → ROW` (`FR-07` TSS mission check). The live reliability and report-age terms decide TSS PASS / FAIL on the fire mission that depends on the source. The 30 seconds that win the demo are this edge firing on stage — in the row, not as an interrupt.
 
-If both edges aren't visible end-to-end during the 5-minute slot, the wedge isn't demonstrated — the system reduces to "another COP with link health." The on-screen subtitle *"Kill-chain gated below ROE floor"* at Beat 1:20 (R18 mitigation) ensures the load-bearing 30 seconds **says the words.**
+If both edges aren't visible end-to-end during the 5-minute slot, the wedge isn't demonstrated — the system reduces to "another COP with link health." The row text *"TSS: FAIL — RELIABILITY E5 (min C)"* and *"Rec. method of control: DO NOT LOAD"* at Beat 1:15–1:20 (R18 mitigation) ensures the load-bearing 30 seconds **says the words.** Stage subtitle: *"Target selection standard not met — source E5."*
 
 ---
 

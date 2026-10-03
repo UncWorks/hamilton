@@ -112,7 +112,7 @@ sme-validation-2026-05-02: Confirmed local-first/laptop-only stack matches opera
 - [ ] glTF stand-ins (or photoreal) for **R-330Zh Zhitel** + **Pole-21** on disk; geocoordinates set
 - [ ] Cesium viewer renders with **zero Cesium ion network calls** (verified by airplane-mode test)
 - [ ] One entity's `color.alpha` bound to live MQTT trust score via `CallbackProperty` — visible fade on jam event
-- [ ] DOM kill-chain modal correctly anchored over Cesium viewport (screen-space pin to source unit)
+- [ ] ~~DOM kill-chain modal anchored over Cesium viewport~~ — superseded by the non-modal TSS fire-mission row (`docs/plans/tss-mission-row.md`)
 - [ ] Demo laptop SSD ≥ 10GB free; RAM headroom verified with full bundle loaded
 - [ ] **MapLibre + PMTiles fallback path remains runnable** — `make demo-fallback` swaps the renderer in one command
 - [ ] **1100 Sunday gate decision recorded** in [[Specs/System Design]] §6c notes

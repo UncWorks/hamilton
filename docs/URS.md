@@ -19,7 +19,7 @@ related:
 >
 > **Anchor discipline (R15 mitigation):** every UR is grounded in the FDC seat first. Generalization to other personas (AEGIS TAO, MSS analyst, UAF artillery, force employment) is **path-forward only** (§5).
 >
-> **Wedge discipline (R16 mitigation):** what the operator needs is **a continuous trust score that gates kill-chain decisions** — not a binary sensor health indicator and not a link-health badge.
+> **Wedge discipline (R16 mitigation):** what the operator needs is **a continuous trust score that feeds the target selection standards (TSS) check on each fire mission** — not a binary sensor health indicator and not a link-health badge.
 
 ---
 
@@ -32,7 +32,7 @@ related:
 | **Authority** | Clears / declines GPS-guided precision artillery rounds (Excalibur class) under rules-of-engagement |
 | **Time pressure** | Seconds-to-minutes between target nomination and trigger pull |
 | **Information available today** | Mission picture (target grid, charge, fuze, time of flight) — **no signal of GPS-link state of the round in flight, even when adversary jamming has densified in the target's grid** |
-| **Information missing today** | Per-track radio-link health at the engagement moment; per-recommendation trust trace; kill-chain confidence below ROE floor |
+| **Information missing today** | Per-track radio-link health at the engagement moment; per-recommendation trust trace; whether a fire mission's sources meet the TSS |
 | **Real-life anchor** | [[../../Real Life Situational Context/Brief 3 (MAIN) - Excalibur in Avdiivka|Brief 3 — Excalibur in Avdiivka]] — UAF Excalibur effectiveness collapsed under Russian EW. The FDC seat had no signal that the GPS link was being jammed. |
 | **Persona reference** | [[../../Real Life Situational Context/Personas/P1 - Battalion Fires Officer|P1 — Battalion Fires Officer]] |
 
@@ -40,7 +40,7 @@ related:
 
 1. He sees, **at the engagement moment**, that one of the elements feeding his picture is degrading — not after-action.
 2. He understands **why** in plain English (cadence, network stability, spatial localization, named jammer profile) — not as a wall of metrics.
-3. The system **interrupts** him before he commits a GPS-dependent strike under low confidence, and **offers him three concrete options** — not just a warning popup.
+3. The system **flags the mission** — TSS FAIL in the fire-mission row, never a modal — before he clears a GPS-dependent round on a degraded source, and **offers pre-planned branches** in that row.
 4. The decision and trust state are **logged for after-action** without any extra effort from him.
 
 ---
@@ -64,7 +64,7 @@ This counterfactual is the operational basis for every UR below. It is **one Fir
 | **ID** | `UR-01` |
 | **Statement** | *"As Adam, I need every track on my COP to carry a continuous, live trust score, so I never confuse a confidently rendered icon with a confidently sourced one."* |
 | **Success criterion** | At any moment during the engagement, Adam can identify the trust state of every track on the screen at a glance, and confirm a numeric score on hover. |
-| **Why continuous (R16)** | Binary up/down is insufficient — Adam needs to see the score **trending** so he can act before it crosses the ROE floor. |
+| **Why continuous (R16)** | Binary up/down is insufficient — Adam needs to see the score **trending** so he can act before it drops below the TSS minimum. |
 | **Satisfied by** | `FR-05`, `FR-06` |
 | **Demo beat** | All beats; visible from `B-0:00` |
 | **Priority** | P0 — load-bearing |
@@ -103,17 +103,17 @@ This counterfactual is the operational basis for every UR below. It is **one Fir
 | **Priority** | P0 |
 | **Discipline** | Detection is **threshold-based deterministic**, not ML-classified (R14). |
 
-### UR-05 — Be interrupted before committing a GPS-dependent strike below ROE confidence
+### HS-05 — See TSS FAIL in the fire-mission row (replaces UR-05)
 
 | Field | Value |
 |---|---|
-| **ID** | `UR-05` |
-| **Statement** | *"As Adam, I need the system to refuse to recommend a kill-chain action when sensor confidence is below the rules-of-engagement floor for that action class — and to interrupt me with a modal — so a confident-looking icon never causes a confident-looking commit."* |
-| **Success criterion** | B stays above the 0.60 ROE floor through 0:45–1:05 (WATCH) and first crosses it at `B-1:15` (0.13). At `B-1:20`, AI **declines** to recommend the GPS-guided strike. Modal renders three options: `delay 60s`, `shift to non-GPS munition`, `confirm via alt channel`. |
+| **ID** | `HS-05` (was `UR-05`, dropped: its modal / "AI declines to recommend" clause is superseded) |
+| **Statement** | *"As the FDC officer, I want a call for fire that depends on a source failing the target selection standards (TSS) to show **TSS FAIL** and a recommended method of control in its mission row, so I never clear a GPS round on a source I couldn't see was degraded — while my monitoring is never interrupted."* (TSS; method of control.) |
+| **Success criterion** | **G** B at D4 (or E5) and a call for fire from B for M982; **W** the mission enters the queue; **T** the row shows `TSS: FAIL — RELIABILITY D4 (min C)` and `Rec. method of control: DO NOT LOAD (M982)`; no modal, no scrim, focus unchanged. **G** no mission open; **T** no gate UI appears. Demo: AB1001 arrives at `B-1:12` TSS PASS (B C3) and flips to FAIL in-row at `B-1:15` (B E5, 0.13). |
 | **Satisfied by** | `FR-07` |
-| **Demo beat** | `B-1:20` (the load-bearing beat) |
-| **Priority** | P0 — **the 30 seconds that win the demo are 1:15 → 1:50** |
-| **Discipline** | The wedge is **continuous score + kill-chain gating** (R16). The interruption is grounded in the score crossing the ROE floor, not in a generic warning. |
+| **Demo beat** | `B-1:12` → `B-1:20` |
+| **Priority** | P0 |
+| **Discipline** | The wedge is a **continuous, evidence-based reliability and report-age term in the TSS check** (R16), per source and per mission. Thresholds are the commander-approved TSS table (GPS-guided C / 10 s), not an ROE floor. Hamilton recommends; it never issues a fire command. Source: decision-workflow assessment §3–§4; `docs/plans/tss-mission-row.md`. |
 
 ### UR-06 — Read a 3-bullet trust trace beside every AI recommendation
 
@@ -121,18 +121,18 @@ This counterfactual is the operational basis for every UR below. It is **one Fir
 |---|---|
 | **ID** | `UR-06` |
 | **Statement** | *"As Adam, every AI recommendation on my screen needs to come with a 3-bullet trust trace I can read in seconds, so I know what the recommendation is grounded on and what it isn't."* |
-| **Success criterion** | Every AI kill-chain recommendation on stage carries exactly 3 bullets, generated from deterministic detection events (no LLM hallucination of facts not in the input). |
+| **Success criterion** | Every TSS verdict and recommendation on stage carries exactly 3 bullets, generated from deterministic detection events (no LLM hallucination of facts not in the input). |
 | **Satisfied by** | `FR-07`, `FR-08` |
 | **Demo beat** | `B-1:20` (and any prior recommendations rendered in baseline state) |
 | **Priority** | P0 |
 
-### UR-07 — Pick from three concrete operator options when the kill chain is interrupted
+### UR-07 (HS-07) — Pick a pre-planned branch inline when a mission fails TSS
 
 | Field | Value |
 |---|---|
-| **ID** | `UR-07` |
-| **Statement** | *"As Adam, when the system interrupts a kill chain, I need three named, concrete options — not a yes/no — so I have something to do, not just something to read."* |
-| **Success criterion** | Beat 1:20 modal: `(a) delay <N>s for link recovery`, `(b) shift to non-GPS munition`, `(c) confirm via alt channel before commit`. Operator selects (b); flow continues. |
+| **ID** | `UR-07` → `HS-07` |
+| **Statement** | *"As the FDC officer, I want the pre-planned branches inline in the mission row, so I have something to do, not just something to read."* |
+| **Success criterion** | **G** TSS FAIL; **W** I press `1`; **T** the mission re-plans to M795 HE, TSS re-runs and passes, and the choice is logged. **W** `3`; **T** method of control = AT MY COMMAND and a 60 s re-rate timer is shown. Branches: `[1] Shift → M795 HE, adjust fire`, `[2] Confirm via alt channel`, `[3] AT MY COMMAND — re-rate in 60 s`, `[4] Accept risk… (FSO)`. |
 | **Satisfied by** | `FR-07` |
 | **Demo beat** | `B-1:20` → `B-1:50` |
 | **Priority** | P0 |
@@ -159,7 +159,7 @@ This counterfactual is the operational basis for every UR below. It is **one Fir
 | **Why (operator)** | Naming the jammer is necessary but insufficient — Adam in Avdiivka would still need to know *which rounds in his inventory are denied by that jammer class*. The munitions-affected link is what turns attribution into a decision substrate inside the engagement window. |
 | **Why (R14 discipline)** | "Likelihood" here is operator-readable shorthand for a deterministic normalized overlap score — count of matched fingerprint-dimension threshold booleans / total dimensions. **Not** a trained probabilistic classifier. See `FR-04a`. |
 | **Satisfied by** | `FR-04` (detection), `FR-04a` (ranked mapping + munitions-affected) |
-| **Demo beat** | `B-1:15` (extends the existing jamming-fingerprint beat); reinforces `B-1:20` modal options |
+| **Demo beat** | `B-1:15` (extends the existing jamming-fingerprint beat); reinforces the `B-1:20` mission-row branches |
 | **Priority** | P0 — sharpens the wedge from *"name the jammer"* to *"name the jammer **and** the affected rounds"* |
 | **Inventory scope** | US/NATO + adversary munitions per catalog (Excalibur, JDAM-ER, Switchblade 300, GMLRS-U, Lancet, Shahed, FPV C2, ATAK position-share, etc.) — proves the layer is sensor-/munition-class-agnostic |
 | **Source citations** | Per-candidate hover citations to upstream catalog (Bronk RUSI 2024, JAPCC 2023, *WaPo* 2024) — strengthens R14 defense |
@@ -173,8 +173,8 @@ The demo satisfies the URS if, on stage in the 5-minute slot, Adam (or the opera
 1. **See trust degrade live** on Unit B without anyone telling him — the screen tells him (`UR-01`, `UR-02`).
 2. **Read why** in plain English without engineering jargon (`UR-03`).
 3. **Get attribution** — directional vs. blanket, named jammer profile (`UR-04`).
-4. **Be interrupted** before he commits the strike, with three named options (`UR-05`, `UR-07`).
-5. **Verify the trust trace** behind the AI's refusal in three bullets (`UR-06`).
+4. **See the mission fail TSS in its row** before he clears the round, with pre-planned branches — and no interruption of monitoring (`HS-05`, `UR-07`/`HS-07`).
+5. **Verify the trust trace** behind the TSS verdict in three bullets (`UR-06`).
 6. **Demonstrate the offline guarantee** — at any point during the demo, the laptop's wifi can be disabled and nothing breaks (`UR-08`).
 
 If all six are visible in the 5-minute slot, the URS is satisfied.
@@ -204,9 +204,9 @@ The following personas are **out-of-scope for the demo URS.** They are real and 
 | `UR-02` | Visible icon fade on jam | `FR-06` | `B-0:45..2:15` |
 | `UR-03` | Plain-English degradation reason | `FR-01`, `FR-02`, `FR-08` | `B-0:45`, `B-0:55` |
 | `UR-04` | Localized vs. blanket; named jammer | `FR-03`, `FR-04` | `B-1:05`, `B-1:15` |
-| `UR-05` | Kill-chain interrupt below ROE | `FR-07` | `B-1:20` |
+| `HS-05` (was `UR-05`) | TSS FAIL in the mission row, no modal | `FR-07` | `B-1:12..1:20` |
 | `UR-06` | 3-bullet trust trace per AI recommendation | `FR-07`, `FR-08` | `B-1:20` |
-| `UR-07` | Three named operator options | `FR-07` | `B-1:20..1:50` |
+| `UR-07` (`HS-07`) | Branches inline in the mission row | `FR-07` | `B-1:20..1:50` |
 | `UR-08` | Offline single-laptop guarantee | `NFR-01..03` | All beats |
 | `UR-09` | Ranked candidate methods + munitions affected | `FR-04`, `FR-04a` | `B-1:15`, `B-1:20` |
 
