@@ -294,7 +294,7 @@ const SIDC_TABLE = `
 `;
 
 const meta = {
-  title: 'Explorations/Track Symbology',
+  title: 'Archive/Track Symbology',
   decorators: [withDeuteranopia],
   parameters: {
     layout: 'fullscreen',
@@ -302,12 +302,15 @@ const meta = {
       story: { inline: true },
       description: {
         component:
+          '**ARCHIVED — superseded by Decisions/Track Symbology.** Options A / B / C / B′ led to the decided symbol (doctrinal filled ' +
+          'frames, side gauge + J, no halo). The B′ rating tooltip is now production (src/components/symbol/RatingTooltip.tsx), ' +
+          'and since the J split a stale track exports F6 here too.\n\n' +
           'APP-6(E) / MIL-STD-2525E track-symbology options. Rows = friend / hostile / neutral / unknown frames + jammer ' +
           '(confirmed, candidate) + one selected state; columns = trust 0.95 · 0.72 · 0.45 · 0.20; sizes 16 / 24 / 32px; dark ' +
           'map surface. Halos use the fixed, centred implementation (`.halo` → transform-box: fill-box). Text amplifiers: T left, ' +
           'J (trust) right only below 0.60, dark text outline. Toggle **deuteranopia** for the Machado 2009 simulation ' +
           '(SVG feColorMatrix decorator). Proposed tokens: `--sym-*`, `--trust-failed-stroke` (tokens.css). ' +
-          '**No live renderer uses these yet** — Branding §5.1 currently says "not 2525"; the option is pending a decision.\n\n' +
+          
           'Jammer rows are not trust-scored: the column value is used as the candidate score (J) for the candidate row and ' +
           'ignored for the confirmed row.\n\n### Proposed SIDCs\n' +
           SIDC_TABLE,

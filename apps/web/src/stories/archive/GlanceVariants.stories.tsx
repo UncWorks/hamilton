@@ -1,7 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import type { CSSProperties, ReactNode } from 'react';
-import { expect, userEvent, waitFor, within } from '@storybook/test';
-import type { SensorType } from '@hamilton/contracts';
 import {
   D_LOD_BELOW_PX,
   D_MIN_BOX_PX,
@@ -9,27 +7,15 @@ import {
   GlanceCell,
   GlanceMatrix,
   GlanceStyles,
-  GlanceSymbol,
   HALO_CANDIDATES,
   RESEARCH_ID,
   mapSurface,
   renderBoxPx,
   type GlanceVariant,
 } from '@/stories/support/GlanceSymbol';
-import {
-  DifferencesTable,
-  MANUAL,
-  OddOneOut,
-  ProtocolNote,
-  ResultsTable,
-  SidcTable,
-  UnverifiedList,
-  VARIANT_DOCS,
-  VariantHeatmaps,
-  mono,
-} from '@/stories/support/glance-bench';
+import { MANUAL, ProtocolNote, ResultsTable, SidcTable, VARIANT_DOCS, VariantHeatmaps, mono } from '@/stories/support/glance-bench';
 import type { FrameKind } from '@/stories/support/MilSymbol';
-import { VISION_LABEL, VisionFilter, withVision, type VisionMode } from '@/stories/support/vision-filters';
+import { withVision, type VisionMode } from '@/stories/support/vision-filters';
 
 // ---------------------------------------------------------------------------
 // Args
@@ -132,7 +118,7 @@ function VariantPage({ variant, args, extra }: { variant: GlanceVariant; args: G
 // ---------------------------------------------------------------------------
 
 const meta = {
-  title: 'Explorations/At-a-Glance Symbols',
+  title: 'Archive/At-a-Glance Variants',
   decorators: [withVision],
   parameters: {
     layout: 'fullscreen',
@@ -140,6 +126,9 @@ const meta = {
       story: { inline: true },
       description: {
         component:
+          '**ARCHIVED — decided in Decisions/Track Symbology** (base V1 + V4 label treatment, side gauge + J, no halo; E declutter). ' +
+          'The evaluation stories (blur, thumbnail, grayscale, colour vision, distinctness, search, radar T7) moved to ' +
+          '**Decisions/Evidence/At-a-Glance**, which also scores the decided symbol (FINAL).\n\n' +
           'Comparison bench for track-symbol alternates that are distinguishable at a glance AND follow **FM 1-02 / MCRP 5-12A, ' +
           '"Operational Terms and Graphics" (21 Sep 2004)** — frames Table 4-1 p 4-3, colours Table 4-3 p 4-4, fields Fig 4-2 / Table 4-4 ' +
           'pp 4-5 – 4-9, unit icons Table 5-3, mobility Table 5-4, echelon Table 5-6 p 5-33. Variants follow ' +
@@ -282,251 +271,3 @@ export const HaloVariants: Story = {
   ),
 };
 
-// ---------------------------------------------------------------------------
-// E — doctrinal declutter
-// ---------------------------------------------------------------------------
-
-interface Track {
-  id: string;
-  sensor: SensorType;
-  frame: FrameKind;
-  score: number;
-  x: number;
-  y: number;
-}
-
-const CLUSTER: Track[] = [
-  { id: 'A', sensor: 'recon_static', frame: 'friend', score: 0.95, x: 120, y: 92 },
-  { id: 'B', sensor: 'offense', frame: 'friend', score: 0.45, x: 132, y: 100 },
-  { id: 'C', sensor: 'detection', frame: 'friend', score: 0.95, x: 126, y: 112 },
-  { id: 'H1', sensor: 'offense', frame: 'hostile', score: 0.95, x: 140, y: 96 },
-  { id: 'U1', sensor: 'defense', frame: 'unknown', score: 0.72, x: 115, y: 106 },
-];
-
-function Declutter({ size, args }: { size: number; args: GlanceArgs }) {
-  const W = 300;
-  const H = 210;
-  const s = size;
-  const cx = CLUSTER.reduce((a, t) => a + t.x, 0) / CLUSTER.length;
-  const cy = CLUSTER.reduce((a, t) => a + t.y, 0) / CLUSTER.length;
-  const ordered = [...CLUSTER].sort((a, b) => Number(b.frame === 'hostile') - Number(a.frame === 'hostile'));
-  const sym = (t: Track, x: number, y: number) => (
-    <g key={t.id} transform={`translate(${x - s / 2} ${y - s / 2}) scale(${s / 200})`}>
-      <GlanceSymbol variant="V3" sensor={t.sensor} frame={t.frame} score={t.score} sizePx={s} reducedMotion={args.reducedMotion} blinkOn={!args.acknowledged} />
-    </g>
-  );
-  const stackX = 210;
-  const rowH = s * 0.62;
-  const stackTop = cy - (ordered.length * rowH) / 2;
-  const panel = (title: string, body: ReactNode) => (
-    <figure style={{ margin: 0, display: 'grid', gap: 4 }}>
-      <figcaption style={{ ...mono, color: 'var(--text-secondary)' }}>{title}</figcaption>
-      <svg width={W} height={H} style={{ ...mapSurface, display: 'block' }} overflow="hidden">
-        <circle cx={cx} cy={cy} r={2} fill="var(--sym-ink)" />
-        {body}
-      </svg>
-    </figure>
-  );
-  const ink = { stroke: 'var(--sym-ink)', strokeWidth: 1.25, fill: 'none' } as const;
-  return (
-    <div style={{ display: 'flex', gap: 'var(--space-4)', flexWrap: 'wrap' }}>
-      {panel('Raw: 5 tracks within 1.5·s — overlap', CLUSTER.map((t) => sym(t, t.x, t.y)))}
-      {panel(
-        'E: bracketed stack + one locator line (¶5-8, Fig 5-6, p 5-41/42), hostile first',
-        <>
-          <path d={`M${cx},${cy} H${stackX - 14}`} {...ink} />
-          <path d={`M${stackX - 6},${stackTop} h-8 V${stackTop + ordered.length * rowH} h8`} {...ink} />
-          {ordered.map((t, i) => sym(t, stackX + s / 2, stackTop + rowH * (i + 0.5)))}
-        </>,
-      )}
-      {panel(
-        'E (compact, Hamilton convention): first 3 frames + "+n"',
-        <>
-          <path d={`M${cx},${cy} H${stackX - 14}`} {...ink} />
-          <path d={`M${stackX - 6},${cy - rowH * 1.5} h-8 V${cy + rowH * 1.5} h8`} {...ink} />
-          {ordered.slice(0, 3).map((t, i) => sym(t, stackX + s / 2, cy - rowH * 1.5 + rowH * (i + 0.5)))}
-          <text x={stackX + s + 6} y={cy + 4} fill="var(--sym-ink)" style={{ ...mono, fontSize: 11 }}>
-            +{ordered.length - 3}
-          </text>
-        </>,
-      )}
-    </div>
-  );
-}
-
-export const EDeclutter: Story = {
-  name: 'E — doctrinal declutter',
-  render: (args) => (
-    <div style={page}>
-      <GlanceStyles />
-      <p style={para}>
-        Research candidate E. When three or more symbols overlap within 1.5·s: stack them in a bracket with one locator line from the bracket centre to
-        the true location ({MANUAL} ¶5-8, Fig 5-6, pp 5-41/5-42); hostile first. If the stack still collides, show up to three frames plus a
-        &ldquo;+n&rdquo; count (Hamilton convention, labelled). Symbols are V3 (C). The dot marks the true centroid.
-      </p>
-      {[24, 32].map((s) => (
-        <Declutter key={s} size={s} args={args} />
-      ))}
-    </div>
-  ),
-};
-
-// ---------------------------------------------------------------------------
-// Evaluation stories
-// ---------------------------------------------------------------------------
-
-function VisionRow({ modes, size = 16, score = 0.45 }: { modes: VisionMode[]; size?: number; score?: number }) {
-  return (
-    <div style={{ display: 'grid', gap: 'var(--space-4)' }}>
-      {modes.map((m) => (
-        <div key={m} style={{ display: 'grid', gap: 4 }}>
-          <h3 style={h3}>{VISION_LABEL[m]}</h3>
-          <VisionFilter mode={m}>
-            <div style={{ display: 'flex', gap: 'var(--space-3)', flexWrap: 'wrap', alignItems: 'start' }}>
-              {GLANCE_VARIANTS.map((v) => (
-                <GlanceMatrix key={v} variant={v} sizePx={size} score={score} reducedMotion caption={v} />
-              ))}
-            </div>
-          </VisionFilter>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-export const BlurTest: Story = {
-  name: 'Eval — blur σ 1 / 2 px (T1)',
-  render: () => (
-    <div style={page}>
-      <GlanceStyles />
-      <p style={para}>SVG feGaussianBlur at σ 1 and σ 2 px over every variant at 16 px, trust 0.45. The computed T1 scores use the same σ on silhouette alpha.</p>
-      <VisionRow modes={['normal', 'blur1', 'blur2']} />
-      <ResultsTable />
-    </div>
-  ),
-};
-
-export const Thumbnail16: Story = {
-  name: 'Eval — 16 px thumbnail (T4)',
-  render: () => (
-    <div style={page}>
-      <GlanceStyles />
-      <p style={para}>
-        True 16 px, no zoom, nominal and degraded. T4 classifies 16 sub-pixel offsets with σ 0.02 noise by max NCC against ≥ 128 px templates; its
-        accuracies are in the results table (affiliation · function, at 16 / 24 / 32).
-      </p>
-      <VisionRow modes={['normal']} score={0.95} />
-      <VisionRow modes={['normal']} score={0.45} />
-      <ResultsTable />
-    </div>
-  ),
-};
-
-export const Grayscale: Story = {
-  name: 'Eval — grayscale (T5)',
-  render: () => (
-    <div style={page}>
-      <GlanceStyles />
-      <VisionRow modes={['grayscale']} size={24} />
-      <ResultsTable vision="grayscale" />
-    </div>
-  ),
-};
-
-export const ColourVision: Story = {
-  name: 'Eval — deuteranopia / protanopia (T6)',
-  render: () => (
-    <div style={page}>
-      <GlanceStyles />
-      <p style={para}>Machado, Oliveira &amp; Fernandes 2009, severity 1.0, linear RGB — the same matrices drive the SVG filter and the evaluator.</p>
-      <VisionRow modes={['deuteranopia', 'protanopia']} size={24} />
-      <ResultsTable vision="deuteranopia" />
-      <ResultsTable vision="protanopia" />
-    </div>
-  ),
-};
-
-export const SilhouetteDistinctness: Story = {
-  name: 'Eval — silhouette distinctness (all variants)',
-  play: async ({ canvasElement }) => {
-    const c = within(canvasElement);
-    await waitFor(() => expect(c.getByTestId('results-normal').getAttribute('data-ready')).toBe('true'), { timeout: 60000 });
-    // Calibration (research §5.3): the doctrinal reference passes T1, the n-gon baseline fails it.
-    const row = (v: string) => c.getByTestId('results-normal').querySelector(`tr[data-variant="${v}"]`)!;
-    await expect(row('REF').textContent).toMatch(/^REF.*?PASS/);
-    await expect(row('V0').textContent).toMatch(/FAIL/);
-  },
-  render: () => (
-    <div style={page}>
-      <GlanceStyles />
-      <ProtocolNote />
-      <ResultsTable />
-      {(['REF', ...GLANCE_VARIANTS] as const).map((v) => (
-        <Section key={v} title={`${v}${v === 'REF' ? ' — doctrinal reference (milsymbol-default sizes)' : v === 'V0' ? ' — current' : ` (${RESEARCH_ID[v]})`}`}>
-          <VariantHeatmaps variant={v} />
-        </Section>
-      ))}
-    </div>
-  ),
-};
-
-function searchStory(mode: 'affiliation' | 'function', alwaysPresent: boolean): Story {
-  return {
-    argTypes: { variant: shown, size: shown, ...(alwaysPresent ? {} : { n: shown }) },
-    play: async ({ canvasElement }) => {
-      const c = within(canvasElement);
-      await userEvent.click(c.getByTestId('ooo-start'));
-      const grid = c.getByTestId('ooo-grid');
-      const target = Number(grid.getAttribute('data-target'));
-      if (target >= 0) await userEvent.click(c.getByTestId(`ooo-cell-${target}`));
-      else await userEvent.click(c.getByTestId('ooo-absent'));
-      await expect(c.getByTestId('ooo-result').textContent).toMatch(/^Correct in \d+ ms/);
-    },
-    render: (args) => (
-      <div style={page}>
-        <GlanceStyles />
-        <p style={para}>
-          {mode === 'affiliation' ? 'One hostile among friends (offense row).' : 'One recon_mobile among recon_static (friend) — the hardest V0 pair (heptagon vs hexagon).'}{' '}
-          {alwaysPresent
-            ? 'Brief version: 10 × 10, target always present. Click it; the time is recorded per variant. "Randomise seed" moves it.'
-            : `T8 human mode: ${args.n} items placed at seeded random cells of a 10 × 10 lattice, target present on 50 % of seeds. Run several N (8 / 16 / 32) to get the slope b of RT = a + b·N; pass ≤ ${10} ms/item.`}{' '}
-          Switch <strong>variant</strong> / <strong>size</strong> in Controls; stats accumulate per variant until reload.
-        </p>
-        <OddOneOut mode={mode} variant={args.variant} sizePx={args.size} score={0.95} n={alwaysPresent ? 100 : args.n} alwaysPresent={alwaysPresent} />
-      </div>
-    ),
-  };
-}
-
-export const SearchAffiliation: Story = { name: 'Eval — odd-one-out: hostile among friends (10×10)', ...searchStory('affiliation', true) };
-export const SearchFunction: Story = { name: 'Eval — odd-one-out: one function among another (10×10)', ...searchStory('function', true) };
-export const SearchSlope: Story = { name: 'Eval — T8 search slope (N 8/16/32, 50 % present)', ...searchStory('affiliation', false) };
-
-// ---------------------------------------------------------------------------
-// Reference
-// ---------------------------------------------------------------------------
-
-export const Reference: Story = {
-  name: 'Reference — MCRP 5-12A vs 2525E, unverified',
-  render: () => (
-    <div style={page}>
-      <ProtocolNote />
-      <Section title={`Differences — ${MANUAL} vs MIL-STD-2525E / FM 1-02.2 (research §2.2 + bench findings)`}>
-        <DifferencesTable />
-      </Section>
-      <Section title="Sensor type → MCRP icon → codes (research §2.1, validated with milsymbol 3.0.4 isValid())">
-        <SidcTable variant="V1" withEchelon />
-      </Section>
-      <Section title="Fixture correction">
-        <p style={para}>
-          <code>AFFILIATION_TRACKS</code> types <code>hostile_ew_1</code> as sensor_type &ldquo;defense&rdquo;, which would draw a hostile air-defense dome. It is an EW
-          (jamming) emitter: &ldquo;EW&rdquo; + sawtooth, Table 5-3 p 5-18; 2525B SHGPUUMSEJ-----, CoT a-h-G-U-U-M-S-E-J. The contract&apos;s SensorType has no EW
-          value, so <code>SYMBOL_FUNCTION_OVERRIDES</code> (fixtures/avdiivka.ts) maps it to <code>&apos;ew-jamming&apos;</code>.
-        </p>
-      </Section>
-      <Section title="Unverified / not found">
-        <UnverifiedList />
-      </Section>
-    </div>
-  ),
-};

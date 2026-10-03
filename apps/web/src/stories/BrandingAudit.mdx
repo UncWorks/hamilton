@@ -6,8 +6,9 @@ import { FINDINGS, FindingsTable, UNCWORK_MAP, UncworkTable } from './support/au
 # Branding audit
 
 Every component in `apps/web` compared against **docs/Branding and Frontend Design.md** (the spec). This page is the
-working list for unifying look-and-feel. **Nothing here has been fixed** — components are untouched; the stories
-render them exactly as they ship. Line numbers point at the tree as of the commit that added Storybook.
+working list for unifying look-and-feel. Live components are untouched unless a finding says FIXED. The stories render
+them exactly as they ship. Findings marked **RESOLVED BY DECISION** have a decided design (Decisions/Track Symbology)
+that the renderers have not adopted yet. Line numbers point at the tree as of the commit that added Storybook.
 
 {FINDINGS.length} findings: {FINDINGS.filter((f) => f.severity === 'high').length} high,
 {' '}{FINDINGS.filter((f) => f.severity === 'med').length} medium,
@@ -24,9 +25,15 @@ trust (1 − match strength), candidates are the engine's 1.00 / 0.50 / 0.17 for
 - **Foundations/Colors → Renderer Mirrors / Hard-coded Literals** shows the color drift side by side with Δ values.
 - **Foundations/Trust Bands** shows score → color / halo / opacity as each renderer actually applies it.
 - **Foundations/Typography → Families** live-checks whether the self-hosted fonts loaded (they don't — A01).
-- **Explorations/At-a-Glance Symbols** measures the §5.2 n-gons against FM 1-02 / MCRP 5-12A alternates (G01).
-- **COP/TrackSymbol (overlay)** is the spec-correct §5.2 icon, built from the app's own geometry helpers, for the
-  renderers to converge on.
+- **Decisions/Track Symbology** records the symbology decisions (base symbol, trust cue, J split, standards, radar
+  glyph, declutter) and shows the production symbol in `src/components/symbol`. It resolves G01, S01–S06 and S10 by
+  decision, and supersedes the halo (A15, S05). The renderers still have to adopt it. S07–S09 hold in the decided
+  symbol.
+- **Decisions/Evidence/At-a-Glance** holds the measurements behind the decision (T1–T8, the radar T7 sweep, MCRP vs
+  2525E reference).
+- **COP/TrackSymbol (overlay)** is the §5.2 n-gon icon the live renderers are built from today. It fails the
+  at-a-glance test (G01) and is superseded by the decided symbol.
+- **Archive** keeps the superseded explorations (Track Symbology A/B/C/B′, Halo Options, At-a-Glance variants V0–V4).
 
 ## High severity — the load-bearing look
 

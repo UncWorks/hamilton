@@ -1,0 +1,167 @@
+import { Canvas, Meta } from '@storybook/blocks';
+import * as Stories from './TrackSymbology.stories';
+
+<Meta of={Stories} />
+
+# Track symbology — decisions
+
+The COP's track symbol, as decided. Production code: **`src/components/symbol`** (`TrackSymbol`, `TrackSymbolWithTooltip`,
+`DeclutterStack`, `trackSymbolSvg` / `trackSymbolDataUrl`) with **`src/lib/track-sidc.ts`** (`toSidc2525E`,
+`toSidc2525C`, `toCotType`) and **`src/lib/link-trust-rating.ts`** (rating names, J split). Manual: **FM 1-02 / MCRP 5-12A,
+"Operational Terms and Graphics" (21 Sep 2004)**; page numbers are the manual's own. Bench numbers come from the At-a-Glance
+protocol (glance-symbology-research.md §5), measured in the browser on the production primitives.
+The live renderers (CesiumSpine / MapSpine) adopt the symbol separately.
+
+<Canvas of={Stories.TrustBands} />
+
+| # | Decision | Choice |
+|---|---|---|
+| 1 | Base symbol | V1 doctrinal filled frames + V4 unit-label treatment |
+| 2 | Trust cue | Side gauge + J text outside the frame; no halo, outline or blink |
+| 3 | Rating | NOMINAL / WATCH / DEGRADED / UNRELIABLE / STALE + hover breakdown; J split |
+| 4 | Standards | Draw to MCRP 5-12A; store 2525E numeric; export 2525B/C letter + CoT |
+| 5 | TA-radar glyph | Enlarged within the frame; T7 (iii) 1.11 → 2.07 |
+| 6 | Clustering | E, doctrinal declutter (bracketed stack, "+n") |
+
+## 1 · Base symbol: V1 filled frames + V4 unit labels
+
+**Choice.** Table 4-1 frames (p 4-3) filled with the Table 4-3 hues (p 4-4) at dark-map luminance (friend #0091c0,
+hostile #f00000, neutral #00b000, unknown #dcd900), frame line in `--sym-ink`, enlarged Table 5-3 icons in #06090d (FA
+cannonball r 25, COLT/FIST dot r 20). From V4, only the label behaviour: T left of the frame (Fig 4-2, p 4-5), mono 400,
+never smaller than a 24 px symbol's label (10 px). Below 28 px, the echelon (Table 5-6, p 5-33) and every amplifier
+except T are hidden. V4's heavier strokes and 24 px box floor are **not** taken.
+
+**Rationale.** Fill colour is a guiding feature that is redundant with frame shape, and MIL-STD-1472H §5.17.25.15 prefers
+filled symbols. ¶4-10 (p 4-10) requires symbols that are "easily distinguishable", including without colour. FINAL scores
+T1 0.81 max / friend–hostile 0.62 (pass ≤ 0.85 / ≤ 0.70), and T4 100 % affiliation and function at 16, 24 and 32 px.
+The n-gons fail at 0.97.
+
+**Evidence.** [Matrix](?path=/story/decisions-track-symbology--matrix) ·
+[Bench scores](?path=/story/decisions-track-symbology--bench-scores) ·
+[Silhouette distinctness](?path=/story/decisions-evidence-at-a-glance--silhouette-distinctness) ·
+[16 px thumbnail (T4)](?path=/story/decisions-evidence-at-a-glance--thumbnail-16) ·
+archived [V1](?path=/story/archive-at-a-glance-variants--v-1-filled) and [V4](?path=/story/archive-at-a-glance-variants--v-4-high-glance).
+
+## 2 · Trust cue: side gauge + J, outside the frame
+
+**Choice.** The Hamilton link-trust overlay is a 3 px side gauge directly right of the frame. Its fill height is the
+score, in the trust colour. J (evaluation rating) is drawn as text right of the gauge, so no field moves when J appears.
+Neither changes the frame or the fill. There is no circular halo, no frame-following outline and no blink. The gauge is non-doctrinal: it
+is labelled in the legend (¶4-5, p 4-4) and is never exported.
+
+**Rationale.** A circle is the friendly equipment frame (Table 4-1, p 4-3), and the variable-rate pulse conflicts with
+MIL-STD-1472H §5.17.27. On the bench, the halo raises silhouette similarity by +0.72 (T2, V0) and the outline by
++0.10 (V3, V4). The fail line is +0.05. The gauge adds +0.01. J is a doctrinal field (Table 4-4, p 4-6).
+
+**Evidence.** [Trust bands](?path=/story/decisions-track-symbology--trust-bands) ·
+[Bench scores](?path=/story/decisions-track-symbology--bench-scores) ·
+archived [Halo variants on V1](?path=/story/archive-at-a-glance-variants--halo-variants),
+[V3 outline](?path=/story/archive-at-a-glance-variants--v-3-outline),
+[Halo Options](?path=/story/archive-halo-options--comparison).
+
+## 3 · Rating names, hover breakdown, J split
+
+**Choice.** The rating names stay NOMINAL / WATCH / DEGRADED / UNRELIABLE / STALE, and hovering or focusing a symbol
+opens the factor breakdown, now the production `RatingTooltip`. J is split into two axes:
+
+- the score sets the **reliability letter**: B / C / D / E at ≥ 0.85, ≥ 0.60, ≥ 0.30 and below;
+- corroboration sets the **credibility digit**: 1 when confirmed on an alternate channel or by a second sensor, otherwise
+  today's 2 / 3 / 4 / 5;
+- STALE becomes **F6**, with AR = NRT;
+- the S2 can override J with a reason (`jOverride` in the fixtures). The override is shown and exported, and the
+  automatic value is kept in the tooltip;
+- an algorithm never emits "A".
+
+**Rationale.** Table 4-4 (p 4-6) treats reliability and credibility as independent axes. The B2 / C3 / D4 / E5 diagonal
+conflated them (decision-workflow assessment §6, item 2). HS-14 keeps J an S2 product. The names avoid every reserved
+2525 / FM 1-02.2 term. Unit tests cover the split, F6, never-A and override validation (`link-trust-rating.test.ts`).
+
+**Evidence.** [Rating tooltip](?path=/story/decisions-track-symbology--rating-tooltip) ·
+[Trust bands](?path=/story/decisions-track-symbology--trust-bands) ·
+archived [B′ rating tooltip](?path=/story/archive-track-symbology--option-b-prime-rating-tooltip).
+
+## 4 · Standards: MCRP 5-12A drawing, 2525E stored, 2525B/C + CoT exported
+
+**Choice.** Symbols are drawn to FM 1-02 / MCRP 5-12A (2004). The 20-digit 2525E SIDC is stored (`toSidc2525E`). For
+ATAK, export the 15-character 2525B/C letter SIDC (`toSidc2525C`) and the CoT type (`toCotType`). Mapping:
+
+- FA battery: 130300 / UCF--- / a-f-G-U-C-F
+- COLT/FIST: 130400 / UCFTCD
+- TA radar: 130300 + modifier 50 / UCFTR-. Not 130302, which is 2525D only.
+- Recon, motorized: 121303 / UCRVM-
+- Air defense: 130100 / UCD---
+- EW jamming: 150504 / UUMSEJ
+
+**Rationale.** MCRP 5-12A is 2525B-era (Preface p vi), so its CoT type follows directly from the 2525B function code,
+while 2525E is the current storage standard. The codes come from glance-symbology-research.md §2.1 and pass milsymbol 3.0.4
+`isValid()`. `hostile_ew_1` is drawn as EW jamming (p 5-18), not as an air-defense dome.
+
+**Evidence.** [Export: SIDC / CoT + billboard image](?path=/story/decisions-track-symbology--export) ·
+[Reference: MCRP vs 2525E, codes, unverified](?path=/story/decisions-evidence-at-a-glance--reference).
+
+## 5 · TA-radar glyph enlarged (T7 condition iii)
+
+**Choice.** The FA target-acquisition radar glyph (dot + radar, Table 5-3, p 5-13) is enlarged inside the frame. Icon
+enlargement within the frame is permitted (2525D §5.3.1.2).
+
+- Friend and neutral frames: 1.45×, re-centred vertically, radar stroke 1.5× the frame stroke.
+- Hostile diamond: 1.12×. Unknown quatrefoil: 1.15×. Beyond that, the radar arm crosses the frame.
+
+**Before / after.** T7 (iii) asks how quickly a friendly FA battery stands out among friendly TA radars. Minimum R over
+N 8 / 16 / 32, pass ≥ 2:
+
+| Glyph | R at N 8 | R at N 16 | R at N 32 | Result |
+|---|---|---|---|---|
+| Before: V1, doctrinal size | 1.11 | 1.29 | 1.14 | Fail |
+| Iteration 1: 1.45×, stroke ×1.25 | 1.99 | 2.15 | 1.95 | Fail |
+| Iteration 2 (shipped): 1.45×, re-centred, stroke ×1.5 | 2.12 | 2.29 | 2.07 | Pass |
+| REF (calibration) | — | — | — | 2.17 |
+
+The pass margin is thin. T7 tests the friend frame only, and the hostile and unknown glyphs, which cannot grow as far, are
+not tested. The T7 threshold is provisional (research §5.3), and REF itself only reaches 2.17. If the threshold is
+recalibrated, it should be set relative to REF, for example R ≥ 0.9 × R(REF), rather than as an absolute 2.
+
+**Evidence.** [Radar glyph: T7 (iii) before / after + sweep](?path=/story/decisions-evidence-at-a-glance--radar-glyph-t-7).
+
+## 6 · Clustering: E, doctrinal declutter
+
+**Choice.** When three or more symbols overlap within 1.5·s, they are drawn as a bracketed stack with one locator line to
+the true location, hostile first (¶5-8, Fig 5-6, pp 5-41/5-42). If the stack still collides, it shows three frames and
+"+n", a labelled Hamilton convention. Only the symbol-side pieces are built here: `DeclutterStack`, `StackBracket`,
+`OverflowCount`, `stackOrder` and `stackGeometry`. Deciding when tracks collide belongs to the map renderers.
+
+**Rationale.** E addresses the overlap penalty reported by Fletcher et al. (2011), and MIL-STD-1472H §5.17.22.4.4 asks for
+declutter controls. The stack is a doctrinal construct, unlike a bespoke cluster bubble.
+
+**Evidence.** [Declutter stack](?path=/story/decisions-track-symbology--declutter) ·
+[COP: Avdiivka](?path=/story/decisions-track-symbology--cop).
+
+## Final symbol: bench scores
+
+Measured headless (Chrome) on this commit. The live [Bench scores](?path=/story/decisions-track-symbology--bench-scores)
+story recomputes them. REF must pass and V0 must fail before any other row is trusted.
+
+| Test | Pass rule | FINAL | V1 (base) | REF | V0 (n-gons) |
+|---|---|---|---|---|---|
+| T1 silhouette (σ1 max · F/H · σ2) | ≤ 0.85 · ≤ 0.70 · ≤ 0.92 | **0.81 · 0.62 · 0.83 ✓** | 0.81 · 0.62 · 0.83 ✓ | 0.81 · 0.62 · 0.83 ✓ | 0.97 · 0.97 · 0.99 ✗ |
+| T2 overlay masking | rise ≤ 0.05 | **+0.01 ✓** | 0 ✓ | 0 ✓ | +0.72 ✗ |
+| T3 function distance D | ≥ REF and ≥ 1.5× V0 | **0.315 ✓** | 0.315 ✓ | 0.243 | 0.122 |
+| T4 thumbnail (aff · fn, 16/24/32) | 100 % · ≥ 95–100 % | **100 % everywhere ✓** | 100 % ✓ | 98.8 % aff at 16 ✗ | 100 % ✓ |
+| T5 grayscale (T1 · T4 · min contrast) | pass · pass · ≥ 3:1 | **✓ · ✓ · 4.4:1 ✓** | ✓ · ✓ · 4.4:1 | ✓ · ✗ · 8.2:1 | ✗ · ✓ · 4.2:1 |
+| T6 deuteranopia / protanopia (T1 · T4) | pass, colour redundant | **✓ · ✓ ✓** | ✓ · ✓ | ✓ · ✗ | ✗ (deut) · ✓ |
+| T7 salience R (i · ii · iii · iv) | each ≥ 2 | **6.52 · 5.69 · 2.07 · 4.20 ✓** | 6.52 · 5.69 · 1.11 ✗ · 6.41 | 6.38 · 7.21 · 2.17 · 7.19 ✓ | 4.40 · 4.05 · 4.22 · 0.51 ✗ |
+
+Notes:
+
+- Under deuteranopia, affiliation ΔE is 6.4 (hostile/neutral) and trust ΔE is 3.3. Both are redundant: the frame shape
+  carries affiliation, and gauge length plus J carry trust.
+- FINAL's T7 (iv) drops from 6.41 to 4.20 because the gauge now sits inside the measured 2s window at 24 px. It still
+  passes.
+- REF's T4 miss at 16 px (98.8 %) is the reason the research thresholds still need calibration.
+- T8, human search time, is not measured automatically. Run the
+  [search stories](?path=/story/decisions-evidence-at-a-glance--search-slope).
+
+## Superseded
+
+Options A/B/C/B′ and the side-by-side comparison, Halo Options, and the At-a-Glance variants V0–V4 are under **Archive**.
+The evaluation stories moved to **Decisions/Evidence/At-a-Glance**, which scores FINAL alongside the archived variants.

@@ -160,13 +160,17 @@ function OptionRow({
 }
 
 const meta = {
-  title: 'Explorations/Halo Options',
+  title: 'Archive/Halo Options',
   parameters: {
     layout: 'fullscreen',
     docs: {
       story: { inline: true },
       description: {
         component:
+          '**ARCHIVED — superseded by Decisions/Track Symbology, decision 2:** the decided symbol shows trust as a side gauge + J ' +
+          'text outside the frame, with no circular halo (a circle is the friendly equipment frame, MCRP Table 4-1 p 4-3, and the ' +
+          'variable-rate pulse conflicts with MIL-STD-1472H §5.17.27). Kept for the record; the live renderers still draw Option 1 ' +
+          'until they adopt the production symbol.\n\n' +
           'Below-ROE-floor halo treatments (Branding §5.2 / §6.3) compared at trust 0.55 · 0.40 · 0.20 on the dark map ' +
           'surface. Colours are the real `--trust-degraded` / `--trust-failed` tokens.\n\n' +
           '**Live: Option 1 (spec-faithful pulse).** MapSpine (deck.gl) and CesiumSpine draw it from the shared ' +
