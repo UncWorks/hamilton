@@ -193,6 +193,17 @@ export const PHASE_TRACKS = {
   ),
 } as const;
 
+/**
+ * Symbol-function overrides for fixture sources whose contract `sensor_type`
+ * cannot express what they are. hostile_ew_1 is an EW jamming emitter
+ * (FM 1-02 / MCRP 5-12A Table 5-3 p 5-18; 2525B SHGPUUMSEJ), but SensorType has
+ * no EW value, so its "defense" would draw a hostile air-defense dome.
+ * Symbology stories must consult this before mapping sensor_type to an icon.
+ */
+export const SYMBOL_FUNCTION_OVERRIDES: Record<string, 'ew-jamming'> = {
+  hostile_ew_1: 'ew-jamming',
+};
+
 /** Mixed-affiliation track list for icon/halo coverage. */
 export const AFFILIATION_TRACKS: TrackState[] = [
   track('unit_a', BAND_SAMPLES.nominal),

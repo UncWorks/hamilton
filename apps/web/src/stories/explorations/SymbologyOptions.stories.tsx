@@ -1,4 +1,4 @@
-import type { Decorator, Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react';
 import { useId, useRef, type CSSProperties, type ReactNode } from 'react';
 import { expect, fireEvent, userEvent, waitFor, within } from '@storybook/test';
 import type { SensorType } from '@hamilton/contracts';
@@ -42,6 +42,7 @@ import {
   type ExplanationProps,
 } from '@/stories/support/OptionBPrime';
 import { mono } from '@/stories/support/foundation-ui';
+import { withDeuteranopia } from '@/stories/support/vision-filters';
 
 // ---------------------------------------------------------------------------
 // Args + deuteranopia decorator
@@ -61,29 +62,6 @@ interface SymbologyArgs {
   /** COP – Option B′: scenario clock in seconds (0:45 → 1:20). */
   clock: number;
 }
-
-/** Machado 2009 deuteranopia, severity 1.0 — linear RGB (feColorMatrix default). */
-const MACHADO_DEUTERANOPIA = [
-  [0.367322, 0.860646, -0.227968],
-  [0.280085, 0.672501, 0.047413],
-  [-0.01182, 0.04294, 0.968881],
-];
-const FILTER_ID = 'hamilton-deuteranopia';
-
-const withDeuteranopia: Decorator = (Story, ctx) => {
-  if (!ctx.args.deuteranopia) return <Story />;
-  const values = MACHADO_DEUTERANOPIA.map((row) => `${row.join(' ')} 0 0`).join('  ') + '  0 0 0 1 0';
-  return (
-    <div style={{ filter: `url(#${FILTER_ID})` }}>
-      <svg width={0} height={0} style={{ position: 'absolute' }} aria-hidden>
-        <filter id={FILTER_ID} colorInterpolationFilters="linearRGB">
-          <feColorMatrix type="matrix" values={values} />
-        </filter>
-      </svg>
-      <Story />
-    </div>
-  );
-};
 
 // ---------------------------------------------------------------------------
 // Matrix definition

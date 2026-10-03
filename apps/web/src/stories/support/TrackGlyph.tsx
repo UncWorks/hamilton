@@ -127,6 +127,19 @@ export function HaloSvg({
   }
 }
 
+/** §5.2 polygon (track-symbol.ts symbolGeometry) as SVG `points`, centred on (cx, cy). */
+export function trackPolygonPoints(affiliation: Affiliation, sensorType: SensorType, radius: number, cx = 0, cy = 0): string {
+  const geom = symbolGeometry(affiliation, sensorType);
+  const rot = (geom.rotation_deg * Math.PI) / 180;
+  return geom.vertices
+    .map(([x, y]) => {
+      const rx = x * Math.cos(rot) - y * Math.sin(rot);
+      const ry = x * Math.sin(rot) + y * Math.cos(rot);
+      return `${(cx + rx * radius).toFixed(2)},${(cy + ry * radius).toFixed(2)}`;
+    })
+    .join(' ');
+}
+
 export interface TrackGlyphProps {
   affiliation: Affiliation;
   sensorType: SensorType;
@@ -154,15 +167,7 @@ export function TrackGlyph({
   haloPeriodScale = 1,
   reducedMotion = false,
 }: TrackGlyphProps) {
-  const geom = symbolGeometry(affiliation, sensorType);
-  const rot = (geom.rotation_deg * Math.PI) / 180;
-  const pts = geom.vertices
-    .map(([x, y]) => {
-      const rx = x * Math.cos(rot) - y * Math.sin(rot);
-      const ry = x * Math.sin(rot) + y * Math.cos(rot);
-      return `${(rx * radius).toFixed(2)},${(ry * radius).toFixed(2)}`;
-    })
-    .join(' ');
+  const pts = trackPolygonPoints(affiliation, sensorType, radius);
   const band = trustBand(score);
   const [r, g, b] = affiliationRgb(affiliation);
   const fill = useCssToken ? `var(--affiliation-${affiliation})` : `rgb(${r} ${g} ${b})`;

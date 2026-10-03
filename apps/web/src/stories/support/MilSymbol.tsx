@@ -10,9 +10,8 @@
 
 import type { CSSProperties, ReactNode } from 'react';
 import type { Affiliation, SensorType } from '@hamilton/contracts';
-import { symbolGeometry } from '@/components/cop/track-symbol';
 import { haloPeriodMs, shouldHaloPulse, trustBand } from '@/lib/trust-gradient';
-import { HaloSvg } from './TrackGlyph';
+import { HaloSvg, trackPolygonPoints } from './TrackGlyph';
 
 export type SymbologyOption = 'A' | 'B' | 'C';
 export type FrameKind = 'friend' | 'hostile' | 'neutral' | 'unknown';
@@ -35,7 +34,7 @@ export const FRAME_BOX: Record<FrameKind, [number, number, number, number]> = {
   unknown: [4.92, 4.92, 27.08, 27.08],
 };
 
-const FRAME_TO_AFFILIATION: Record<FrameKind, Affiliation> = {
+export const FRAME_TO_AFFILIATION: Record<FrameKind, Affiliation> = {
   friend: 'friendly',
   hostile: 'enemy',
   neutral: 'neutral',
@@ -92,11 +91,29 @@ export function fontPx(sizePx: number) {
   return sizePx >= 32 ? 11 : sizePx >= 24 ? 10 : 9;
 }
 
+/**
+ * Frame-dependent icon parts, 200-unit space, verified against milsymbol 3.0.4
+ * src/iconparts/ground.js (GR.IC.FF.RECONNAISSANCE, GR.IC.FF.AIR DEFENCE):
+ * the slash / dome is re-fitted to each affiliation frame.
+ */
+export const RECON_PATH: Record<FrameKind, string> = {
+  friend: 'M25,150L175,50',
+  hostile: 'M60,130L140,70',
+  neutral: 'M45,155L155,45',
+  unknown: 'M50,135L150,65',
+};
+export const AIRDEF_PATH: Record<FrameKind, string> = {
+  friend: 'M25,150 C25,110 175,110 175,150',
+  hostile: 'M70,140 C70,115 130,115 130,140',
+  neutral: 'M45,150 C45,110 155,110 155,150',
+  unknown: 'm 55,135 c 10,-20 80,-20 90,0',
+};
+
 export function Icon({ kind, frame, color, k }: { kind: IconKind; frame: FrameKind; color: string; k: number }) {
   if (kind === 'none') return null;
   const sw = (1.5 * k) / 0.16; // 1.5px in 200-unit space
   const line = { fill: 'none', stroke: color, strokeWidth: sw, strokeLinecap: 'round' as const };
-  const reconPath = frame === 'friend' ? 'M25,150L175,50' : 'M60,130L140,70';
+  const reconPath = RECON_PATH[frame];
   const parts: ReactNode[] = [];
   if (kind === 'fa' || kind === 'fa-observer' || kind === 'fa-radar') {
     parts.push(<circle key="fa" cx={100} cy={100} r={15} fill={color} />);
@@ -112,7 +129,7 @@ export function Icon({ kind, frame, color, k }: { kind: IconKind; frame: FrameKi
       />,
     );
   }
-  if (kind === 'airdef') parts.push(<path key="ad" d="M25,150 C25,110 175,110 175,150" {...line} />);
+  if (kind === 'airdef') parts.push(<path key="ad" d={AIRDEF_PATH[frame]} {...line} />);
   if (kind === 'ew') {
     parts.push(
       <text
@@ -138,7 +155,18 @@ export function EchelonMark({ echelon, y, k, color }: { echelon?: Echelon | unde
   if (echelon === 'battery') {
     return <line x1={16} x2={16} y1={y - 5} y2={y} stroke={color} strokeWidth={1.5 * k} />;
   }
-  const xs = echelon === 'team' ? [16] : [12, 16, 20];
+  if (echelon === 'team') {
+    // Team / crew = Ø (FM 1-02 / MCRP 5-12A Table 5-6, p 5-33; same in 2525E). A
+    // single dot is SQUAD, so the earlier dot rendering was one echelon off.
+    const rr = 2;
+    return (
+      <g fill="none" stroke={color} strokeWidth={1.25 * k}>
+        <circle cx={16} cy={y - rr - 0.3} r={rr} />
+        <line x1={16 - rr * 1.4} y1={y + 0.6} x2={16 + rr * 1.4} y2={y - 2 * rr - 1.2} />
+      </g>
+    );
+  }
+  const xs = [12, 16, 20];
   return (
     <g fill={color}>
       {xs.map((x) => (
@@ -291,16 +319,7 @@ export function MilSymbol(p: MilSymbolProps) {
       iconEl = <Icon kind={icon} frame={frame} color={color} k={k} />;
     } else {
       // Hamilton n-gon (track-symbol.ts) as the interior icon.
-      const geom = symbolGeometry(aff, sensorType);
-      const rot = (geom.rotation_deg * Math.PI) / 180;
-      const r = 5.5;
-      const pts = geom.vertices
-        .map(([x, y]) => {
-          const rx = x * Math.cos(rot) - y * Math.sin(rot);
-          const ry = x * Math.sin(rot) + y * Math.cos(rot);
-          return `${(16 + rx * r).toFixed(2)},${(16 + ry * r).toFixed(2)}`;
-        })
-        .join(' ');
+      const pts = trackPolygonPoints(aff, sensorType, 5.5, 16, 16);
       iconEl = <polygon points={pts} fill={color} stroke={`var(--trust-${band})`} strokeWidth={k} />;
     }
   }

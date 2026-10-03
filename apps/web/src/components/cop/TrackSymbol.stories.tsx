@@ -15,7 +15,11 @@ const meta = {
           '`affiliationRgb`) and `trust-gradient.ts` (`haloRadiusPx`, `haloPeriodMs`, `shouldHaloPulse`). ' +
           'This is the Branding §5.2 rule — side count = sensor type, 45° for enemy, opacity = score, pulsing ' +
           'halo below 0.60. Both live renderers currently draw circles instead, so this story is the reference ' +
-          'for unifying them (see Branding Audit).',
+          'for unifying them (see Branding Audit).\n\n' +
+          '**At-a-glance verdict: this n-gon scheme FAILS** (Branding Audit G01). Measured on ' +
+          '**Explorations/At-a-Glance Symbols**: affiliation silhouettes soft-IoU 0.97 at σ 1 px (pass ≤ 0.85), the halo raises ' +
+          'pair similarity by +0.72 (pass ≤ +0.05), and hexagon vs heptagon is sub-pixel at 16 px. The bench compares ' +
+          'FM 1-02 / MCRP 5-12A-conformant alternates (V1–V4) against this baseline (V0).',
       },
     },
   },
@@ -44,8 +48,21 @@ export const UnitBDecay: Story = {
   ),
 };
 
-/** Sensor type × affiliation matrix at the degraded sample score. */
+/**
+ * Sensor type × affiliation matrix at the degraded sample score.
+ * Fails the at-a-glance test (Branding Audit G01) — see Explorations/At-a-Glance Symbols for the
+ * measured comparison against FM 1-02 / MCRP 5-12A-conformant alternates.
+ */
 export const ShapeMatrix: Story = {
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'NOTE: this n-gon scheme fails the at-a-glance test — see **Explorations/At-a-Glance Symbols** (V0 is this matrix) and ' +
+          'Branding Audit G01.',
+      },
+    },
+  },
   render: (args) => (
     <table style={{ borderCollapse: 'collapse', fontFamily: 'var(--font-mono)', fontSize: 'var(--text-micro)' }}>
       <thead>

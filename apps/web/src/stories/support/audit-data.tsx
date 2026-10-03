@@ -375,6 +375,21 @@ export const FINDINGS: Finding[] = [
       'Related: the store raises the kill-chain gate on the first crossing (1:15), while the storyboard modal beat is 1:20.',
     spec: 'Branding §10.1–§10.5 · System Design §2 / §5.1 · FRS FR-01–FR-05 · PR #1',
   },
+  // --- At-a-glance symbology ---
+  {
+    id: 'G01',
+    severity: 'high',
+    area: 'Symbology — at-a-glance (n-gon scheme fails)',
+    where: 'components/cop/track-symbol.ts · COP/TrackSymbol → ShapeMatrix · Explorations/At-a-Glance Symbols',
+    finding:
+      'The Branding §5.2 n-gon scheme (sides = sensor type, enemy +45°, colour/fill/dash = affiliation, one circular amber halo) fails the at-a-glance protocol (glance-symbology-research.md §5), measured in-browser on the exact rendered pixels: ' +
+      'T1 affiliation silhouette soft-IoU 0.97 at σ 1 px and 0.985 at σ 2 (pass ≤ 0.85 / ≤ 0.92; friend–hostile ≤ 0.70); T2 the halo raises pair similarity by +0.72 (pass ≤ +0.05); ' +
+      'recon_static vs recon_mobile (hexagon vs heptagon) soft-IoU 0.87 → indistinguishable; T7 salience R 0.51 for a hostile among friends with mixed trust (pass ≥ 2). ' +
+      'The FM 1-02 / MCRP 5-12A frames score 0.81 max (hostile/unknown) and friend–hostile 0.62 (all of V1–V4 and the doctrinal reference pass T1), function icons ≤ 0.70. ' +
+      'Doctrinal basis: MCRP ¶4-10 p 4-10 ("easily distinguishable", "distinguishable without color"); a circle is the friendly equipment frame (Table 4-1 p 4-3). ' +
+      'Open: none of V1–V4 passes T7 condition (iii) FA among TA radar (R 0.93–1.49 vs REF 2.17), V2–V4 fail T2 (H1 outline +0.09 – +0.10), and the doctrinal reference itself misses T4 affiliation at 16 px (98.8 % vs 100 %) — the provisional thresholds need calibration.',
+    spec: 'Branding §5.2 · FM 1-02 / MCRP 5-12A ¶4-10, Table 4-1 · MIL-STD-1472H §5.17.27',
+  },
 ];
 
 export interface PortRow {
