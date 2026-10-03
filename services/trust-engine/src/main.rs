@@ -42,6 +42,14 @@ async fn main() -> Result<()> {
         .unwrap_or_else(|_| "./data/trust.duckdb".into())
         .into();
 
+    // FRS FR-03: neighbour radius for spatial correlation, default 500 m.
+    let spatial_radius_m: f64 = env::var("TRUST_ENGINE_SPATIAL_RADIUS_M")
+        .ok()
+        .and_then(|s| s.parse().ok())
+        .filter(|r: &f64| r.is_finite() && *r > 0.0)
+        .unwrap_or(trust_detectors::spatial::DEFAULT_RADIUS_M);
+    info!(spatial_radius_m, "spatial correlation radius");
+
     let library = load_bundled()?;
     info!(entries = library.len(), "fingerprint library loaded");
 
@@ -65,6 +73,7 @@ async fn main() -> Result<()> {
         Arc::clone(&publisher),
         Arc::clone(&log),
         library,
+        spatial_radius_m,
     ));
 
     let http_state = AppState {

@@ -9,6 +9,8 @@ import { EventTerminal } from '@/components/terminal/EventTerminal';
 import { useHamiltonMqtt } from '@/hooks/useHamiltonMqtt';
 import { useHamilton, type TrackState } from '@/store/hamilton';
 
+// Seed positions = comms-sim SOURCE_POSITIONS (A/C ~245 m N/S of B). Live
+// positions arrive on `integrity/trust/*` (lat/lon) and override these.
 const SEED_TRACKS: TrackState[] = [
   {
     source_id: 'unit_a',

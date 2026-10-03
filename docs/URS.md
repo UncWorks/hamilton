@@ -86,7 +86,7 @@ This counterfactual is the operational basis for every UR below. It is **one Fir
 |---|---|
 | **ID** | `UR-03` |
 | **Statement** | *"As Adam, I need to read why a track is degrading without needing to be a comms engineer — cadence, error rate, gap duration — so I can decide, not just observe."* |
-| **Success criterion** | Trust trace beside the affected track reads like an operator brief, not a log line. Demo example: *"B-link cadence degraded 18s ago — investigating"* → *"B-link: 14% corrupted frames, 6.2s gap."* |
+| **Success criterion** | Trust trace beside the affected track reads like an operator brief, not a log line. Demo example: *"B-link cadence degraded 18s ago — investigating"* → *"B-link: 6% corrupted frames, cadence 1.17s."* (WATCH band, before the 1:15 jammer peak of 6.1s gap / 14% CRC) |
 | **Satisfied by** | `FR-01`, `FR-02`, `FR-08` |
 | **Demo beat** | `B-0:45`, `B-0:55` |
 | **Priority** | P0 |
@@ -109,7 +109,7 @@ This counterfactual is the operational basis for every UR below. It is **one Fir
 |---|---|
 | **ID** | `UR-05` |
 | **Statement** | *"As Adam, I need the system to refuse to recommend a kill-chain action when sensor confidence is below the rules-of-engagement floor for that action class — and to interrupt me with a modal — so a confident-looking icon never causes a confident-looking commit."* |
-| **Success criterion** | At `B-1:20`, AI **declines** to recommend the GPS-guided strike. Modal renders three options: `delay 60s`, `shift to non-GPS munition`, `confirm via alt channel`. |
+| **Success criterion** | B stays above the 0.60 ROE floor through 0:45–1:05 (WATCH) and first crosses it at `B-1:15` (0.13). At `B-1:20`, AI **declines** to recommend the GPS-guided strike. Modal renders three options: `delay 60s`, `shift to non-GPS munition`, `confirm via alt channel`. |
 | **Satisfied by** | `FR-07` |
 | **Demo beat** | `B-1:20` (the load-bearing beat) |
 | **Priority** | P0 — **the 30 seconds that win the demo are 1:15 → 1:50** |
@@ -155,7 +155,7 @@ This counterfactual is the operational basis for every UR below. It is **one Fir
 |---|---|
 | **ID** | `UR-09` |
 | **Statement** | *"As Adam, when the trust layer detects a jamming-pattern degradation, I need to see (a) the top three named jamming methods most likely responsible, ranked by match strength, and (b) for each candidate, the list of munitions in my inventory whose guidance package is known to be affected — so I can decide whether to switch round type, delay, or proceed."* |
-| **Success criterion** | At `B-1:15`, side panel renders: *"Top match: ground_based_gps_uhf_barrage (0.81) — affected: Excalibur, JDAM-ER, Switchblade 300. Second: cellular_uhf_barrage (0.42) — affected: ATAK position-share, FPV C2 link. Third: swept_uhf_low_power (0.18) — affected: (none in current inventory)."* Adam can name the round he'd switch to in <10s. |
+| **Success criterion** | At `B-1:15`, side panel renders: *"Top match: ground_based_gps_uhf_barrage (1.00) — affected: Excalibur, JDAM-ER, Switchblade 300, GMLRS-U. Second: pulsed_uhf_wide (0.50) — affected: FPV C2 link, Switchblade 300. Third: cellular_uhf_barrage (0.17) — affected: ATAK position-share, FPV C2 link."* Adam can name the round he'd switch to in <10s. |
 | **Why (operator)** | Naming the jammer is necessary but insufficient — Adam in Avdiivka would still need to know *which rounds in his inventory are denied by that jammer class*. The munitions-affected link is what turns attribution into a decision substrate inside the engagement window. |
 | **Why (R14 discipline)** | "Likelihood" here is operator-readable shorthand for a deterministic normalized overlap score — count of matched fingerprint-dimension threshold booleans / total dimensions. **Not** a trained probabilistic classifier. See `FR-04a`. |
 | **Satisfied by** | `FR-04` (detection), `FR-04a` (ranked mapping + munitions-affected) |

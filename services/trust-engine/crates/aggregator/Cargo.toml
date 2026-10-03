@@ -9,3 +9,6 @@ serde = { workspace = true }
 chrono = { workspace = true }
 hamilton-contracts = { workspace = true }
 trust-detectors = { workspace = true }
+
+[dev-dependencies]
+serde_json = { workspace = true }

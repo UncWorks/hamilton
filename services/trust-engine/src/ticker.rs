@@ -20,16 +20,15 @@ use trust_aggregator::{aggregate, AggregatorWeights, DetectorReadings};
 use trust_detectors::{
     fingerprint::{match_fingerprint, FingerprintEntry},
     fingerprint_candidates::rank_candidates,
-    spatial::{classify_spatial, NeighborState},
-    stability::detect_stability,
-    temporal::detect_temporal,
+    spatial::{classify_spatial, is_degrading, NeighborState},
+    stability::{detect_stability, StabilityReading},
+    temporal::{detect_temporal, TemporalReading},
 };
 use trust_transport::{mqtt::pad_to_three, AfterActionLog, MqttPublisher};
 
 use crate::state::EngineState;
 
 const TICK_INTERVAL_MS: u64 = 1000;
-const SPATIAL_RADIUS_M: f64 = 500.0;
 const PUBLISH_CANDIDATES_THRESHOLD: f64 = 0.5;
 
 pub async fn run(
@@ -37,6 +36,7 @@ pub async fn run(
     publisher: Arc<MqttPublisher>,
     log: Arc<AfterActionLog>,
     library: Vec<FingerprintEntry>,
+    spatial_radius_m: f64,
 ) -> Result<()> {
     let weights = AggregatorWeights::default();
     let mut tick = interval(Duration::from_millis(TICK_INTERVAL_MS));
@@ -50,6 +50,7 @@ pub async fn run(
             &log,
             &weights,
             &library,
+            spatial_radius_m,
             &mut last_match,
         )
         .await
@@ -65,49 +66,74 @@ async fn publish_one_tick(
     log: &Arc<AfterActionLog>,
     weights: &AggregatorWeights,
     library: &[FingerprintEntry],
+    spatial_radius_m: f64,
     last_match: &mut std::collections::HashMap<String, String>,
 ) -> Result<()> {
     let now = Utc::now();
     let snapshot = state.read().await;
     let source_ids: Vec<String> = snapshot.sources.keys().cloned().collect();
 
+    // Pass 1: per-source temporal + stability readings, so every source's
+    // "degrading" status is MEASURED by the engine before spatial correlation.
+    let readings: std::collections::HashMap<&str, (TemporalReading, StabilityReading)> = snapshot
+        .sources
+        .iter()
+        .map(|(id, s)| {
+            let arrivals: Vec<_> = s.recent_arrivals.iter().copied().collect();
+            (
+                id.as_str(),
+                (
+                    detect_temporal(&arrivals, &s.baseline),
+                    detect_stability(&s.stability),
+                ),
+            )
+        })
+        .collect();
+    let degrading = |id: &str| readings.get(id).is_some_and(|(t, s)| is_degrading(t, s));
+
     for source_id in &source_ids {
         let Some(source) = snapshot.sources.get(source_id) else {
             continue;
         };
-
-        let arrivals: Vec<_> = source.recent_arrivals.iter().copied().collect();
-        let temporal = detect_temporal(&arrivals, &source.baseline);
-        let stability = detect_stability(&source.stability);
+        let Some((temporal, stability)) = readings.get(source_id.as_str()) else {
+            continue;
+        };
 
         let neighbors: Vec<NeighborState> = snapshot
             .sources
             .iter()
             .filter(|(id, _)| id.as_str() != source_id.as_str())
-            .map(|(_, s)| NeighborState {
+            .map(|(id, s)| NeighborState {
                 id: s.location.id.clone(),
                 position: s.location.position,
-                degrading: s.degrading,
+                degrading: degrading(id),
             })
             .collect();
-        let spatial = classify_spatial(&source.location, &neighbors, SPATIAL_RADIUS_M);
+        let spatial = classify_spatial(
+            &source.location,
+            degrading(source_id),
+            &neighbors,
+            spatial_radius_m,
+        );
 
         let fingerprint = source
             .last_rf
             .as_ref()
             .and_then(|rf| match_fingerprint(rf, library));
 
-        let payload = aggregate(
+        let mut payload = aggregate(
             source_id.clone(),
             DetectorReadings {
-                temporal: &temporal,
-                stability: &stability,
+                temporal,
+                stability,
                 spatial: &spatial,
                 fingerprint: fingerprint.as_ref(),
             },
             weights,
             now,
         );
+        payload.lat = Some(source.location.position.lat);
+        payload.lon = Some(source.location.position.lon);
 
         if let Err(e) = publisher.publish_trust(&payload).await {
             warn!(source_id = %source_id, error = %e, "publish_trust failed");

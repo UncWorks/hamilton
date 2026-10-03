@@ -47,8 +47,10 @@ pub struct RfFingerprint {
 pub struct FingerprintMatch {
     pub method_id: String,
     pub named_systems: Vec<String>,
-    /// Normalized overlap ratio in [0.0, 1.0]: matched booleans / total dimensions.
-    pub score: f64,
+    /// Match strength: normalized overlap ratio in [0.0, 1.0] (matched booleans /
+    /// total dimensions). Higher = MORE like this jammer. This is NOT a trust
+    /// value; convert with [`fingerprint_trust`] before aggregating (FR-05).
+    pub match_strength: f64,
     pub munitions_affected: Vec<String>,
     pub source_citation: String,
 }
@@ -74,10 +76,20 @@ pub fn match_fingerprint(
         .map(|(entry, score)| FingerprintMatch {
             method_id: entry.method_id.clone(),
             named_systems: entry.named_systems.clone(),
-            score,
+            match_strength: score,
             munitions_affected: entry.munitions_affected.clone(),
             source_citation: entry.source_citation.clone(),
         })
+}
+
+/// Convert the best fingerprint match into a trust-oriented component for
+/// FR-05 (1.0 = healthy, 0.0 = bad).
+///
+/// `fingerprint_trust = 1 - match_strength`. No match (nothing at or above the
+/// 0.5 threshold) yields 1.0: no evidence of jamming. Because the matcher is
+/// k/6-quantized, the reachable values are 1.0, 0.5, 2/6, 1/6 and 0.0.
+pub fn fingerprint_trust(best: Option<&FingerprintMatch>) -> f64 {
+    best.map_or(1.0, |m| (1.0 - m.match_strength).clamp(0.0, 1.0))
 }
 
 /// Compute the threshold-boolean overlap ratio for one library entry.
@@ -155,7 +167,7 @@ mod tests {
         }
     }
 
-    // FRS §2.4 acceptance: Unit B pattern → ground_based_gps_uhf_barrage at score 0.81
+    // FRS §2.4 acceptance: Unit B pattern → ground_based_gps_uhf_barrage at 6/6 = 1.00
     #[test]
     fn frs_acceptance_unit_b_matches_ground_based_gps_uhf_barrage() {
         let lib = library();
@@ -166,11 +178,45 @@ mod tests {
         assert!(result.is_some(), "expected a match");
         let m = result.unwrap();
         assert_eq!(m.method_id, "ground_based_gps_uhf_barrage");
-        // All 6 dimensions match → score = 6/6 = 1.0
-        // FRS acceptance says "0.81"; our deterministic function gives 1.0 because
-        // the library entry perfectly contains the observed values. The spec's 0.81
-        // was an example; 1.0 is the correct deterministic ratio for a perfect match.
-        assert!(m.score >= 0.5, "score must pass minimum threshold");
+        // All 6 dimensions match → match_strength = 6/6 = 1.0
+        assert!((m.match_strength - 1.0).abs() < 1e-10);
+    }
+
+    fn synthetic_match(match_strength: f64) -> FingerprintMatch {
+        FingerprintMatch {
+            method_id: "x".into(),
+            named_systems: vec![],
+            match_strength,
+            munitions_affected: vec![],
+            source_citation: "x".into(),
+        }
+    }
+
+    // No match → no evidence of jamming → full trust.
+    #[test]
+    fn fingerprint_trust_no_match_is_one() {
+        assert!((fingerprint_trust(None) - 1.0).abs() < f64::EPSILON);
+    }
+
+    // Full 6/6 match (the demo jammer) → zero fingerprint trust.
+    #[test]
+    fn fingerprint_trust_full_match_is_zero() {
+        let lib = library();
+        let m = match_fingerprint(&unit_b_observed(), &lib).expect("demo jammer matches");
+        assert!(fingerprint_trust(Some(&m)).abs() < 1e-10);
+    }
+
+    // A stronger match never yields higher trust, across every reachable k/6
+    // value; no match is the ceiling.
+    #[test]
+    fn fingerprint_trust_is_monotonic_non_increasing_in_match_strength() {
+        let mut prev = fingerprint_trust(None);
+        for k in 3..=6 {
+            let t = fingerprint_trust(Some(&synthetic_match(f64::from(k) / 6.0)));
+            assert!(t <= prev, "k={k}: trust {t} > previous {prev}");
+            assert!((0.0..=1.0).contains(&t));
+            prev = t;
+        }
     }
 
     // No library entries → None
@@ -197,7 +243,7 @@ mod tests {
         // Not asserting None definitively because some entries may partially match;
         // we assert the returned score is consistent if present
         if let Some(m) = match_fingerprint(&observed, &lib) {
-            assert!(m.score >= 0.5);
+            assert!(m.match_strength >= 0.5);
         }
     }
 

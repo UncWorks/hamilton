@@ -2417,6 +2417,7 @@ dependencies = [
  "chrono",
  "hamilton-contracts",
  "serde",
+ "serde_json",
  "trust-detectors",
 ]
 
