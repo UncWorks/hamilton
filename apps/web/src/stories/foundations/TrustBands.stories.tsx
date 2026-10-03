@@ -3,7 +3,7 @@ import { trustBand, trustOklch, trustRgb, trustVarForBand } from '@/lib/trust-gr
 import { rateLinkTrust } from '@/lib/link-trust-rating';
 import { TrackSymbol } from '@/components/symbol';
 import { TrustReadout } from '@/components/panel/TrustReadout';
-import { BAND_SAMPLES, ROE_FLOOR } from '@/stories/fixtures/avdiivka';
+import { BAND_SAMPLES, TSS_MIN_GPS_SCORE } from '@/stories/fixtures/avdiivka';
 import { Page, Section, mono } from '@/stories/support/foundation-ui';
 
 const meta = {
@@ -26,8 +26,8 @@ function MappingTable() {
         title="Score → band → rating → map symbol (trust-gradient.ts + link-trust-rating.ts)"
         note={
           <>
-            Bands: 1.00–0.85 nominal · 0.85–0.60 watching · 0.60–0.30 degraded · &lt;0.30 failed. ROE floor{' '}
-            {ROE_FLOOR.toFixed(2)}. The map symbol (both live renderers) shows trust as the side gauge (fill height = score, band
+            Bands: 1.00–0.85 nominal · 0.85–0.60 watching · 0.60–0.30 degraded · &lt;0.30 failed. GPS-guided TSS minimum (C){' '}
+            {TSS_MIN_GPS_SCORE.toFixed(2)}. The map symbol (both live renderers) shows trust as the side gauge (fill height = score, band
             colour) and J right of the gauge: at rest below the floor, on hover above it. No halo, no pulse, no opacity change
             (Decisions/Track Symbology, decision 2).
           </>
@@ -114,7 +114,7 @@ function Strips() {
       ))}
       <div
         aria-hidden
-        style={{ position: 'absolute', left: `${(1 - ROE_FLOOR) * 100}%`, top: -6, bottom: -6, width: 1, background: 'var(--trust-roe-line)' }}
+        style={{ position: 'absolute', left: `${(1 - TSS_MIN_GPS_SCORE) * 100}%`, top: -6, bottom: -6, width: 1, background: 'var(--trust-roe-line)' }}
       />
     </div>
   );
@@ -128,7 +128,7 @@ function Strips() {
       </Section>
       <div style={{ ...mono, display: 'flex', justifyContent: 'space-between', color: 'var(--text-tertiary)' }}>
         <span>1.00</span>
-        <span>ROE 0.60 ↑</span>
+        <span>TSS min C 0.60 ↑</span>
         <span>0.00</span>
       </div>
     </Page>
@@ -144,7 +144,7 @@ export const Readouts: Story = {
     <Page>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 'var(--space-6)' }}>
         {[BAND_SAMPLES.nominal, BAND_SAMPLES.watching, BAND_SAMPLES.degraded, BAND_SAMPLES.failed].map((s) => (
-          <TrustReadout key={s} score={s} roeFloor={ROE_FLOOR} />
+          <TrustReadout key={s} score={s} tssMin={TSS_MIN_GPS_SCORE} />
         ))}
       </div>
     </Page>

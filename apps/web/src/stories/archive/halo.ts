@@ -4,11 +4,11 @@
 // Archive / evidence stories (Halo Options, At-a-Glance variants, the retired
 // n-gon glyph) that still render the old treatment for comparison.
 
-const ROE_FLOOR = 0.6;
+const TSS_MIN_GPS_SCORE = 0.6;
 
 /** True when the icon's pulsing halo should activate (Branding §5.2). */
 export function shouldHaloPulse(score: number): boolean {
-  return score < ROE_FLOOR;
+  return score < TSS_MIN_GPS_SCORE;
 }
 
 /** Halo radius in CSS px. (1 - score) * 24 per Branding §5.2. */

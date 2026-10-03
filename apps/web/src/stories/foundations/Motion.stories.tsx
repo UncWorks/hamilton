@@ -12,15 +12,12 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 const PRIMITIVES = [
-  { cls: 'motion-modal-frame', spec: 'gating-modal-arrival', used: 'KillChainGate frame + options' },
-  { cls: 'motion-modal-subtitle', spec: 'gating-modal-arrival (subtitle, +100ms)', used: 'KillChainGate subtitle' },
   { cls: 'motion-candidate-reveal', spec: 'fingerprint-candidate-reveal', used: 'CandidateCards' },
   { cls: 'motion-hairline-extend', spec: '§9.3 hairline extend', used: 'BrandBar hairline' },
   { cls: 'motion-recovery-pulse', spec: 'recovery-pulse', used: 'UNUSED' },
-  { cls: 'motion-cop-blur', spec: 'gating-modal-arrival (COP blur 8px)', used: 'UNUSED — COP never blurs' },
 ];
 
-const MISSING = ['trust-decay (800ms opacity tween)', 'score-numeral-tick', 'roe-floor-cross', 'playhead-scrub'];
+const MISSING = ['trust-decay (800ms opacity tween)', 'score-numeral-tick', 'roe-floor-cross (now: TSS-minimum cross; the mission row uses no motion)', 'playhead-scrub'];
 
 function Primitives() {
   const [n, setN] = useState(0);

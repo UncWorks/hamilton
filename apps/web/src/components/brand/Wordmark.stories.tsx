@@ -70,7 +70,7 @@ export const Lockup: Story = {
           color: 'var(--text-tertiary)',
         }}
       >
-        trust gating for the kill chain
+        link reliability for fires
       </span>
     </div>
   ),

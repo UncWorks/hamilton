@@ -19,7 +19,7 @@ const meta = {
         component:
           'After-action log (Branding §7.2, 160px sticky bottom). Polls `GET :8080/api/events` every 1s — here the ' +
           'engine API is mocked via `parameters.engineApi`. Hover pauses tail-following (header flips to ' +
-          '`--gating-primary`). Kind colors: modal_* → gating, fingerprint → trust-degraded, recovery → ' +
+          '`--gating-primary`). Kind colors: tss / branch / re-rate (FDC journal) and the engine modal_* kinds (shown as tss_fail / branch) → gating, fingerprint → trust-degraded, recovery → ' +
           'trust-nominal, everything else → text-secondary.',
       },
     },
@@ -31,7 +31,7 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-/** Avdiivka crescendo (engine beats, PR #1) — `[18:42:06] unit_b · temporal_anomaly · cadence 1.0s → 1.17s (3.4σ)` at 0:45, CRC 6% at 0:55, 6.1 s gap + 14% CRC + fingerprint at 1:15, gate at 1:20. */
+/** Avdiivka crescendo (engine beats, PR #1) — `[18:42:06] unit_b · temporal_anomaly · cadence 1.0s → 1.17s (3.4σ)` at 0:45, CRC 6% at 0:55, 6.1 s gap + 14% CRC + fingerprint at 1:15, the engine copy of branch [1] on AB1001 at 1:22. */
 export const Crescendo: Story = { parameters: { engineApi: { events: TERMINAL_EVENTS_API } } };
 
 /** Lines arrive one per poll (tail-following live). Hover to pause. */

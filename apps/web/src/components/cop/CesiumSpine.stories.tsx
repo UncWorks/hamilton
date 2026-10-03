@@ -74,7 +74,7 @@ export const Nominal: Story = {
 export const Watching: Story = { parameters: { hamilton: { tracks: PHASE_TRACKS.watching } } };
 
 /**
- * 1:15 — B 0.13 (E5, gauge near empty), first below the ROE floor: bearing line toward the suspected jammer.
+ * 1:15 — B 0.13 (E5, gauge near empty), first below the GPS-guided TSS minimum: bearing line toward the suspected jammer.
  * The web draws the line when B < 0.60, i.e. from 1:15; Branding §10.3 places it at 1:05 (open UX
  * item, Branding Audit F02).
  */

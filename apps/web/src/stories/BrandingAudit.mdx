@@ -17,8 +17,10 @@ that the renderers have not adopted yet. Line numbers point at the tree as of th
 **Fixtures assume PR #1 (fix/fingerprint-trust-inversion) is merged:** `components.fingerprint` is read directly as
 trust (1 − match strength), candidates are the engine's 1.00 / 0.50 / 0.17 for the Avdiivka jammer, and the old
 `1 − overlap` story workaround is gone (F01). Scores and components are the PR #1 engine's per-beat output
-(6733817): A and C hold 1.00, B is WATCH 0.70 → 0.65 from 0:45 to 1:05 and first crosses the ROE floor at 1:15
-(0.13), with the modal at 1:20 (F02). Open UX item: the directional vector appears at 1:15, not at 1:05 as §10.3 says.
+(6733817): A and C hold 1.00, B is WATCH 0.70 → 0.65 from 0:45 to 1:05 and first drops below the GPS-guided TSS
+minimum (C, 0.60) at 1:15 (0.13) (F02). **The kill-chain modal is gone (T01):** the call for fire AB1001 arrives at
+~1:12 and shows TSS FAIL in its mission row at 1:15 — the modal findings A07, A08, A09 and A16 are superseded. Open UX
+item: the directional vector appears at 1:15, not at 1:05 as §10.3 says.
 
 ## How to use this page
 
@@ -50,12 +52,12 @@ trust (1 − match strength), candidates are the engine's 1.00 / 0.50 / 0.17 for
 
 ## What is already consistent
 
-- All panel / modal / terminal / brand-bar colors go through `var(--…)` tokens — the hard-coded literals are
+- All panel / mission-row / terminal / brand-bar colors go through `var(--…)` tokens — the hard-coded literals are
   confined to the two WebGL renderers (which can't read CSS) and `app/layout.tsx` `themeColor`.
 - Phosphor literal discipline holds (`scripts/lint-phosphor.sh` passes): the OKLCH phosphor value only appears in
   `tokens.css` and `trust-gradient.ts`.
 - `.trust-readout` tabular numerics are applied to every score numeral (TrustReadout, CandidateCards).
-- Surface tiers are used as specified: base → panel → elevated → modal scrim.
+- Surface tiers are used as specified: base → panel → elevated (the modal-scrim tier is unused since T01).
 
 ## Components without a story of their own
 
@@ -65,7 +67,8 @@ trust (1 − match strength), candidates are the engine's 1.00 / 0.50 / 0.17 for
 - **`CandidateCard`, `CitationHover`** (private in `CandidateCards.tsx`) — not exported; covered by
   Panel/CandidateCards (all branches, including the empty filler and no-munitions states).
 - **`TraceBullets`** (private in `TrustPanel.tsx`) — covered by Panel/TrustPanel (0–3 bullets via Playground).
-- **`RoeFloorIndicator`** (private in `TrustReadout.tsx`) — covered by Panel/TrustReadout (above / on / below floor).
+- **`TssMinIndicator`** (private in `TrustReadout.tsx`) — covered by Panel/TrustReadout (above / on / below the TSS minimum).
+- **`RiskForm`, `Branch`, `Chip`** (private in `MissionRow.tsx`) — covered by Fires/Mission Row.
 - **`SpineLoader`** (private in `Spine.tsx`) — only visible while the dynamic chunk loads; flashes in COP/Spine.
 - **`SpineWithProps`** (private in `app/page.tsx`) — page-local adapter; covered by Pages/COP.
 - **WebGL renderers** (`CesiumSpine`, `MapSpine`) — storied and render offline, but need a WebGL-capable browser;

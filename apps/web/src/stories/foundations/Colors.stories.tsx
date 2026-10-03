@@ -30,7 +30,7 @@ const GROUPS: Array<{ prefix: string; title: string; note: string }> = [
   { prefix: '--surface-', title: '§3.1 Surface tiers', note: 'Three dark depth levels + the Beat 1:20 scrim.' },
   { prefix: '--text-', title: '§3.2 Text emphasis', note: 'Color tokens only (the --text-* size scale is on Typography).' },
   { prefix: '--trust-', title: '§3.3 Trust gradient', note: 'Load-bearing. Phosphor appears only in --trust-nominal and --gating-secondary.' },
-  { prefix: '--gating-', title: '§3.4 Kill-chain gating accent', note: 'Amber primary, phosphor secondary. Not red.' },
+  { prefix: '--gating-', title: '§3.4 TSS gating accent', note: 'Amber primary, phosphor secondary. Not red.' },
   { prefix: '--affiliation-', title: '§3.5 Track affiliation', note: 'Defined in CSS but unused by components. The live map symbols use the doctrinal fills (components/symbol DOCTRINAL_FILL), not these tokens; the old RGB mirrors below are archived.' },
   { prefix: '--status-', title: '§3.6 Status states', note: 'Defined but unused anywhere in components.' },
   { prefix: '--citation-', title: '§3.7 Citation / provenance', note: '--citation-bg-hover is unused.' },

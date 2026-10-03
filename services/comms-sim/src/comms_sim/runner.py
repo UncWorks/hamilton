@@ -131,7 +131,7 @@ def _jittered(
     Jitter is proportional to the value (0.5% on cadence, 5% on CRC, CRC
     floor 0.0005). The engine's temporal band is narrow (3σ = 1.15 s,
     6σ = 1.30 s), so absolute jitter of a few tenths of a second would make
-    temporal trust, and with it the ROE gate, flicker at random."""
+    temporal trust, and with it the TSS verdict, flicker at random."""
 
     jittered = []
     for p in payloads:

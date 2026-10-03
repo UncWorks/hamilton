@@ -36,14 +36,13 @@ const OFF_SCALE = [
   { where: 'LlmToggle.tsx:41-42', value: '8 × 8 status dot', token: '--space-2 (8px) as size' },
   { where: 'EventTerminal.tsx:90', value: 'height - 32 (header height assumed)', token: 'derived — breaks if header padding changes' },
   { where: 'page.tsx:74', value: "gridTemplateRows: '56px 1fr 160px'", token: 'layout constants; spec §7.2 24px gutters not applied' },
-  { where: 'KillChainGate.tsx:75', value: 'maxWidth: 720', token: 'no layout-width tokens' },
 ];
 
 const RADII = [
   { where: 'CandidateCards.tsx:60', value: '4px', role: 'empty candidate card (dashed)' },
   { where: 'LlmToggle.tsx:34', value: '2px', role: 'toggle container' },
   { where: 'LlmToggle.tsx:43', value: '4px (circle)', role: 'status dot' },
-  { where: 'everything else', value: '0', role: 'cards, modal, panel, buttons' },
+  { where: 'everything else', value: '0', role: 'cards, mission rows, panel, buttons' },
 ];
 
 /** Hard-coded spacing / sizing and the radii in use (no radius tokens exist). */
@@ -89,8 +88,7 @@ const Z = [
   { layer: 'Brand bar', spec: 20, impl: '20 (BrandBar.tsx:17)' },
   { layer: 'Side panel / terminal', spec: 10, impl: 'none (grid flow)' },
   { layer: 'Citation hover card', spec: 50, impl: 'not implemented (native title tooltip)' },
-  { layer: 'Modal scrim', spec: 90, impl: 'merged into frame container' },
-  { layer: 'Modal frame', spec: 100, impl: '100 (KillChainGate.tsx:64)' },
+  { layer: 'Modal scrim / frame', spec: 90, impl: 'none — modal retired (TSS mission row, no z-layer)' },
 ];
 
 /** §7.2 z-index discipline vs. implementation. */

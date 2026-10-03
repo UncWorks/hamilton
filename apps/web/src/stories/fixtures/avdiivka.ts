@@ -22,7 +22,7 @@ import {
   type TrustComponents,
   type TrustScorePayload,
 } from '@hamilton/contracts';
-import type { GateEvent, TrackState } from '@/store/hamilton';
+import type { TrackState } from '@/store/hamilton';
 import {
   AVDIIVKA_BEATS,
   AVDIIVKA_POSITIONS,
@@ -37,7 +37,7 @@ import {
 
 export { AVDIIVKA_BEATS, beatAt };
 
-/** Scenario epoch — the 1:20 gating beat lands at 18:42:41Z. */
+/** Scenario epoch — the 1:20 TSS beat lands at 18:42:41Z. */
 export const T0 = '2024-02-15T18:42:00.000Z';
 export const at = (seconds: number): string =>
   new Date(Date.parse(T0) + seconds * 1000).toISOString();
@@ -49,7 +49,7 @@ export const clockIso = (clockS: number): string => at(clockS - CLOCK_TO_T0_S);
 
 export const JAMMER_LOCATION = { lat: 48.142, lon: 37.762 } as const;
 
-export const ROE_FLOOR = 0.6;
+export const TSS_MIN_GPS_SCORE = 0.6;
 
 const beatOf = (clockS: number): EngineBeat => {
   const b = AVDIIVKA_BEATS.find((x) => x.clockS === clockS);
@@ -183,9 +183,9 @@ export const PHASE_TRACKS = {
   watching: beatTracks(45, 0, [TRACE_BULLETS[0]]),
   /** 1:05 — spatial discrimination; B WATCH 0.65 (CRC 6 %), localized, A and C 1.00. */
   localized: beatTracks(65, 45, TRACE_BULLETS),
-  /** 1:15 — jammer at full power + candidate reveal; B 0.65 → 0.13, first crossing below the ROE floor. */
+  /** 1:15 — jammer at full power + candidate reveal; B 0.65 → 0.13, first score below the GPS-guided TSS minimum (C). */
   degraded: beatTracks(75, 65, TRACE_BULLETS),
-  /** 1:50 — recovery initiates; B 0.22, still gated. */
+  /** 1:50 — recovery initiates; B 0.22, still below the TSS minimum. */
   failed: beatTracks(110, 75, TRACE_BULLETS),
   /** 2:15 — recovered; B 1.00. */
   recovered: tracksRecord(
@@ -366,7 +366,7 @@ export interface CrescendoStep {
 /**
  * The 0:00 → 1:20 crescendo, one step per engine beat: A, B, C payloads, the
  * narration bullets due by then and the candidate reveal at 1:15. B is WATCH
- * from 0:45 to 1:05 and first crosses the ROE floor at 1:15 (0.65 → 0.13).
+ * from 0:45 to 1:05 and first drops below the GPS-guided TSS minimum at 1:15 (0.65 → 0.13).
  */
 export const CRESCENDO_STEPS: CrescendoStep[] = [
   { clockS: 0, bullets: 0 },
@@ -400,8 +400,8 @@ const RAW_EVENTS: DetectionEvent[] = [
   { source_id: 'unit_b', kind: 'temporal_anomaly', message: 'cadence 1.17s → 6.1s', timestamp: clockIso(75) },
   { source_id: 'unit_b', kind: 'stability', message: 'CRC 6% → 14%', timestamp: clockIso(75) },
   { source_id: 'unit_b', kind: 'fingerprint', message: 'ground_based_gps_uhf_barrage 1.00 · pulsed_uhf_wide 0.50 · cellular_uhf_barrage 0.17', timestamp: clockIso(75) },
-  { source_id: 'unit_b', kind: 'modal_gated', message: `trust ${f2(bAt(65).score)} → ${f2(bAt(80).score)} < ROE floor 0.60 (crossed 1:15) — kill-chain gated`, timestamp: clockIso(80) },
-  { source_id: 'unit_b', kind: 'modal_selection', message: 'FDC · Adam selected shift_non_gps', timestamp: clockIso(110) },
+  // Engine copy of the FDC's branch [1] on AB1001 (POST /api/modal/selection; mission id rides in source_id).
+  { source_id: 'AB1001/unit_b', kind: 'modal_selection', message: `operator selected (shift_non_gps) at score ${f2(bAt(80).score)}`, timestamp: clockIso(82) },
   { source_id: 'unit_b', kind: 'recovery', message: `trust ${f2(bAt(110).score)} → ${f2(bAt(135).score)} · cadence 1.0s`, timestamp: clockIso(135) },
 ];
 
@@ -437,17 +437,3 @@ export const TERMINAL_EVENTS_FULL: DetectionEvent[] = Array.from({ length: 80 },
     timestamp: at(i),
   });
 }).reverse();
-
-// ---------------------------------------------------------------------------
-// Kill-chain gate history
-// ---------------------------------------------------------------------------
-
-/** 1:20 — the modal beat. B first crossed the floor at 1:15 and is still 0.13. */
-export const GATE_OPEN: GateEvent = {
-  source_id: 'unit_b',
-  triggered_at: clockIso(80),
-  score_at_trigger: bAt(80).score,
-  selected_option: null,
-};
-
-export const GATE_RESOLVED: GateEvent = { ...GATE_OPEN, selected_option: 'shift_non_gps' };

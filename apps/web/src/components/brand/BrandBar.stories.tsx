@@ -1,6 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { BrandBar } from './BrandBar';
-import { GATE_OPEN, GATE_RESOLVED } from '@/stories/fixtures/avdiivka';
 
 const meta = {
   title: 'Brand/BrandBar',
@@ -12,8 +11,8 @@ const meta = {
       description: {
         component:
           'Sticky 56px brand bar (Branding §7.2): wordmark + tagline lockup, conditional `--gating-primary` hairline ' +
-          '(on once any kill-chain gate has fired this session, §10.6), LLM provider toggle, operator seat `FDC · ADAM`. ' +
-          'Reads `gateHistory`, `llmMode`, `llmStatus` from the store.',
+          '(on once any fire mission has failed TSS this session, §10.6), LLM provider toggle, operator seat `FDC · ADAM`. ' +
+          'Tagline: "link reliability for fires". Reads `tssFailedThisSession`, `llmMode`, `llmStatus` from the store.',
       },
     },
   },
@@ -22,17 +21,12 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-/** Session start — no gate yet, LLM pending. */
+/** Session start — no TSS FAIL yet, LLM pending. */
 export const Default: Story = {};
 
-/** A gate has fired — hairline rule extends and stays on (§10.6 "Hamilton was on its feet"). */
-export const AfterGateFired: Story = {
-  parameters: { hamilton: { gateHistory: [GATE_RESOLVED], llmStatus: 'active' } },
-};
-
-/** Gate currently open (the modal is on screen elsewhere). */
-export const GateActive: Story = {
-  parameters: { hamilton: { gateHistory: [GATE_OPEN], gateActive: true, llmStatus: 'active' } },
+/** A mission has failed TSS — hairline rule extends and stays on (§10.6 "Hamilton was on its feet"). */
+export const AfterTssFail: Story = {
+  parameters: { hamilton: { tssFailedThisSession: true, llmStatus: 'active' } },
 };
 
 export const LlmClaudeActive: Story = {
@@ -51,6 +45,6 @@ export const LlmOffUnreachable: Story = {
 export const Narrow: Story = {
   parameters: {
     viewport: { defaultViewport: 'mobile2' },
-    hamilton: { gateHistory: [GATE_RESOLVED] },
+    hamilton: { tssFailedThisSession: true },
   },
 };

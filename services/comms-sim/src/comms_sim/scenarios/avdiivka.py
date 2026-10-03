@@ -62,9 +62,10 @@ class ScenarioBeat:
 # Gate timing (docs/plans/fix-spatial-trust-and-gate-timing.md, FIX 2).
 # The engine's temporal detector maps 1σ → 1.0 and 6σ → 0.0 with baseline
 # 1.0 s ± 0.05 s, so anything ≥ 1.30 s scores 0 and, through the 0.4·min term,
-# alone drags B below the 0.60 ROE floor. The storyboard wants B in the
-# WATCH band (0.60–0.85) from 0:45 to 1:15 and below the floor at the 1:20
-# gate, so the jammer ramps up: cadence stretches just past 3σ at 0:45, CRC
+# alone drags B below the 0.60 GPS-guided TSS minimum (C). The storyboard wants
+# B in the WATCH band (0.60–0.85) from 0:45 to 1:15 and below the minimum when
+# the call for fire AB1001 (missions.py, 1:12) is being processed, so the
+# jammer ramps up: cadence stretches just past 3σ at 0:45, CRC
 # just past the 5% FR-02 threshold at 0:55, and the full 6.1 s gap, 14% CRC
 # and the RF fingerprint all land together at 1:15.
 WATCH_CADENCE_S = 1.17  # 3.4σ: FR-01 anomaly fires, temporal trust 0.52
