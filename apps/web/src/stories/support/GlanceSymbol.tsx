@@ -1,13 +1,15 @@
-// Story-only symbols for Explorations/At-a-Glance Symbols. NOT used by the live
-// renderers (CesiumSpine / MapSpine are untouched).
+// At-a-Glance bench symbols (Archive/At-a-Glance Variants, Decisions/Evidence).
+// NOT used by the app. V0–V4 + REF are the archived research candidates;
+// FINAL is the decided production symbol, drawn by
+// src/components/symbol/describe.ts — the bench evaluates exactly what the app
+// renders.
 //
 // Reference: FM 1-02 / MCRP 5-12A "Operational Terms and Graphics" (21 Sep
 // 2004, Change 1 copy) — page numbers are the manual's own labels. Design
 // candidates, sizes, fills, cues and the evaluation protocol follow
-// glance-symbology-research.md (research §4, §5): V1 = A, V2 = B, V3 = C
-// (recommended), V4 = D; E (declutter) is its own story. Geometry is
-// milsymbol 3.0.4's 200-unit box (frame centre 100,100), checked against the
-// manual's drawings.
+// glance-symbology-research.md (research §4, §5): V1 = A (DECIDED base),
+// V2 = B, V3 = C, V4 = D (label treatment DECIDED); E (declutter) is its own
+// story. Geometry is shared with production (components/symbol/geometry.ts).
 //
 // cellPrims() is the single description of a cell: the SVG renderer and the
 // canvas evaluator both draw from it, so every score is computed from exactly
@@ -16,68 +18,44 @@
 import type { CSSProperties, ReactNode } from 'react';
 import type { SensorType } from '@hamilton/contracts';
 import { haloOuterRadiusPx, shouldHaloPulse, trustBand } from '@/lib/trust-gradient';
-import { buildLetterSidc, buildSidc } from '@/lib/glance-metrics';
+import { FRAME_AFFILIATION, SENSOR_FUNCTION, toCotType, toSidc2525C, toSidc2525E, type Echelon, type FrameKind } from '@/lib/track-sidc';
 import { rateLinkTrust } from '@/lib/link-trust-rating';
-import { AIRDEF_PATH, Amplifier, EchelonMark, FRAME_TO_AFFILIATION, RECON_PATH, fontPx, trustStrokeVar, type Echelon, type FrameKind } from './MilSymbol';
+import {
+  DOCTRINAL_FILL,
+  FRAME_BOX_200,
+  FRAME_D,
+  ICON_DARK,
+  circ,
+  frameStrokePx as finalFrameStrokePx,
+  iconPrims as sharedIconPrims,
+  trustStrokeVar,
+  type IconOpts,
+  type IconSet,
+  type PPrim,
+} from '@/components/symbol/geometry';
+import { describeTrackSymbol, isDetail } from '@/components/symbol/describe';
+import { SymbolGroup } from '@/components/symbol/TrackSymbol';
+import { Amplifier, EchelonMark, fontPx } from './MilSymbol';
 import { HaloSvg, trackPolygonPoints } from './TrackGlyph';
+
+export { DOCTRINAL_FILL, FRAME_BOX_200, FRAME_D, ICON_DARK, type PPrim };
 
 export type GlanceVariant = 'V0' | 'V1' | 'V2' | 'V3' | 'V4';
 /** REF = doctrinal reference at milsymbol-default icon sizes + 2525C light fills (calibration only). */
-export type AnyVariant = GlanceVariant | 'REF';
+/** FINAL = the decided production symbol (components/symbol). */
+export type AnyVariant = GlanceVariant | 'REF' | 'FINAL';
 export const GLANCE_VARIANTS: GlanceVariant[] = ['V0', 'V1', 'V2', 'V3', 'V4'];
 export const SENSOR_ROWS: SensorType[] = ['recon_static', 'recon_mobile', 'detection', 'offense', 'defense'];
 export const FRAME_COLS: FrameKind[] = ['friend', 'hostile', 'neutral', 'unknown'];
-export const RESEARCH_ID: Record<AnyVariant, string> = { V0: 'baseline', V1: 'A', V2: 'B', V3: 'C', V4: 'D', REF: 'ref' };
+export const RESEARCH_ID: Record<AnyVariant, string> = { V0: 'baseline', V1: 'A', V2: 'B', V3: 'C', V4: 'D', REF: 'ref', FINAL: 'decided' };
 
 /** V4 (D): never smaller than this box, px (research §4 D). */
 export const D_MIN_BOX_PX = 24;
 /** V4 (D): below this box the level-of-detail (glance) state applies (research §4 D). */
 export const D_LOD_BELOW_PX = 28;
 
-// ---------------------------------------------------------------------------
-// Geometry (200-unit space)
-// ---------------------------------------------------------------------------
-
-/** Land-unit frames, Table 4-1 p 4-3 (milsymbol Ground{Friend,Hostile,Neutral,Unknown}). */
-export const FRAME_D: Record<FrameKind, string> = {
-  friend: 'M25,50 L175,50 175,150 25,150 Z',
-  hostile: 'M100,28 L172,100 100,172 28,100 Z',
-  neutral: 'M45,45 L155,45 155,155 45,155 Z',
-  unknown: 'M63,63 C63,20 137,20 137,63 C180,63 180,137 137,137 C137,180 63,180 63,137 C20,137 20,63 63,63 Z',
-};
-export const FRAME_BOX_200: Record<FrameKind, [number, number, number, number]> = {
-  friend: [25, 50, 175, 150],
-  hostile: [28, 28, 172, 172],
-  neutral: [45, 45, 155, 155],
-  unknown: [30.75, 30.75, 169.25, 169.25],
-};
-/** Radar, Table 5-3 p 5-13 (milsymbol GR.IC.RADAR, drawn by 2525B UCFTR-). */
-const RADAR_D = 'M72,95 l30,-25 0,25 30,-25 M70,70 c0,35 15,50 50,50';
-const circ = (cx: number, cy: number, r: number) => `M${cx - r},${cy} a${r},${r} 0 1,0 ${2 * r},0 a${r},${r} 0 1,0 ${-2 * r},0 Z`;
-
-/** Fills (research §4 A): 2525C hues at dark-map luminance. */
-export const DOCTRINAL_FILL: Record<FrameKind, string> = { friend: '#0091c0', hostile: '#f00000', neutral: '#00b000', unknown: '#dcd900' };
 /** milsymbol "Light" colour mode (2525C light fills) — REF only. */
 export const REF_FILL: Record<FrameKind, string> = { friend: 'rgb(128,224,255)', hostile: 'rgb(255,128,128)', neutral: 'rgb(170,255,170)', unknown: 'rgb(255,255,128)' };
-export const ICON_DARK = '#06090d';
-
-export type Layer = 'cue' | 'plate' | 'frame' | 'icon';
-export interface PPrim {
-  d: string;
-  mode: 'fill' | 'stroke';
-  /** CSS colour, may be var(--…). */
-  color: string;
-  layer: Layer;
-  /** Stroke width, 200-units. */
-  w?: number | undefined;
-  dash?: number[] | undefined;
-  cap?: 'round' | 'butt' | 'square' | undefined;
-  opacity?: number | undefined;
-  /** C: 1 Hz single-rate blink (H5) — static in the evaluator. */
-  blink?: boolean | undefined;
-  /** Drawn by HaloSvg in the SVG (animated live halo); prims are its static canvas equivalent. */
-  svgSkip?: boolean | undefined;
-}
 
 // ---------------------------------------------------------------------------
 // Strokes and sizes (research §4 table)
@@ -87,10 +65,11 @@ export function renderBoxPx(v: AnyVariant, sizePx: number): number {
   return v === 'V4' ? Math.max(D_MIN_BOX_PX, sizePx) : sizePx;
 }
 
-/** Frame stroke, px. A/B/C(+REF): 1.25 / 1.5 / 2 / 2.5 at 16/24/32/48; D: 1.5 / 2 / 2.75 / 3.5. V0 = TrackGlyph's 2. */
+/** Frame stroke, px. A/B/C(+REF, FINAL): 1.25 / 1.5 / 2 / 2.5 at 16/24/32/48; D: 1.5 / 2 / 2.75 / 3.5. V0 = TrackGlyph's 2. */
 export function frameStrokePx(v: AnyVariant, box: number): number {
   if (v === 'V0') return 2;
-  const steps = v === 'V4' ? [1.5, 2, 2.75, 3.5] : [1.25, 1.5, 2, 2.5];
+  if (v !== 'V4') return finalFrameStrokePx(box);
+  const steps = [1.5, 2, 2.75, 3.5];
   return box <= 16 ? steps[0]! : box <= 24 ? steps[1]! : box <= 32 ? steps[2]! : steps[3]!;
 }
 
@@ -100,44 +79,11 @@ export function iconStrokePx(v: AnyVariant, box: number): number {
 }
 
 // ---------------------------------------------------------------------------
-// Icons
+// Icons (shared with production: components/symbol/geometry.ts)
 // ---------------------------------------------------------------------------
 
-type IconSet = 'ref' | 'A' | 'D-lod';
-
-const DOT_R: Record<IconSet, { fa: number; colt: number; ta: number }> = {
-  ref: { fa: 15, colt: 15, ta: 9 }, // milsymbol defaults
-  A: { fa: 25, colt: 20, ta: 12 }, // research §4 A
-  'D-lod': { fa: 28, colt: 20, ta: 12 }, // research §4 D
-};
-
-const MOTORIZED_Y: Record<FrameKind, [number, number]> = {
-  friend: [50, 150],
-  hostile: [28, 172],
-  neutral: [45, 155],
-  unknown: [30.75, 169.25],
-};
-
 function iconPrims(sensor: SensorType, frame: FrameKind, set: IconSet, w: number, color: string): PPrim[] {
-  const S = (d: string, mul = 1): PPrim => ({ d, mode: 'stroke', color, layer: 'icon', w: w * mul, cap: 'round' });
-  const F = (d: string): PPrim => ({ d, mode: 'fill', color, layer: 'icon' });
-  const r = DOT_R[set];
-  const diag = set === 'D-lod' ? 1.5 : 1;
-  switch (sensor) {
-    case 'offense': // FA cannonball, Table 5-3 p 5-11
-      return [F(circ(100, 100, r.fa))];
-    case 'recon_static': // Reconnaissance (COLT/FIST): diagonal + dot, p 5-13
-      return [S(RECON_PATH[frame], diag), F(circ(100, 100, r.colt))];
-    case 'recon_mobile': {
-      // Reconnaissance bandoleer (p 5-13) + Motorized (Table 5-4 p 5-28)
-      const [y0, y1] = MOTORIZED_Y[frame];
-      return [S(RECON_PATH[frame], diag), S(`M100,${y0} L100,${y1}`)];
-    }
-    case 'detection': // FA target acquisition radar: dot + radar, p 5-13
-      return [F(circ(70, 110, r.ta)), S(RADAR_D)];
-    case 'defense': // Air defense radar dome, p 5-6
-      return [S(AIRDEF_PATH[frame], diag)];
-  }
+  return sharedIconPrims(SENSOR_FUNCTION[sensor], frame, set, w, color);
 }
 
 // ---------------------------------------------------------------------------
@@ -160,6 +106,7 @@ export interface CueSet {
 }
 
 export const VARIANT_CUES: Record<AnyVariant, CueSet> = {
+  FINAL: { gauge: true, j: true }, // decided: gauge + J (drawn by describe.ts)
   V0: { circle: true },
   V1: { gauge: true, j: true }, // A
   V2: { outline: 'steps', gauge: true }, // B
@@ -261,6 +208,16 @@ export interface CellOpts {
   detail?: boolean | undefined;
   /** C blink enabled (false once acknowledged / reduced motion). */
   blinkOn?: boolean | undefined;
+  /** FINAL only: icon geometry overrides (radar sweep, decision 5). */
+  icon?: IconOpts | undefined;
+}
+
+/** FINAL: the production description for a bench cell. */
+export function finalDescription(sensor: SensorType, frame: FrameKind, score: number, sizePx: number, opts: CellOpts = {}) {
+  return describeTrackSymbol(
+    { affiliation: FRAME_AFFILIATION[frame], sensorType: sensor, score, designation: FUNCTIONS[sensor].designation },
+    { sizePx, detail: opts.detail, overlay: opts.overlay, icon: opts.icon },
+  );
 }
 
 export function v4Detail(sizePx: number, detail?: boolean): boolean {
@@ -268,6 +225,8 @@ export function v4Detail(sizePx: number, detail?: boolean): boolean {
 }
 
 export function cellPrims(v: AnyVariant, sensor: SensorType, frame: FrameKind, score: number, sizePx: number, opts: CellOpts = {}): PPrim[] {
+  // Amplifiers (T, J, echelon) are text / marks outside the measured symbol for every variant (V4's are SVG-only too).
+  if (v === 'FINAL') return finalDescription(sensor, frame, score, sizePx, opts).prims.filter((q) => q.layer !== 'echelon');
   const box = renderBoxPx(v, sizePx);
   const u = 200 / box;
   const fw = frameStrokePx(v, box) * u;
@@ -275,7 +234,7 @@ export function cellPrims(v: AnyVariant, sensor: SensorType, frame: FrameKind, s
   const cues = opts.overlay === false ? {} : (opts.cues ?? VARIANT_CUES[v]);
   const blinkOn = opts.blinkOn ?? true;
   if (v === 'V0') {
-    const aff = FRAME_TO_AFFILIATION[frame];
+    const aff = FRAME_AFFILIATION[frame];
     const pts = trackPolygonPoints(aff, sensor, 80, 100, 100);
     const d = `M${pts.replace(/ /g, ' L')} Z`;
     const col = `var(--affiliation-${aff})`;
@@ -308,48 +267,28 @@ export function cellPrims(v: AnyVariant, sensor: SensorType, frame: FrameKind, s
 // Codes (research §2.1 table; validated with milsymbol 3.0.4 isValid())
 // ---------------------------------------------------------------------------
 
+/** Bench row metadata (fixture assumptions). Codes come from lib/track-sidc.ts. */
 export interface FunctionCode {
   name: string;
   cite: string;
-  e: { entity: string; m1?: string; m2?: string };
   eNote?: string;
-  b: string;
   echelon: Echelon;
-  echelonE: string;
-  echelonB: string;
   designation: string;
 }
 
 export const FUNCTIONS: Record<SensorType, FunctionCode> = {
-  offense: { name: 'Field artillery (cannonball)', cite: 'Table 5-3, p 5-11', e: { entity: '130300' }, b: 'UCF---', echelon: 'battery', echelonE: '15', echelonB: 'E', designation: 'B' },
-  recon_static: {
-    name: 'Reconnaissance (COLT/FIST), dismounted',
-    cite: 'Table 5-3, p 5-13',
-    e: { entity: '130400' },
-    eNote: '2525E 130400 = FA observer (different icon: triangle).',
-    b: 'UCFTCD',
-    echelon: 'team',
-    echelonE: '11',
-    echelonB: 'A',
-    designation: 'A',
-  },
-  recon_mobile: { name: 'Reconnaissance, motorized', cite: 'Table 5-3 p 5-13 + Table 5-4 p 5-28', e: { entity: '121303' }, b: 'UCRVM-', echelon: 'platoon', echelonE: '14', echelonB: 'D', designation: 'R2' },
+  offense: { name: 'Field artillery (cannonball)', cite: 'Table 5-3, p 5-11', echelon: 'battery', designation: 'B' },
+  recon_static: { name: 'Reconnaissance (COLT/FIST), dismounted', cite: 'Table 5-3, p 5-13', eNote: '2525E 130400 = FA observer (different icon: triangle).', echelon: 'team', designation: 'A' },
+  recon_mobile: { name: 'Reconnaissance, motorized', cite: 'Table 5-3 p 5-13 + Table 5-4 p 5-28', echelon: 'platoon', designation: 'R2' },
   detection: {
     name: 'FA target acquisition — radar',
     cite: 'Table 5-3, p 5-13',
-    e: { entity: '130300', m1: '50' },
     eNote: 'Not 130302: per research that subtype is 2525D (JMSML) only, absent from the 2525E tables.',
-    b: 'UCFTR-',
     echelon: 'platoon',
-    echelonE: '14',
-    echelonB: 'D',
     designation: 'C',
   },
-  defense: { name: 'Air defense (radar dome)', cite: 'Table 5-3, p 5-6', e: { entity: '130100' }, b: 'UCD---', echelon: 'battery', echelonE: '15', echelonB: 'E', designation: 'AD' },
+  defense: { name: 'Air defense (radar dome)', cite: 'Table 5-3, p 5-6', echelon: 'battery', designation: 'AD' },
 };
-
-const IDENTITY_E: Record<FrameKind, string> = { friend: '3', hostile: '6', neutral: '4', unknown: '1' };
-const AFF_B: Record<FrameKind, 'F' | 'H' | 'N' | 'U'> = { friend: 'F', hostile: 'H', neutral: 'N', unknown: 'U' };
 
 export interface CellCodes {
   e: string;
@@ -359,12 +298,8 @@ export interface CellCodes {
 
 export function cellCodes(v: AnyVariant, sensor: SensorType, frame: FrameKind, withEchelon = false): CellCodes | undefined {
   if (v === 'V0') return undefined;
-  const f = FUNCTIONS[sensor];
-  return {
-    e: buildSidc({ identity: IDENTITY_E[frame], entity: f.e.entity, modifier1: f.e.m1, modifier2: f.e.m2, echelon: withEchelon ? f.echelonE : '00' }),
-    b: buildLetterSidc({ affiliation: AFF_B[frame], fn: f.b, echelon: withEchelon ? f.echelonB : '-' }),
-    cot: `a-${AFF_B[frame].toLowerCase()}-G-${f.b.replace(/-+$/, '').split('').join('-')}`,
-  };
+  const t = { affiliation: FRAME_AFFILIATION[frame], sensorType: sensor, echelon: withEchelon ? FUNCTIONS[sensor].echelon : null };
+  return { e: toSidc2525E(t), b: toSidc2525C(t), cot: toCotType(t) };
 }
 
 // ---------------------------------------------------------------------------
@@ -429,6 +364,7 @@ export interface GlanceCellProps extends CellOpts {
 
 export function GlanceSymbol(p: Omit<GlanceCellProps, 'pad'>) {
   const { variant: v, sensor, frame, score, sizePx, reducedMotion = false } = p;
+  if (v === 'FINAL') return <SymbolGroup d={finalDescription(sensor, frame, score, sizePx, p)} />;
   const box = renderBoxPx(v, sizePx);
   const u = 200 / box;
   const k = 32 / box;
@@ -471,6 +407,10 @@ export function GlanceSymbol(p: Omit<GlanceCellProps, 'pad'>) {
 
 /** Horizontal room a variant needs for cues + amplifiers, px [left, right]. */
 export function cellPad(v: AnyVariant, sizePx: number, score: number): [number, number] {
+  if (v === 'FINAL') {
+    const pad = finalDescription('offense', 'friend', Math.min(score, 0.59), sizePx).layout.pad;
+    return [Math.max(6, pad.left + 2), Math.max(6, pad.right + 2)];
+  }
   const box = renderBoxPx(v, sizePx);
   const cues = VARIANT_CUES[v];
   const circle = cues.circle ? Math.max(0, haloOuterRadiusPx(Math.min(score, 0.59), 0.4 * box) - box / 2) : 0;
@@ -483,10 +423,10 @@ export function cellPad(v: AnyVariant, sizePx: number, score: number): [number, 
 export function GlanceCell({ pad, ...p }: GlanceCellProps) {
   const box = renderBoxPx(p.variant, p.sizePx);
   const [l, r] = pad ?? [...cellPad(p.variant, p.sizePx, p.score), 0];
-  const vpad = pad?.[2] ?? Math.max(6, p.variant === 'V0' ? cellPad('V0', p.sizePx, p.score)[0] : 6) + (p.variant === 'V4' && v4Detail(p.sizePx, p.detail) ? 6 : 0);
+  const vpad = pad?.[2] ?? Math.max(6, p.variant === 'V0' ? cellPad('V0', p.sizePx, p.score)[0] : 6) + ((p.variant === 'V4' && v4Detail(p.sizePx, p.detail)) || (p.variant === 'FINAL' && isDetail(p.sizePx, p.detail)) ? 6 : 0);
   const w = box + l + r;
   const h = box + 2 * vpad;
-  const codes = cellCodes(p.variant, p.sensor, p.frame, p.variant === 'V4' && v4Detail(p.sizePx, p.detail));
+  const codes = cellCodes(p.variant, p.sensor, p.frame, (p.variant === 'V4' && v4Detail(p.sizePx, p.detail)) || p.variant === 'FINAL');
   const label = `${p.variant} ${p.sensor} ${p.frame} trust ${p.score.toFixed(2)}${codes ? ` · 2525E ${codes.e} · 2525B ${codes.b} · CoT ${codes.cot}` : ' · bespoke (no SIDC)'}`;
   return (
     <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} overflow="visible" role="img" aria-label={label} style={{ display: 'block' }}>

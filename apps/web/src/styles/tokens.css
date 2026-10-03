@@ -35,9 +35,12 @@
   --affiliation-neutral: oklch(72% 0.02 80);
   --affiliation-unknown: oklch(65% 0.10 145);
 
-  /* Track symbology — APP-6(E) / 2525E exploration (Explorations/Track
-   * Symbology). PROPOSED, additive only: no renderer uses these yet and the
-   * §3.5 affiliation tokens above are unchanged. Contrast vs --surface-base. */
+  /* Track symbology. --sym-ink, --sym-ink-stale, --sym-select and
+   * --trust-failed-stroke are used by the decided production symbol
+   * (src/components/symbol, Decisions/Track Symbology). The Option A fills
+   * (--sym-fill-*, --sym-ink-strong, --sym-plate) are kept for
+   * Archive/Track Symbology. The §3.5 affiliation tokens above are unchanged.
+   * Contrast vs --surface-base. */
   --sym-ink: oklch(90% 0.01 90);              /* #e0ded7 · 14.8:1 — frames, icons, ink graphics */
   --sym-ink-strong: oklch(94% 0.008 90);      /* #edebe5 — Option A frame + icon */
   --sym-plate: oklch(14% 0.01 250 / 0.85);    /* surface-base @ 0.85 — frame backing plate */

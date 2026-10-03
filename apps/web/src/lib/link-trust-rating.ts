@@ -1,8 +1,7 @@
 // Link-trust rating scale — ONE typed source of truth for the semantic rating
-// names, the MIL-STD-2525 J (evaluation rating) code each maps to, the ROE
-// gate and the explanation maths. Story-adopted today (Explorations/Track
-// Symbology → Option B′); exported so TrustPanel / the COP renderers can
-// adopt it later.
+// names, the 2525 J (evaluation rating) each maps to, the ROE gate and the
+// explanation maths. Used by the production TrackSymbol + RatingTooltip
+// (src/components/symbol) and the Storybook fixtures.
 //
 // Deliberately dependency-free (no '@/…' imports) so it runs under
 // `node --test` with native type stripping. Band edges mirror
@@ -13,6 +12,19 @@
 // hostile), status (present, anticipated/planned), operational condition
 // (damaged, destroyed, full to capacity) and K combat effectiveness
 // (FO/SO/MO/NO). "NOMINAL" also matches the --trust-nominal token.
+//
+// J split (Decisions/Track Symbology, decision 3; decision-workflow-assessment
+// §6 item 2). FM 1-02 Table 4-4 (p 4-6) treats reliability (A–F) and
+// credibility (1–6) as independent axes, so they are no longer moved in
+// lockstep (B2/C3/D4/E5):
+//  - the trust SCORE sets the reliability LETTER (a property of source + link);
+//  - CORROBORATION sets the credibility DIGIT: confirmed on an alternate
+//    channel / second sensor → 1; uncorroborated → the band's default digit
+//    (2 / 3 / 4 / 5, today's value);
+//  - STALE → F6 (no basis to judge either), plus AR = NRT;
+//  - the S2 can OVERRIDE the J value (with a reason); the override is shown and
+//    exported, the automatic value is kept for the log;
+//  - an algorithm never emits "A" (completely reliable).
 
 // ---------------------------------------------------------------------------
 // Aggregation — mirrors services/trust-engine/crates/aggregator/src/lib.rs
@@ -302,9 +314,11 @@ export interface RatingLevel {
   band: TrustBandId;
   /** Trust token — the ONLY colour a rating may use. */
   bandToken: string;
+  /** Reliability letter this score band sets. */
   reliability: ReliabilityCode;
+  /** Credibility digit when the report is NOT corroborated (today's digit). */
   credibility: CredibilityCode;
-  /** 2525 J amplifier value — secondary on screen, the value used for export. */
+  /** Uncorroborated J value for the band, e.g. "D4". */
   jCode: string;
   description: string;
 }
@@ -360,17 +374,48 @@ export const LINK_TRUST_SCALE: readonly RatingLevel[] = [
 export const STALE_NAME = 'STALE';
 /** 2525 AR (special designator) value for non-real-time data. */
 export const NRT = 'NRT';
+/** J for a stale report: reliability F + credibility 6 ("cannot be judged"). */
+export const STALE_J = 'F6';
+
+/**
+ * Corroboration of the reported information (the credibility axis):
+ * - `confirmed` — confirmed on an alternate channel (PACE) or by a second sensor → 1;
+ * - `uncorroborated` — default; the band's digit (2–5) stands.
+ */
+export type Corroboration = 'confirmed' | 'uncorroborated';
+
+/** S2 override of the evaluation rating (HS-14): the J field stays an S2 product. */
+export interface JOverride {
+  /** J value set by the S2, e.g. "C3". Reliability A–F + credibility 1–6. */
+  j: string;
+  /** Role (and optionally initials) of whoever set it, e.g. "S2". */
+  by: string;
+  reason: string;
+  /** ISO time of the override. */
+  at?: string | undefined;
+}
+
+export interface RateOptions {
+  stale?: boolean | undefined;
+  corroboration?: Corroboration | undefined;
+  override?: JOverride | undefined;
+}
 
 export interface LinkTrustRating extends RatingLevel {
   score: number;
   /** True below ROE_FLOOR. */
   roeGated: boolean;
   stale: boolean;
+  corroboration: Corroboration;
+  /** J the algorithm derived (letter from score/stale, digit from corroboration/stale). */
+  autoJ: string;
+  /** The S2 override in force, if any — `jCode` is then the override value. */
+  override: JOverride | undefined;
   /** Visible label: STALE when stale, else the band name. */
   label: string;
   /** Token for the label: grey when stale. */
   labelToken: string;
-  /** Rating text visible at rest (below the floor, or stale); otherwise hover only. */
+  /** Rating text visible at rest (below the floor, stale or overridden); otherwise hover only. */
   visibleAtRest: boolean;
   /** "D: Not usually reliable · 4: Doubtfully true". */
   jMeaning: string;
@@ -380,19 +425,43 @@ export function ratingLevel(score: number): RatingLevel {
   return LINK_TRUST_SCALE.find((l) => score >= l.min) ?? LINK_TRUST_SCALE[LINK_TRUST_SCALE.length - 1]!;
 }
 
-export function rateLinkTrust(score: number, opts: { stale?: boolean } = {}): LinkTrustRating {
+/** Parses "C3" → ['C', '3']; undefined for anything outside A–F × 1–6. */
+export function parseJ(j: string): [ReliabilityCode, CredibilityCode] | undefined {
+  const m = /^([A-F])([1-6])$/.exec(j.trim().toUpperCase());
+  return m ? [m[1] as ReliabilityCode, m[2] as CredibilityCode] : undefined;
+}
+
+/** Automatic J: score → letter, corroboration → digit, stale → F6. Never "A". */
+export function autoEvaluation(score: number, opts: Pick<RateOptions, 'stale' | 'corroboration'> = {}): [ReliabilityCode, CredibilityCode] {
+  if (opts.stale) return ['F', '6'];
+  const level = ratingLevel(score);
+  return [level.reliability, opts.corroboration === 'confirmed' ? '1' : level.credibility];
+}
+
+export function rateLinkTrust(score: number, opts: RateOptions = {}): LinkTrustRating {
   const level = ratingLevel(score);
   const stale = opts.stale ?? false;
+  const corroboration = opts.corroboration ?? 'uncorroborated';
   const roeGated = score < ROE_FLOOR;
+  const auto = autoEvaluation(score, { stale, corroboration });
+  const ov = opts.override ? parseJ(opts.override.j) : undefined;
+  if (opts.override && !ov) throw new Error(`J override "${opts.override.j}" is not A–F × 1–6`);
+  const [reliability, credibility] = ov ?? auto;
   return {
     ...level,
+    reliability,
+    credibility,
+    jCode: `${reliability}${credibility}`,
+    autoJ: `${auto[0]}${auto[1]}`,
+    override: ov ? opts.override : undefined,
     score,
     roeGated,
     stale,
+    corroboration,
     label: stale ? STALE_NAME : level.name,
     labelToken: stale ? 'var(--sym-ink-stale)' : level.bandToken,
-    visibleAtRest: roeGated || stale,
-    jMeaning: `${level.reliability}: ${RELIABILITY[level.reliability].label} · ${level.credibility}: ${CREDIBILITY[level.credibility].label}`,
+    visibleAtRest: roeGated || stale || !!ov,
+    jMeaning: `${reliability}: ${RELIABILITY[reliability].label} · ${credibility}: ${CREDIBILITY[credibility].label}`,
   };
 }
 

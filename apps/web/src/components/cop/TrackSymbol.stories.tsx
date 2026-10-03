@@ -16,10 +16,12 @@ const meta = {
           'This is the Branding §5.2 rule — side count = sensor type, 45° for enemy, opacity = score, pulsing ' +
           'halo below 0.60. Both live renderers currently draw circles instead, so this story is the reference ' +
           'for unifying them (see Branding Audit).\n\n' +
-          '**At-a-glance verdict: this n-gon scheme FAILS** (Branding Audit G01). Measured on ' +
-          '**Explorations/At-a-Glance Symbols**: affiliation silhouettes soft-IoU 0.97 at σ 1 px (pass ≤ 0.85), the halo raises ' +
-          'pair similarity by +0.72 (pass ≤ +0.05), and hexagon vs heptagon is sub-pixel at 16 px. The bench compares ' +
-          'FM 1-02 / MCRP 5-12A-conformant alternates (V1–V4) against this baseline (V0).',
+          '**Superseded by Decisions/Track Symbology.** This is the n-gon scheme the live renderers are built from today. ' +
+          'It fails the at-a-glance test (Branding Audit G01). On **Decisions/Evidence/At-a-Glance** (V0 = this matrix): ' +
+          'affiliation silhouette soft-IoU is 0.97 at σ 1 px (pass ≤ 0.85), the halo raises pair similarity by +0.72 ' +
+          '(pass ≤ +0.05), and hexagon vs heptagon is sub-pixel at 16 px. The decided replacement is the FM 1-02 / MCRP 5-12A ' +
+          'symbol in `src/components/symbol`: filled frames, side gauge + J, no halo. It passes T1–T7. ' +
+          'Keep this story until CesiumSpine / MapSpine adopt the production symbol.',
       },
     },
   },
@@ -50,16 +52,16 @@ export const UnitBDecay: Story = {
 
 /**
  * Sensor type × affiliation matrix at the degraded sample score.
- * Fails the at-a-glance test (Branding Audit G01) — see Explorations/At-a-Glance Symbols for the
- * measured comparison against FM 1-02 / MCRP 5-12A-conformant alternates.
+ * Fails the at-a-glance test (Branding Audit G01) — see Decisions/Evidence/At-a-Glance for the
+ * measurements and Decisions/Track Symbology for the replacement.
  */
 export const ShapeMatrix: Story = {
   parameters: {
     docs: {
       description: {
         story:
-          'NOTE: this n-gon scheme fails the at-a-glance test — see **Explorations/At-a-Glance Symbols** (V0 is this matrix) and ' +
-          'Branding Audit G01.',
+          'NOTE: this n-gon scheme fails the at-a-glance test and is superseded. See **Decisions/Track Symbology** for the ' +
+          'decided symbol, **Decisions/Evidence/At-a-Glance** (V0 is this matrix) and Branding Audit G01.',
       },
     },
   },

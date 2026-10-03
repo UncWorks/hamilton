@@ -45,7 +45,7 @@ export const TrackSymbology: Story = {
 export const Halo: Story = {
   render: () => (
     <Page>
-      <Section title="Pulsing halo (§5.2, §6.3)" note="Option 1 (live): halo-pulse keyframe in motion.css, scaled about the icon centre (.halo → transform-box: fill-box). MapSpine + CesiumSpine draw the same geometry via haloFrameAt(). Alternatives: Explorations/Halo Options.">
+      <Section title="Pulsing halo (§5.2, §6.3)" note="Option 1 (live): halo-pulse keyframe in motion.css, scaled about the icon centre (.halo → transform-box: fill-box). MapSpine + CesiumSpine draw the same geometry via haloFrameAt(). Alternatives: Archive/Halo Options. The decided track symbol drops the halo for a side gauge + J (Decisions/Track Symbology, decision 2).">
         <div style={{ display: 'flex', gap: 'var(--space-6)', alignItems: 'end', flexWrap: 'wrap' }}>
           {[0.65, 0.59, 0.45, 0.3, 0.13, 0.05].map((s) => (
             <TrackGlyph key={s} affiliation="friendly" sensorType="offense" score={s} />

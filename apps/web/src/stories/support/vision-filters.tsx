@@ -1,5 +1,5 @@
-// Story-only vision filters, shared by Explorations/Track Symbology and
-// Explorations/At-a-Glance Symbols. Every filter is an SVG <filter> referenced
+// Story-only vision filters, shared by Decisions/Evidence/At-a-Glance and the
+// Archive (Track Symbology, At-a-Glance Variants). Every filter is an SVG <filter> referenced
 // from CSS (`filter: url(#id)`), so the same pixels the user sees are filtered.
 
 import type { Decorator } from '@storybook/react';
@@ -69,7 +69,7 @@ export function VisionFilter({ mode, children }: { mode: VisionMode; children: R
   );
 }
 
-/** Decorator driven by a boolean `deuteranopia` arg (Explorations/Track Symbology). */
+/** Decorator driven by a boolean `deuteranopia` arg (Archive/Track Symbology). */
 export const withDeuteranopia: Decorator = (Story, ctx) => {
   if (!ctx.args.deuteranopia) return <Story />;
   return (

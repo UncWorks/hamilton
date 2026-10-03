@@ -17,7 +17,7 @@ import {
 } from '@/lib/trust-gradient';
 
 /**
- * Halo treatments compared in Explorations/Halo Options.
+ * Halo treatments compared in Archive/Halo Options.
  * `pulse` (Option 1) is the LIVE treatment — MapSpine + CesiumSpine draw the
  * same thing via haloFrameAt().
  */

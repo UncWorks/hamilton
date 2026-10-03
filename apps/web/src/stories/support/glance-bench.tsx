@@ -1,11 +1,12 @@
-// Explorations/At-a-Glance Symbols — bench UI: heatmaps + results for the
+// At-a-Glance bench UI (Decisions/Evidence, Archive/At-a-Glance Variants): heatmaps + results for the
 // research protocol (glance-eval.ts), the human odd-one-out task (T8), SIDC
 // tables and the documentation (rationale, conformance, differences,
 // unverified list). Story-only.
 
 import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from 'react';
 import type { SensorType } from '@hamilton/contracts';
-import { CONFUSABLE_AT, INDISTINGUISHABLE_AT, T, formatSidc, linearFit, mulberry32 } from '@/lib/glance-metrics';
+import { CONFUSABLE_AT, INDISTINGUISHABLE_AT, T, linearFit, mulberry32 } from '@/lib/glance-metrics';
+import { formatSidc } from '@/lib/track-sidc';
 import type { FrameKind } from './MilSymbol';
 import { FRAME_COLS, FUNCTIONS, GLANCE_VARIANTS, GlanceCell, RESEARCH_ID, SENSOR_ROWS, cellCodes, mapSurface, type AnyVariant, type GlanceVariant } from './GlanceSymbol';
 import { SEARCH_CONDITIONS, VISIONS, runSuite, t3Pass, type PairMatrix, type SearchCondition, type SuiteResult, type Vision } from './glance-eval';
@@ -141,7 +142,7 @@ const P = ({ ok }: { ok: boolean }) => <span style={{ color: ok ? 'var(--text-pr
 const f2 = (x: number) => (Number.isFinite(x) ? x.toFixed(2) : '∞');
 const pct = (x: number) => `${Math.round(x * 100)}%`;
 
-export const SUITE_VARIANTS: AnyVariant[] = ['REF', ...GLANCE_VARIANTS];
+export const SUITE_VARIANTS: AnyVariant[] = ['REF', ...GLANCE_VARIANTS, 'FINAL'];
 
 export function ResultsTable({ variants = SUITE_VARIANTS, vision = 'normal' }: { variants?: AnyVariant[]; vision?: Vision }) {
   const { results, done } = useSuites(variants.includes('REF') && variants.includes('V0') ? variants : (['REF', 'V0', ...variants.filter((v) => v !== 'REF' && v !== 'V0')] as AnyVariant[]));
@@ -539,7 +540,7 @@ export function OddOneOut({
     return mode === 'affiliation' ? { sensor, frame: isT ? 'hostile' : 'friend' } : { sensor: isT ? target : distractor, frame: 'friend' };
   };
 
-  const stats = (['V0', 'V1', 'V2', 'V3', 'V4', 'REF'] as AnyVariant[])
+  const stats = (['V0', 'V1', 'V2', 'V3', 'V4', 'REF', 'FINAL'] as AnyVariant[])
     .map((v) => {
       const mine = trials.filter((t) => t.variant === v);
       const ok = mine.filter((t) => t.correct && t.present);
