@@ -14,11 +14,12 @@
 //  - At-a-glance cue = the existing centred halo (HaloSvg, Option 1), labelled
 //    "Hamilton link-trust overlay (non-2525)", toggleable, trust tokens only;
 //    text amplifiers are pushed outside its extent so it never sits under them.
-//  - ROE / Excalibur gate lives in the fire-mission popup, not on the symbol.
+//  - The Excalibur TSS check lives on the fire mission, not on the symbol (now the
+//    live TSS mission row — components/fires, Fires/Mission Row).
 
 import type { CSSProperties, ReactNode } from 'react';
 import { haloOuterRadiusPx, shouldHaloPulse } from '@/stories/archive/halo';
-import { CREDIBILITY, J_CODE_CITATION, LINK_TRUST_SCALE, NRT, RELIABILITY, ROE_FLOOR, STALE_AFTER_S, rateLinkTrust, type LinkTrustRating } from '@/lib/link-trust-rating';
+import { CREDIBILITY, J_CODE_CITATION, LINK_TRUST_SCALE, NRT, RELIABILITY, TSS_MIN_GPS_SCORE, STALE_AFTER_S, rateLinkTrust, type LinkTrustRating } from '@/lib/link-trust-rating';
 import {
   RatingExplanation,
   TRIGGER_CSS,
@@ -247,7 +248,8 @@ export function RatingCell({ explanation, forceOpen = false, testId, margin, ...
 }
 
 // ---------------------------------------------------------------------------
-// Fire-mission / target popup mock — where the ROE / Excalibur gate lives
+// Fire-mission / target popup mock — where the TSS check lives (superseded by the
+// live TSS mission row, components/fires/MissionRow.tsx)
 // ---------------------------------------------------------------------------
 
 export function FireMissionPopup({
@@ -267,7 +269,7 @@ export function FireMissionPopup({
   /** Scenario clock of the call for fire, e.g. "1:20". */
   requestedAt?: string;
 }) {
-  const hold = requested && rating.roeGated;
+  const hold = requested && rating.belowTssMin;
   const row: CSSProperties = { display: 'flex', justifyContent: 'space-between', gap: 'var(--space-3)', fontSize: 12 };
   return (
     <section
@@ -306,18 +308,18 @@ export function FireMissionPopup({
       >
         {!requested ? (
           <>
-            <strong style={mono}>AWAITING CALL FOR FIRE.</strong> ROE gate evaluates when the mission arrives
-            {requestedAt ? ` (${requestedAt})` : ''}. Observer link {rating.score.toFixed(2)} {rating.roeGated ? '<' : '≥'} floor{' '}
-            {ROE_FLOOR.toFixed(2)}.
+            <strong style={mono}>AWAITING CALL FOR FIRE.</strong> TSS are evaluated when the mission arrives
+            {requestedAt ? ` (${requestedAt})` : ''}. Observer link {rating.score.toFixed(2)} {rating.belowTssMin ? '<' : '≥'} TSS min{' '}
+            {TSS_MIN_GPS_SCORE.toFixed(2)}.
           </>
         ) : hold ? (
           <>
-            <strong style={mono}>ROE GATE — HOLD.</strong> Observer link {rating.score.toFixed(2)} &lt; floor {ROE_FLOOR.toFixed(2)} → GPS-guided fires gated.
-            <div style={{ marginTop: 4, color: 'var(--text-secondary)' }}>Options: delay 60 s · shift to non-GPS · confirm on alternate channel</div>
+            <strong style={mono}>TSS FAIL — rec. DO NOT LOAD.</strong> Observer link {rating.score.toFixed(2)} &lt; TSS min {TSS_MIN_GPS_SCORE.toFixed(2)} (GPS-guided, C) → target selection standard not met.
+            <div style={{ marginTop: 4, color: 'var(--text-secondary)' }}>Branches: shift → M795 HE · confirm via alternate means · AT MY COMMAND — re-rate 60 s · accept risk (FSO)</div>
           </>
         ) : (
           <>
-            <strong style={mono}>ROE GATE — CLEAR.</strong> Observer link ≥ {ROE_FLOOR.toFixed(2)}.
+            <strong style={mono}>TSS PASS.</strong> Observer link ≥ {TSS_MIN_GPS_SCORE.toFixed(2)} (GPS-guided, C).
           </>
         )}
       </div>
@@ -348,7 +350,7 @@ export function RatingScaleTable() {
     <table style={{ borderCollapse: 'collapse' }}>
       <thead>
         <tr>
-          {['Rating (label)', 'Score', 'J (export)', 'J meaning — FM 2-22.3 App. B', 'ROE'].map((h) => (
+          {['Rating (label)', 'Score', 'J (export)', 'J meaning — FM 2-22.3 App. B', 'TSS (GPS)'].map((h) => (
             <th key={h} style={thS}>
               {h}
             </th>
@@ -366,7 +368,7 @@ export function RatingScaleTable() {
               <td style={{ ...tdS, fontFamily: 'inherit' }}>
                 {l.reliability}: {RELIABILITY[l.reliability].label} · {l.credibility}: {CREDIBILITY[l.credibility].label}
               </td>
-              <td style={tdS}>{l.min < ROE_FLOOR ? 'gated' : '—'}</td>
+              <td style={tdS}>{l.min < TSS_MIN_GPS_SCORE ? 'FAIL' : '—'}</td>
             </tr>
           );
         })}
@@ -431,7 +433,7 @@ export function LegendPrime() {
           <rect x={6} y={6} width={28} height={18} fill="none" stroke="var(--sym-select)" strokeWidth={1.25} />
           <rect x={3} y={3} width={34} height={24} fill="none" stroke="var(--sym-select)" strokeWidth={1.25} />
         </Swatch>
-        <Swatch label="No AL condition bar, no damaged slash, no frame colour/opacity for trust. ROE / Excalibur gate → fire-mission popup">
+        <Swatch label="No AL condition bar, no damaged slash, no frame colour/opacity for trust. Excalibur TSS check → fire-mission row">
           <line x1={4} x2={36} y1={14} y2={14} stroke="var(--text-tertiary)" strokeWidth={1.5} />
         </Swatch>
       </div>

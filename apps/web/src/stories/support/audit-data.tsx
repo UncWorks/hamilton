@@ -77,7 +77,7 @@ export const FINDINGS: Finding[] = [
     area: 'Modal motion',
     where: 'motion.css:6-22, 59-61 · KillChainGate.tsx:56-69',
     finding:
-      'The COP never blurs behind the gate: .motion-cop-blur is defined but not applied anywhere, and gating-modal-arrival animates filter blur(0) → blur(0) (no-op). Frame 1 of the load-bearing beat is missing.',
+      'SUPERSEDED (TSS mission row, docs/plans/tss-mission-row.md): KillChainGate is deleted; there is no modal, scrim, blur or z-index layer to fix. Original: The COP never blurs behind the gate: .motion-cop-blur is defined but not applied anywhere, and gating-modal-arrival animates filter blur(0) → blur(0) (no-op). Frame 1 of the load-bearing beat is missing.',
     spec: '§6.1, §6.2, §10.5',
   },
   {
@@ -86,7 +86,7 @@ export const FINDINGS: Finding[] = [
     area: 'Modal',
     where: 'KillChainGate.tsx:128, 141-146',
     finding:
-      'Option-button leaders use --gating-secondary (phosphor) always; spec puts --gating-primary on leaders and phosphor only on the focused option. No :focus-visible treatment — hover is inline style mutation, keyboard focus is invisible.',
+      'SUPERSEDED (TSS mission row, docs/plans/tss-mission-row.md): KillChainGate is deleted; there is no modal, scrim, blur or z-index layer to fix. Original: Option-button leaders use --gating-secondary (phosphor) always; spec puts --gating-primary on leaders and phosphor only on the focused option. No :focus-visible treatment — hover is inline style mutation, keyboard focus is invisible.',
     spec: '§10.5, §10.6',
   },
   {
@@ -95,7 +95,7 @@ export const FINDINGS: Finding[] = [
     area: 'Copy',
     where: 'KillChainGate.tsx:15, 36, 94',
     finding:
-      'Headline renders "Trust on UNIT_B-position + UNIT_B-GPS…" (uppercased source_id) vs spec "B-position + B-GPS". Option (c) hard-codes "B" regardless of the gated source (see Modal/KillChainGate → Other Source).',
+      'SUPERSEDED (TSS mission row, docs/plans/tss-mission-row.md): KillChainGate is deleted; there is no modal, scrim, blur or z-index layer to fix. Original: Headline renders "Trust on UNIT_B-position + UNIT_B-GPS…" (uppercased source_id) vs spec "B-position + B-GPS". Option (c) hard-codes "B" regardless of the gated source (was Modal/KillChainGate → Other Source).',
     spec: '§10.5 verbatim text',
   },
   {
@@ -161,7 +161,7 @@ export const FINDINGS: Finding[] = [
     area: 'Modal',
     where: 'KillChainGate.tsx:57-69, 78, 101, 105',
     finding:
-      'Scrim and frame share one z-100 container (spec: scrim z90, frame z100). Glow is box-shadow (spec: filter drop-shadow); subtitle adds an unspecified text-shadow and weight 600 vs headline 500.',
+      'SUPERSEDED (TSS mission row, docs/plans/tss-mission-row.md): KillChainGate is deleted; there is no modal, scrim, blur or z-index layer to fix. Original: Scrim and frame share one z-100 container (spec: scrim z90, frame z100). Glow is box-shadow (spec: filter drop-shadow); subtitle adds an unspecified text-shadow and weight 600 vs headline 500.',
     spec: '§6.2, §7.2',
   },
   {
@@ -372,7 +372,7 @@ export const FINDINGS: Finding[] = [
       'RESOLVED. The Storybook workaround that read components.fingerprint as 1 − overlap is removed: stories now treat it directly as trust (1 − match strength, 1.0 = no match), and evidence strings derive the overlap ratio as 1 − trust, as the narrator does. Fixtures align with PR #1 (fix/fingerprint-trust-inversion) semantics, so the stories assume PR #1 is merged. ' +
       'Candidates are what the engine emits for the Avdiivka jammer: ground_based_gps_uhf_barrage 1.00 (6/6), pulsed_uhf_wide 0.50 (3/6), cellular_uhf_barrage 0.17 (1/6), with munitions and citations from assets/fingerprints/library.json (replacing the unreachable 0.81 / 0.42 / 0.18). ' +
       'Every fixture payload uses engine-reachable components (fingerprint ∈ {1, .5, .33, .17, 0}; spatial 1 / 0.6 / 0.3, mirroring the trust-oriented spatial detector) and reproduces its score exactly, so the B′ tooltip mismatch warning stays silent. ' +
-      'Band samples changed: degraded 0.42 → 0.31 (a 6/6 match caps a localized source at 0.372), failed 0.18 → 0.13 (the engine\'s B-1:15 output); B now crosses the ROE floor on the jammer match (0.72 → 0.31) instead of a gradual slide. ' +
+      'Band samples changed: degraded 0.42 → 0.31 (a 6/6 match caps a localized source at 0.372), failed 0.18 → 0.13 (the engine\'s B-1:15 output); B now drops below the 0.60 TSS minimum (then "ROE floor") on the jammer match (0.72 → 0.31) instead of a gradual slide. ' +
       'SUPERSEDED by F02: fixtures now carry the engine\'s per-beat values (PR #1 @ 6733817) instead of solved approximations.',
     spec: 'FRS FR-04 / FR-04a / FR-05 · PR #1',
   },
@@ -383,12 +383,25 @@ export const FINDINGS: Finding[] = [
     where: 'stories/fixtures/avdiivka.ts · lib/link-trust-rating.ts (AVDIIVKA_BEATS, engineTick, solveComponents) · .storybook/mocks/mqtt-client.ts · Archive/Track Symbology → COP – Option B′ · Decisions/Track Symbology → COP',
     finding:
       'RESOLVED. Stories now mirror the PR #1 engine beats (fix/fingerprint-trust-inversion @ 6733817): the fixture beat table is derived from comms-sim scenarios/avdiivka.py telemetry through the engine\'s detector mappings and is unit-tested against the Rust end-to-end test avdiivka_beats_end_to_end. ' +
-      'A and C 1.00 throughout (idle is 1.00, not 0.97 / 0.79). Unit B: 0:00 1.00 → 0:45 0.70 WATCH (cadence 1.0 s → 1.17 s, 3.4σ) → 0:55 0.65 (CRC 0.2% → 6%) → 1:05 0.65 (localized) → 1:15 0.13, first below 0.60, as the 6.1 s gap, 14% CRC and the jammer fingerprint 6/6 land together → 1:20 0.13 (modal) → 1:50 0.22 → 2:15 1.00. ' +
+      'A and C 1.00 throughout (idle is 1.00, not 0.97 / 0.79). Unit B: 0:00 1.00 → 0:45 0.70 WATCH (cadence 1.0 s → 1.17 s, 3.4σ) → 0:55 0.65 (CRC 0.2% → 6%) → 1:05 0.65 (localized) → 1:15 0.13, first below 0.60, as the 6.1 s gap, 14% CRC and the jammer fingerprint 6/6 land together → 1:20 0.13 (TSS beat) → 1:50 0.22 → 2:15 1.00. ' +
       'Spatial trust is the engine\'s Nominal 1.0 / Localized 0.6 / Blanket 0.3. Fixture trust payloads carry the optional lat/lon PR #1 adds to TrustScorePayload, from the comms-sim positions (mirrored locally, since this branch\'s contracts lack them). ' +
       'Band samples: NOMINAL 1.00 (0:00), WATCH 0.70 (0:45), UNRELIABLE 0.13 (1:15) are engine beats; DEGRADED 0.45 is synthetic (the timeline never sits in 0.30–0.60) but engine-reachable. Every tooltip reproduces its payload score, so the mismatch warning stays silent. ' +
       'OPEN UX ITEM: the directional vector appears at 1:15, because app/page.tsx draws it when B < 0.60, whereas Branding §10.3 puts it at 1:05 (B is still 0.65 then). Driving it from components.spatial (localized) would show it from 0:45; neither is 1:05 without a scripted timer. Web-owner decision. ' +
-      'Related: the store raises the kill-chain gate on the first crossing (1:15), while the storyboard modal beat is 1:20.',
+      'Related (SUPERSEDED by T01): the store used to raise the kill-chain modal on the first crossing (1:15) vs the storyboard\'s 1:20 modal beat; there is no modal now — AB1001 arrives at 1:12 and fails TSS in its row at 1:15.',
     spec: 'Branding §10.1–§10.5 · System Design §2 / §5.1 · FRS FR-01–FR-05 · PR #1',
+  },
+  // --- Decision workflow ---
+  {
+    id: 'T01',
+    severity: 'high',
+    area: 'Decision surface — TSS fire-mission row (replaces the kill-chain modal)',
+    where: 'components/fires/MissionQueue.tsx · MissionRow.tsx · TssInForce.tsx · lib/tss.ts · store/hamilton.ts · Fires/Mission Row · Fires/TSS in force · Pages/COP',
+    finding:
+      'RESOLVED (feat/tss-mission-row). The blocking modal is gone. A call for fire (fires/mission/{id}) is evaluated against the target selection standards in force (TSS-1: GPS-guided C / 10 s, laser C / 30 s, unguided never gated, HPT exception D / 10 s with risk acceptance): ' +
+      'reliability = live J letter, report age = time since the last good update, accuracy = "n/a — no TLE source"; hysteresis 5 s. Only mission ∩ failing source ∩ gated munition draws attention: a 2px --gating-primary rule, text chips (FAIL / E5), "Rec. method of control: DO NOT LOAD" and four branch buttons (keys 1–4). ' +
+      'No portal, scrim, blur or focus move; aria-live polite only on the selected mission; motion: none. Terminology: TSS / DO NOT LOAD / AT MY COMMAND replace kill chain / HOLD / delay 60 s. ' +
+      'Resolves A07, A08, A09 and A16 by removal (this audit has no C14; the modal copy item is A09). Open: DP star / DSM row / CCIR queue (Alternatives C, D) and an engine-side decision endpoint.',
+    spec: 'decision-workflow assessment §3 A + B, §4 HS-05/07/13/15/16, §6 · FRS FR-07 · Branding §10 (superseded parts)',
   },
   // --- At-a-glance symbology ---
   {

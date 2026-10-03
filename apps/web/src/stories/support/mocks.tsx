@@ -3,7 +3,7 @@
 // stories opt in through `parameters.hamilton`, `parameters.engineApi` and
 // `parameters.mqtt`.
 
-import { useLayoutEffect, type ReactNode } from 'react';
+import { useEffect, useLayoutEffect, type ReactNode } from 'react';
 import type { DetectionEvent } from '@hamilton/contracts';
 import { useHamilton } from '@/store/hamilton';
 
@@ -14,11 +14,13 @@ export type HamiltonSeed = Partial<
     | 'tracks'
     | 'candidates'
     | 'selectedSource'
-    | 'gateActive'
-    | 'gateHistory'
     | 'llmMode'
     | 'llmStatus'
-    | 'roeFloor'
+    | 'tssTable'
+    | 'missions'
+    | 'selectedMission'
+    | 'decisionLog'
+    | 'tssFailedThisSession'
   >
 >;
 
@@ -61,7 +63,8 @@ export interface EngineApiMock {
 const realFetch: typeof fetch | undefined =
   typeof window !== 'undefined' ? window.fetch.bind(window) : undefined;
 
-export const modalSelections: unknown[] = [];
+/** Bodies POSTed to the engine's /api/modal/selection (branch log copies). */
+export const engineSelections: unknown[] = [];
 
 export function installEngineApi(mock: EngineApiMock = {}): void {
   if (typeof window === 'undefined' || !realFetch) return;
@@ -85,13 +88,37 @@ export function installEngineApi(mock: EngineApiMock = {}): void {
     }
     if (url.includes('/api/modal/selection')) {
       const body = typeof init?.body === 'string' ? JSON.parse(init.body) : init?.body;
-      modalSelections.push(body);
+      engineSelections.push(body);
       // eslint-disable-next-line no-console
       console.info('[storybook] POST /api/modal/selection', body);
       return new Response('{}', { status: 200 });
     }
     return realFetch(input, init);
   };
+}
+
+// ---------------------------------------------------------------------------
+// Trust heartbeat — the engine publishes every source at ~1 Hz, so report age
+// stays ~0–1 s. Stories that seed static tracks mount this so the TSS
+// report-age check sees fresh reports; `frozen` sources keep their timestamp
+// (STALE / report-age stories).
+// ---------------------------------------------------------------------------
+
+export function TrustHeartbeat({ frozen = [], children }: { frozen?: string[]; children: ReactNode }) {
+  const key = frozen.join(',');
+  useEffect(() => {
+    const id = setInterval(() => {
+      const now = new Date().toISOString();
+      useHamilton.setState((s) => ({
+        tracks: Object.fromEntries(
+          Object.entries(s.tracks).map(([k, t]) => [k, frozen.includes(k) ? t : { ...t, last_update: now }]),
+        ),
+      }));
+    }, 1000);
+    return () => clearInterval(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key]);
+  return <>{children}</>;
 }
 
 // ---------------------------------------------------------------------------

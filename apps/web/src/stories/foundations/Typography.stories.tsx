@@ -14,8 +14,8 @@ type Story = StoryObj<typeof meta>;
 const SCALE_ROLE: Record<string, string> = {
   '--text-micro': 'citation, timestamp, eyebrows',
   '--text-body': 'trust-trace bullets, body',
-  '--text-panel': 'side-panel headers, modal options',
-  '--text-modal': '"Kill-chain gated below ROE floor."',
+  '--text-panel': 'side-panel headers',
+  '--text-modal': 'unused since the modal was retired (TSS mission row)',
   '--text-hero': 'deck slide titles (unused in app)',
   '--text-readout': 'the trust score numeral',
 };
@@ -43,7 +43,7 @@ function TypeScale() {
               <span style={{ fontSize: 'var(--text-micro)', color: 'var(--text-tertiary)' }}>{SCALE_ROLE[t.name] ?? ''}</span>
             </div>
             <div style={{ fontSize: `var(${t.name})`, color: 'var(--text-primary)', lineHeight: 1.15 }}>
-              {t.name === '--text-readout' ? <span className="trust-readout">0.13</span> : 'Trust on B-position below ROE floor.'}
+              {t.name === '--text-readout' ? <span className="trust-readout">0.13</span> : 'Target selection standard not met: source D4.'}
             </div>
           </div>
         ))}
@@ -90,7 +90,7 @@ export const Families: Story = {
                 <FontStatus family={f.family} weight={w} />
               </div>
               <div style={{ fontFamily: `var(${f.token})`, fontWeight: w, fontSize: 'var(--text-panel)', color: 'var(--text-primary)' }}>
-                HAMILTON · 0123456789 · O0 l1 · ground_based_gps_uhf_barrage — “Kill-chain gated.”
+                HAMILTON · 0123456789 · O0 l1 · ground_based_gps_uhf_barrage — “TSS: FAIL — rec. DO NOT LOAD.”
               </div>
             </div>
           ))}
@@ -160,7 +160,7 @@ export const LetterSpacingInventory: Story = {
           <div key={t} style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: 'var(--space-4)' }}>
             <code style={{ ...mono, color: 'var(--text-tertiary)' }}>{t}</code>
             <span style={{ letterSpacing: t, textTransform: 'uppercase', fontSize: 'var(--text-micro)', color: 'var(--text-primary)' }}>
-              ROE floor · 0.60 · unit_b
+              TSS MIN · GPS · 0.60 · unit_b
             </span>
           </div>
         ))}

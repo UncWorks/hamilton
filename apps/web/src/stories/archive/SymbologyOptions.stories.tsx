@@ -27,7 +27,7 @@ import {
   componentsFor,
   telemetryFor,
 } from '@/stories/fixtures/avdiivka';
-import { ROE_FLOOR, STALE_AFTER_S, firstCrossingClock, formatDtg, rateLinkTrust } from '@/lib/link-trust-rating';
+import { TSS_MIN_GPS_SCORE, STALE_AFTER_S, firstCrossingClock, formatDtg, rateLinkTrust } from '@/lib/link-trust-rating';
 import {
   FireMissionPopup,
   LegendPrime,
@@ -572,7 +572,7 @@ const RATIONALE_PRIME: ReactNode = (
     for status 1 (candidate sites). No AL condition bar, no damaged slash, no frame colour. Trust travels in standard fields where the
     meaning matches — J (evaluation rating, exported), W (DTG of last good update), AR = NRT + grey frame when stale — and as the
     centred <strong>Hamilton link-trust overlay (non-2525)</strong> halo, toggleable, trust tokens only. Visible label: semantic name +
-    score, J code secondary. Hover or focus a scored symbol for the factor breakdown. ROE / Excalibur gate → fire-mission popup.
+    score, J code secondary. Hover or focus a scored symbol for the factor breakdown. Excalibur TSS check → fire-mission row.
   </>
 );
 
@@ -767,7 +767,7 @@ export const OptionBPrimeRatingTooltip: Story = {
     await expect(tip).toHaveTextContent('0.2% → 14%');
     // Every fixture reproduces its payload score: no mismatch warning anywhere.
     await expect(canvasElement.ownerDocument.querySelectorAll('[role="alert"]')).toHaveLength(0);
-    await expect(tip).toHaveTextContent('Below ROE floor 0.60 → GPS-guided fires gated');
+    await expect(tip).toHaveTextContent('Below TSS minimum (GPS-guided, C ≥ 0.60)');
     await userEvent.unhover(trigger);
     await waitFor(() => expect(tip).not.toBeVisible());
     // Keyboard path. element.focus() does not dispatch focus events while the
@@ -792,12 +792,12 @@ export const OptionBPrimeRatingTooltip: Story = {
  * state between beats, so the clock steps:
  * 0:45 B WATCH 0.70 (cadence 1.0 s → 1.17 s, 3.4σ) → 0:55 WATCH 0.65 (CRC 0.2% → 6%) → 1:05 0.65
  * (localized, A and C 1.00) → 1:15 0.13: the 6.1 s gap, 14% CRC and the jammer fingerprint (6/6)
- * land together, B's first crossing below the ROE floor; candidates and the bearing line appear
+ * land together, B's first score below the GPS-guided TSS minimum; candidates and the bearing line appear
  * (the web draws the directional vector when B < 0.60) → 1:20 call for fire: the fire-mission
  * gate holds. A and C stay at 1.00 throughout.
  */
 const B_CROSSING_CLOCK = firstCrossingClock() ?? 75;
-/** Branding §10.5: the call for fire / kill-chain modal beat. */
+/** Branding §10.5: the call-for-fire beat (formerly the kill-chain modal; now the TSS mission row). */
 const FIRE_MISSION_CLOCK = 80;
 /** Fixed J1 shown with the call for fire. */
 const FIX_CLOCK = FIRE_MISSION_CLOCK;
@@ -854,7 +854,7 @@ function CopScenePrime({ clock, size, reducedMotion, overlay }: Pick<SymbologyAr
   const dy = JAMMER_LOCATION.lat - b.t.lat;
   const bearing = ((Math.atan2(dx, dy) * 180) / Math.PI + 360) % 360;
   const ordered = [...CANDIDATES].sort((p, q) => q.score - p.score);
-  const showBearing = b.score < ROE_FLOOR;
+  const showBearing = b.score < TSS_MIN_GPS_SCORE;
   const showCandidates = clock >= B_CROSSING_CLOCK;
   const showFix = clock >= FIX_CLOCK;
   const missionRequested = clock >= FIRE_MISSION_CLOCK;
@@ -971,7 +971,7 @@ function CopScenePrime({ clock, size, reducedMotion, overlay }: Pick<SymbologyAr
  * Avdiivka scene with Option B′ (US 2525E). A, B, C; candidate sites (status 1,
  * dashed) inside the dashed NAI; confirmed fix J1; bearing line labelled with
  * T and W. The **clock** control steps through the engine beats: B WATCH 0.70
- * at 0:45, 0.65 at 0:55 / 1:05, first below the ROE floor at 1:15 (0.13), and
+ * at 0:45, 0.65 at 0:55 / 1:05, first below the GPS-guided TSS minimum at 1:15 (0.13), and
  * the fire-mission gate holds at the 1:20 call for fire. A and C stay at 1.00.
  * CesiumSpine / MapSpine are NOT changed.
  */
@@ -989,7 +989,7 @@ export const OptionBPrimeCop: Story = {
           '(CRC 0.2% → 6%; stability 0.72) → 1:05 0.65 (localized; A, C 1.00) → 1:15 0.13: 6.1 s gap (temporal 0), 14% CRC ' +
           '(stability 0.31) and the jammer fingerprint 6/6 (fingerprint trust 0) land together — first crossing below 0.60; ' +
           'candidates, NAI and bearing line appear (the web draws the directional vector when B < 0.60) → 1:20 call for fire: ' +
-          'the fire-mission gate holds (ROE GATE — HOLD) and fix J1 is placed. B keeps reporting (6.1 s cadence < ' +
+          'the fire mission fails TSS (rec. DO NOT LOAD) and fix J1 is placed. B keeps reporting (6.1 s cadence < ' +
           'STALE_AFTER_S), so it never goes STALE here. Tooltip components are the engine\'s, so the recomputed score always ' +
           'matches the payload. Assumes PR #1 is merged.',
       },

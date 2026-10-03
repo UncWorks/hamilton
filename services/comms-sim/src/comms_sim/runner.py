@@ -9,10 +9,12 @@ import logging
 import time
 from collections.abc import Iterable
 from dataclasses import dataclass
+from datetime import UTC, datetime
 
 import numpy as np
 import paho.mqtt.client as mqtt
 
+from comms_sim.missions import FireMissionSpec, avdiivka_missions, fire_mission_topic
 from comms_sim.payloads import TelemetryPayload
 from comms_sim.scenarios.avdiivka import (
     ScenarioBeat,
@@ -39,12 +41,20 @@ def _telemetry_topic(source_id: str) -> str:
     return f"telemetry/{source_id}/raw"
 
 
-def run_scenario(config: RunnerConfig, beats: Iterable[ScenarioBeat] | None = None) -> None:
-    """Drive the Avdiivka scenario, publishing telemetry per tick."""
+def run_scenario(
+    config: RunnerConfig,
+    beats: Iterable[ScenarioBeat] | None = None,
+    missions: Iterable[FireMissionSpec] | None = None,
+) -> None:
+    """Drive the Avdiivka scenario, publishing telemetry per tick and the
+    scenario's calls for fire (retained) at their scenario times."""
 
     rng = np.random.default_rng(config.seed)
     state = initial_state()
     beats_list = sorted(beats or avdiivka_beats(), key=lambda b: b.tick_seconds)
+    missions_list = sorted(
+        avdiivka_missions() if missions is None else missions, key=lambda m: m.tick_seconds
+    )
 
     client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2, client_id="hamilton-comms-sim")
     client.connect(config.broker_host, config.broker_port, keepalive=30)
@@ -52,9 +62,14 @@ def run_scenario(config: RunnerConfig, beats: Iterable[ScenarioBeat] | None = No
     log.info("comms-sim connected to broker %s:%s", config.broker_host, config.broker_port)
 
     try:
+        # Clear the previous loop's retained missions before t = 0.
+        for mission in missions_list:
+            client.publish(fire_mission_topic(mission.mission_id), b"", qos=1, retain=True)
+
         scenario_t = 0.0
         sleep_per_tick = TICK_INTERVAL_S / max(config.speed, 0.01)
         next_beat_idx = 0
+        next_mission_idx = 0
 
         while scenario_t <= config.duration_s:
             while (
@@ -65,6 +80,25 @@ def run_scenario(config: RunnerConfig, beats: Iterable[ScenarioBeat] | None = No
                 beat.apply(state)
                 log.info("beat applied (t=%.1fs): %s", beat.tick_seconds, beat.label)
                 next_beat_idx += 1
+
+            while (
+                next_mission_idx < len(missions_list)
+                and missions_list[next_mission_idx].tick_seconds <= scenario_t
+            ):
+                mission = missions_list[next_mission_idx]
+                client.publish(
+                    fire_mission_topic(mission.mission_id),
+                    json.dumps(mission_payload(mission)),
+                    qos=1,
+                    retain=True,
+                )
+                log.info(
+                    "call for fire published (t=%.1fs): %s %s",
+                    mission.tick_seconds,
+                    mission.mission_id,
+                    mission.munition.designation,
+                )
+                next_mission_idx += 1
 
             for payload in _jittered(render_telemetry(state), rng):
                 client.publish(
@@ -82,6 +116,11 @@ def run_scenario(config: RunnerConfig, beats: Iterable[ScenarioBeat] | None = No
         client.disconnect()
 
 
+def mission_payload(mission: FireMissionSpec, now: datetime | None = None) -> dict:
+    """Wire body for `fires/mission/{id}`, stamped with the receive time."""
+    return mission.to_wire(now or datetime.now(UTC))
+
+
 def _jittered(
     payloads: list[TelemetryPayload],
     rng: np.random.Generator,
@@ -92,7 +131,7 @@ def _jittered(
     Jitter is proportional to the value (0.5% on cadence, 5% on CRC, CRC
     floor 0.0005). The engine's temporal band is narrow (3σ = 1.15 s,
     6σ = 1.30 s), so absolute jitter of a few tenths of a second would make
-    temporal trust, and with it the ROE gate, flicker at random."""
+    temporal trust, and with it the TSS verdict, flicker at random."""
 
     jittered = []
     for p in payloads:

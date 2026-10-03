@@ -2,11 +2,9 @@
 
 import { useEffect, useRef, useState } from 'react';
 import type { DetectionEvent } from '@hamilton/contracts';
+import { useHamilton, type DecisionLogEntry } from '@/store/hamilton';
+import { engineUrl } from '@/lib/engine-api';
 
-const HTTP_BASE = (() => {
-  if (typeof window === 'undefined') return '';
-  return window.location.protocol + '//' + window.location.hostname + ':8080';
-})();
 
 const POLL_MS = 1_000;
 const MAX_ROWS = 80;
@@ -23,8 +21,43 @@ interface EventTerminalProps {
   height?: number;
 }
 
+/** A terminal line: an engine DetectionEvent or a web-side FDC journal entry. */
+interface TerminalRow {
+  timestamp: string;
+  who: string;
+  kind: string;
+  message: string;
+  journal: boolean;
+}
+
+/**
+ * Display labels for engine kinds whose wire names predate the TSS row
+ * (the wire enum is the engine's; renaming it is an engine change —
+ * docs/plans/tss-mission-row.md).
+ */
+const KIND_LABEL: Record<string, string> = {
+  modal_gated: 'tss_fail',
+  modal_selection: 'branch',
+};
+
+function journalRow(e: DecisionLogEntry): TerminalRow {
+  const who = e.role ? ` · ${e.role}/${e.initials ?? ''}` : '';
+  const facts =
+    e.kind === 'branch'
+      ? ` · TSS ${e.verdict ?? '—'} · J ${e.j ?? '—'} · age ${e.report_age_s ?? '—'}s${who}`
+      : who;
+  return {
+    timestamp: e.dtg,
+    who: `FM ${e.mission_id}`,
+    kind: e.kind === 'branch' ? 'branch' : e.kind === 're_rate' ? 're-rate' : e.kind === 'received' ? 'call for fire' : e.kind,
+    message: `${e.message}${facts}`,
+    journal: true,
+  };
+}
+
 export function EventTerminal({ height = 160 }: EventTerminalProps) {
   const [events, setEvents] = useState<DetectionEvent[]>([]);
+  const journal = useHamilton((s) => s.decisionLog);
   const [paused, setPaused] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -33,7 +66,7 @@ export function EventTerminal({ height = 160 }: EventTerminalProps) {
     const fetchOnce = async () => {
       if (paused || cancelled) return;
       try {
-        const res = await fetch(`${HTTP_BASE}/api/events?limit=${MAX_ROWS}`);
+        const res = await fetch(engineUrl('events', `?limit=${MAX_ROWS}`));
         if (!res.ok) return;
         const data = (await res.json()) as DetectionEvent[];
         if (!cancelled) setEvents(data);
@@ -53,7 +86,21 @@ export function EventTerminal({ height = 160 }: EventTerminalProps) {
     if (paused) return;
     const node = containerRef.current;
     if (node) node.scrollTop = node.scrollHeight;
-  }, [events, paused]);
+  }, [events, journal, paused]);
+
+  // Engine log (newest-first) + FDC journal, oldest-first for display.
+  const rows: TerminalRow[] = [
+    ...events.map((e) => ({
+      timestamp: e.timestamp,
+      who: e.source_id,
+      kind: KIND_LABEL[e.kind] ?? e.kind,
+      message: e.message,
+      journal: false,
+    })),
+    ...journal.map(journalRow),
+  ]
+    .sort((a, b) => Date.parse(a.timestamp) - Date.parse(b.timestamp))
+    .slice(-MAX_ROWS);
 
   return (
     <section
@@ -96,18 +143,19 @@ export function EventTerminal({ height = 160 }: EventTerminalProps) {
           color: 'var(--text-secondary)',
         }}
       >
-        {events
-          .slice()
-          .reverse()
-          .map((e, idx) => (
-            <div key={`${e.timestamp}-${idx}`} style={{ display: 'flex', gap: 'var(--space-3)' }}>
-              <span style={{ color: 'var(--text-tertiary)' }}>[{fmtTime(e.timestamp)}]</span>
-              <span style={{ color: 'var(--text-primary)' }}>{e.source_id}</span>
-              <span>·</span>
-              <span style={{ color: kindColor(e.kind) }}>{e.kind}</span>
-              <span style={{ color: 'var(--text-secondary)' }}>· {e.message}</span>
-            </div>
-          ))}
+        {rows.map((e, idx) => (
+          <div
+            key={`${e.timestamp}-${idx}`}
+            data-journal={e.journal ? 'true' : undefined}
+            style={{ display: 'flex', gap: 'var(--space-3)' }}
+          >
+            <span style={{ color: 'var(--text-tertiary)', flex: 'none' }}>[{fmtTime(e.timestamp)}]</span>
+            <span style={{ color: 'var(--text-primary)', flex: 'none' }}>{e.who}</span>
+            <span>·</span>
+            <span style={{ color: kindColor(e.kind), flex: 'none' }}>{e.kind}</span>
+            <span style={{ color: 'var(--text-secondary)' }}>· {e.message}</span>
+          </div>
+        ))}
       </div>
     </section>
   );
@@ -115,8 +163,10 @@ export function EventTerminal({ height = 160 }: EventTerminalProps) {
 
 function kindColor(kind: string): string {
   switch (kind) {
-    case 'modal_gated':
-    case 'modal_selection':
+    case 'tss_fail':
+    case 'tss':
+    case 'branch':
+    case 're-rate':
       return 'var(--gating-primary)';
     case 'fingerprint':
       return 'var(--trust-degraded)';

@@ -4,10 +4,11 @@ import { useEffect } from 'react';
 import { BrandBar } from '@/components/brand/BrandBar';
 import { Spine } from '@/components/cop/Spine';
 import { TrustPanel } from '@/components/panel/TrustPanel';
-import { KillChainGate } from '@/components/modal/KillChainGate';
+import { MissionQueue } from '@/components/fires/MissionQueue';
 import { EventTerminal } from '@/components/terminal/EventTerminal';
 import { useHamiltonMqtt } from '@/hooks/useHamiltonMqtt';
 import { useHamilton, type TrackState } from '@/store/hamilton';
+import { minScoreForLetter, tssRow } from '@/lib/tss';
 
 // Seed positions = comms-sim SOURCE_POSITIONS (A/C ~245 m N/S of B). Live
 // positions arrive on `integrity/trust/*` (lat/lon) and override these.
@@ -65,7 +66,11 @@ export default function Home() {
 
   const unitB = tracks.unit_b;
   const candidates = useHamilton((s) => s.candidates);
-  const showDirectional = Boolean(unitB && unitB.score < 0.6);
+  const tssTable = useHamilton((s) => s.tssTable);
+  // Bearing line once B rates below the GPS-guided TSS minimum (C → 0.60).
+  const gpsMinLetter = tssRow(tssTable, 'gps_guided').min_reliability;
+  const gpsMin = (gpsMinLetter && minScoreForLetter(gpsMinLetter)) ?? 0.6;
+  const showDirectional = Boolean(unitB && unitB.score < gpsMin);
   const topCandidate = candidates?.items[0];
   const showJammer = Boolean(showDirectional && topCandidate && topCandidate.score >= 0.5);
 
@@ -73,7 +78,7 @@ export default function Home() {
     <main
       style={{
         display: 'grid',
-        gridTemplateRows: '56px 1fr 160px',
+        gridTemplateRows: '56px minmax(0, 1fr) 160px',
         height: '100vh',
         width: '100vw',
         background: 'var(--surface-base)',
@@ -96,10 +101,20 @@ export default function Home() {
             jammerMethod={topCandidate?.method_id ?? ''}
           />
         </div>
-        <TrustPanel />
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateRows: 'auto minmax(0, 1fr)',
+            minHeight: 0,
+            overflow: 'hidden',
+            background: 'var(--surface-panel)',
+          }}
+        >
+          <MissionQueue />
+          <TrustPanel />
+        </div>
       </div>
       <EventTerminal height={160} />
-      <KillChainGate />
     </main>
   );
 }

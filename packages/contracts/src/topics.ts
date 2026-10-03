@@ -11,3 +11,9 @@ export const narrationTopic = (sourceId: string): string =>
 
 export const telemetryTopic = (sourceId: string): string =>
   `${TOPIC_TELEMETRY_PREFIX}/${sourceId}/raw`;
+
+/** Fire missions (calls for fire), retained: `fires/mission/{mission_id}`. An empty retained payload removes the mission. */
+export const TOPIC_FIRE_MISSION_PREFIX = 'fires/mission' as const;
+
+export const fireMissionTopic = (missionId: string): string =>
+  `${TOPIC_FIRE_MISSION_PREFIX}/${missionId}`;

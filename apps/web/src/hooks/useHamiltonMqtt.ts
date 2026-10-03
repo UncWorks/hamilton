@@ -15,6 +15,8 @@ export function useHamiltonMqtt(): void {
   const setCandidates = useHamilton((s) => s.setCandidates);
   const setTraceBullets = useHamilton((s) => s.setTraceBullets);
   const setLlmStatus = useHamilton((s) => s.setLlmStatus);
+  const upsertMission = useHamilton((s) => s.upsertMission);
+  const removeMission = useHamilton((s) => s.removeMission);
 
   useEffect(() => {
     const url = process.env.NEXT_PUBLIC_MQTT_WS_URL ?? FALLBACK_URL;
@@ -25,10 +27,12 @@ export function useHamiltonMqtt(): void {
         setTraceBullets(p.source_id, p.bullets);
         setLlmStatus(p.provider === 'deterministic' ? 'fallback' : 'active');
       },
+      onMission: upsertMission,
+      onMissionRemoved: removeMission,
       onConnectionChange: (connected) => {
         if (!connected) setLlmStatus('unreachable');
       },
     });
     return () => handle.disconnect();
-  }, [applyScore, setCandidates, setTraceBullets, setLlmStatus]);
+  }, [applyScore, setCandidates, setTraceBullets, setLlmStatus, upsertMission, removeMission]);
 }

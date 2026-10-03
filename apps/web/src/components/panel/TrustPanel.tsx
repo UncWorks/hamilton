@@ -1,6 +1,7 @@
 'use client';
 
 import { useHamilton } from '@/store/hamilton';
+import { minScoreForLetter, tssRow } from '@/lib/tss';
 import { TrustReadout } from './TrustReadout';
 import { CandidateCards } from './CandidateCards';
 
@@ -8,7 +9,9 @@ export function TrustPanel() {
   const tracks = useHamilton((s) => s.tracks);
   const selectedSource = useHamilton((s) => s.selectedSource);
   const candidates = useHamilton((s) => s.candidates);
-  const roeFloor = useHamilton((s) => s.roeFloor);
+  const tssTable = useHamilton((s) => s.tssTable);
+  const gpsMin = tssRow(tssTable, 'gps_guided').min_reliability;
+  const tssMin = (gpsMin && minScoreForLetter(gpsMin)) ?? 0.6;
 
   const focused =
     (selectedSource && tracks[selectedSource]) ??
@@ -72,7 +75,7 @@ export function TrustPanel() {
         </span>
       </header>
 
-      <TrustReadout score={focused.score} roeFloor={roeFloor} />
+      <TrustReadout score={focused.score} tssMin={tssMin} />
 
       <TraceBullets bullets={focused.trace_bullets} />
 

@@ -1,3 +1,4 @@
+import { DEFAULT_TSS_TABLE } from '@/lib/tss';
 import type { Meta, StoryObj } from '@storybook/react';
 import { TrustPanel } from './TrustPanel';
 import {
@@ -52,7 +53,7 @@ export const Watching: Story = { parameters: { hamilton: { tracks: PHASE_TRACKS.
 export const Localized: Story = { parameters: { hamilton: { tracks: PHASE_TRACKS.localized } } };
 
 /**
- * 1:15 — B 0.65 → 0.13, first crossing below the ROE floor: 6.1 s gap, 14% CRC and the jammer
+ * 1:15 — B 0.65 → 0.13, first score below the GPS-guided TSS minimum: 6.1 s gap, 14% CRC and the jammer
  * fingerprint (6/6) land together; full trace + candidate reveal.
  */
 export const DegradedWithCandidates: Story = {
@@ -93,21 +94,24 @@ interface PlaygroundArgs {
   score: number;
   bullets: number;
   showCandidates: boolean;
-  roeFloor: number;
+  gpsMin: 'B' | 'C' | 'D';
 }
 
 /** Drive Unit B's score, trace depth and candidates from Controls. */
 export const Playground: StoryObj<PlaygroundArgs> = {
-  args: { score: BAND_SAMPLES.failed, bullets: 3, showCandidates: true, roeFloor: 0.6 },
+  args: { score: BAND_SAMPLES.failed, bullets: 3, showCandidates: true, gpsMin: 'C' },
   argTypes: {
     score: { control: { type: 'range', min: 0, max: 1, step: 0.01 } },
     bullets: { control: { type: 'range', min: 0, max: 3, step: 1 } },
-    roeFloor: { control: { type: 'range', min: 0, max: 1, step: 0.05 } },
+    gpsMin: { control: { type: 'inline-radio' }, options: ['B', 'C', 'D'] },
   },
-  render: ({ score, bullets, showCandidates, roeFloor }) => (
+  render: ({ score, bullets, showCandidates, gpsMin }) => (
     <StoreSeed
       seed={{
-        roeFloor,
+        tssTable: {
+          ...DEFAULT_TSS_TABLE,
+          rows: DEFAULT_TSS_TABLE.rows.map((r) => (r.id === 'gps_guided' ? { ...r, min_reliability: gpsMin } : r)),
+        },
         tracks: tracksRecord(
           track('unit_a', 1),
           track('unit_b', score, { trace_bullets: TRACE_BULLETS.slice(0, bullets) }),

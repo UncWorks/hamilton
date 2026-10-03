@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react';
 import { useId, useRef, type CSSProperties, type ReactNode } from 'react';
 import { expect, fireEvent, userEvent, waitFor, within } from '@storybook/test';
 import type { Affiliation, SensorType } from '@hamilton/contracts';
-import { ROE_FLOOR, STALE_AFTER_S, firstCrossingClock, formatDtg, type JOverride } from '@/lib/link-trust-rating';
+import { TSS_MIN_GPS_SCORE, STALE_AFTER_S, firstCrossingClock, formatDtg, type JOverride } from '@/lib/link-trust-rating';
 import { formatSidc, toCotType, toSidc2525C, toSidc2525E, type SymbolCodeInput } from '@/lib/track-sidc';
 import {
   DeclutterStack,
@@ -20,7 +20,9 @@ import {
   type SymbolTrack,
 } from '@/components/symbol';
 import { MapSpine } from '@/components/cop/MapSpine';
-import { StoreSeed } from '@/stories/support/mocks';
+import { MissionQueue } from '@/components/fires/MissionQueue';
+import { AB1001_AT_CLOCK_S, AB1002_AT_CLOCK_S, ab1001, ab1002, missionState, missionsRecord } from '@/stories/fixtures/missions';
+import { StoreSeed, TrustHeartbeat } from '@/stories/support/mocks';
 import {
   BAND_SAMPLES,
   CANDIDATES,
@@ -409,7 +411,7 @@ const project = (lat: number, lon: number): [number, number] => [((lon - LON0) /
 const CANDIDATE_SITES = CANDIDATE_SITES_FIXTURE;
 const UNIT_META: Record<string, { designation: string; title: string; neighbours: string }> = {
   unit_a: { designation: 'A', title: 'A · FA observer team (COLT/FIST)', neighbours: 'neighbours B, C' },
-  unit_b: { designation: 'B', title: 'B · FA battery', neighbours: 'neighbours A, C' },
+  unit_b: { designation: 'B', title: 'B · FA battery (its FO, OBS B, calls AB1001)', neighbours: 'neighbours A, C' },
   unit_c: { designation: 'C', title: 'C · FA target-acq radar platoon', neighbours: 'neighbours A, B' },
 };
 const B_CROSSING_CLOCK = firstCrossingClock() ?? 75;
@@ -471,7 +473,7 @@ function CopScene({ clock, size, s2Override, overlay }: Pick<Args, 'clock' | 'si
   const dy = JAMMER_LOCATION.lat - b.t.lat;
   const bearing = ((Math.atan2(dx, dy) * 180) / Math.PI + 360) % 360;
   const ordered = [...CANDIDATES].sort((p, q) => q.score - p.score);
-  const showBearing = b.rating.score < ROE_FLOOR;
+  const showBearing = b.rating.score < TSS_MIN_GPS_SCORE;
   const showCandidates = clock >= B_CROSSING_CLOCK;
   const showFix = clock >= FIX_CLOCK;
   const label: CSSProperties = { ...mono };
@@ -575,29 +577,48 @@ export const Cop: Story = {
 
 function LiveSpineCop({ clock, s2Override }: Pick<Args, 'clock' | 's2Override'>) {
   const beat = beatAt(clock);
-  const tracks = tracksRecord(beatTrack('unit_a', beat.clockS), beatTrack('unit_b', beat.clockS), beatTrack('unit_c', beat.clockS));
+  // Fresh report times (the engine publishes at ~1 Hz): the TSS report-age check
+  // must see live reports, not the 2024 scenario epoch.
+  const fresh = new Date().toISOString();
+  const tracks = tracksRecord(
+    beatTrack('unit_a', beat.clockS, { last_update: fresh }),
+    beatTrack('unit_b', beat.clockS, { last_update: fresh }),
+    beatTrack('unit_c', beat.clockS, { last_update: fresh }),
+  );
   const b = tracks.unit_b!;
   const showCandidates = clock >= B_CROSSING_CLOCK;
   const evaluations = {
     ...UNIT_EVALUATION,
     ...(s2Override && clock >= S2_OVERRIDE_CLOCK ? { unit_b: { jOverride: S2_OVERRIDE_B } } : {}),
   };
+  // Calls for fire due by `clock` (comms-sim missions.py): AB1002 at 0:30, AB1001 at 1:12.
+  const missions = missionsRecord(
+    ...(clock >= AB1002_AT_CLOCK_S ? [missionState(ab1002(new Date(Date.now() - (clock - AB1002_AT_CLOCK_S) * 1000).toISOString()))] : []),
+    ...(clock >= AB1001_AT_CLOCK_S ? [missionState(ab1001(new Date(Date.now() - (clock - AB1001_AT_CLOCK_S) * 1000).toISOString()))] : []),
+  );
   return (
-    <StoreSeed seed={{ tracks, selectedSource: 'unit_b', candidates: showCandidates ? { source_id: 'unit_b', items: CANDIDATES } : null }}>
-      <div style={{ padding: 'var(--space-4)', background: 'var(--surface-panel)', display: 'grid', gap: 'var(--space-3)' }}>
-        <div style={{ ...mono, fontSize: 12, color: 'var(--text-secondary)' }}>
-          Scenario clock <span style={{ color: 'var(--text-primary)' }}>{fmtClock(clock)}</span> · engine beat {beat.label} · the production{' '}
-          <code>MapSpine</code> (CesiumSpine draws the same symbols as billboards). Hover or Tab to a unit for its breakdown.
+    <StoreSeed seed={{ tracks, missions, selectedSource: 'unit_b', candidates: showCandidates ? { source_id: 'unit_b', items: CANDIDATES } : null }}>
+      <TrustHeartbeat>
+        <div style={{ padding: 'var(--space-4)', background: 'var(--surface-panel)', display: 'grid', gap: 'var(--space-3)' }}>
+          <div style={{ ...mono, fontSize: 12, color: 'var(--text-secondary)' }}>
+            Scenario clock <span style={{ color: 'var(--text-primary)' }}>{fmtClock(clock)}</span> · engine beat {beat.label} · the production{' '}
+            <code>MapSpine</code> (CesiumSpine draws the same symbols as billboards) beside the fire-mission queue. Hover or Tab to a unit for its breakdown.
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 2fr) minmax(320px, 1fr)', gap: 'var(--space-3)' }}>
+            <div style={{ position: 'relative', height: 560 }} data-testid="cop-live-spine">
+              <MapSpine
+                evaluations={evaluations}
+                {...(b.score < TSS_MIN_GPS_SCORE ? { directionalFrom: { lat: b.lat, lon: b.lon }, directionalTo: JAMMER_LOCATION } : {})}
+                {...(showCandidates ? { candidateSites: CANDIDATE_SITES, candidateNai: JAMMER_LOCATION } : {})}
+                {...(clock >= FIX_CLOCK ? { jammerLocation: { ...JAMMER_LOCATION, method_id: CANDIDATES[0]!.method_id } } : {})}
+              />
+            </div>
+            <div style={{ maxHeight: 560, overflowY: 'auto', alignSelf: 'start' }}>
+              <MissionQueue />
+            </div>
+          </div>
         </div>
-        <div style={{ position: 'relative', height: 560 }} data-testid="cop-live-spine">
-          <MapSpine
-            evaluations={evaluations}
-            {...(b.score < ROE_FLOOR ? { directionalFrom: { lat: b.lat, lon: b.lon }, directionalTo: JAMMER_LOCATION } : {})}
-            {...(showCandidates ? { candidateSites: CANDIDATE_SITES, candidateNai: JAMMER_LOCATION } : {})}
-            {...(clock >= FIX_CLOCK ? { jammerLocation: { ...JAMMER_LOCATION, method_id: CANDIDATES[0]!.method_id } } : {})}
-          />
-        </div>
-      </div>
+      </TrustHeartbeat>
     </StoreSeed>
   );
 }
@@ -613,7 +634,9 @@ export const CopLiveSpine: Story = {
         story:
           'The COP story above, on the real renderer: the store is seeded with the PR #1 engine beat at **clock** and `MapSpine` draws ' +
           'the production symbols, declutter stacks and rating tooltips. From 1:15 the candidate sites (mock positions) appear as ' +
-          'anticipated EW symbols; from 1:20 the fix J1. B is selected (double frame).',
+          'anticipated EW symbols; from 1:20 the fix J1. B is selected (double frame). The fire-mission queue beside it holds the calls ' +
+          'for fire due by **clock**: AB1002 (OBS C, M795, from 0:30, never gated) and AB1001 (OBS B, M982, from 1:12) — TSS PASS at 1:12 ' +
+          '(B C3), TSS FAIL — RELIABILITY E5 (min C), rec. DO NOT LOAD from 1:15. No modal anywhere (Fires/Mission Row).',
       },
     },
   },
@@ -624,6 +647,8 @@ export const CopLiveSpine: Story = {
     await expect(bHit.getAttribute('aria-label')).toMatch(/J E5/);
     await expect(canvasElement.querySelector('[data-cop-symbol="unit_b"] [data-field="J"]')?.textContent).toBe('E5');
     await waitFor(() => expect(canvasElement.querySelector('[data-symbol-id="__jammer"]')).toBeTruthy());
+    const row = await c.findByTestId('fm-row-AB1001');
+    await waitFor(() => expect(row).toHaveAttribute('data-verdict', 'FAIL'));
   },
 };
 

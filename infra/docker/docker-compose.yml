@@ -90,7 +90,7 @@ services:
     environment:
       NEXT_PUBLIC_MQTT_WS_URL: ws://localhost:9001
       NEXT_PUBLIC_RENDERER: ${NEXT_PUBLIC_RENDERER:-maplibre}
-      NEXT_PUBLIC_ROE_FLOOR: ${NEXT_PUBLIC_ROE_FLOOR:-0.6}
+      ENGINE_HTTP_URL: http://trust-engine:8080
     ports:
       - "3000:3000"
     volumes:

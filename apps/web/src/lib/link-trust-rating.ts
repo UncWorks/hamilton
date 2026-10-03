@@ -1,5 +1,5 @@
 // Link-trust rating scale — ONE typed source of truth for the semantic rating
-// names, the 2525 J (evaluation rating) each maps to, the ROE gate and the
+// names, the 2525 J (evaluation rating) each maps to, the TSS minimum and the
 // explanation maths. Used by the production TrackSymbol + RatingTooltip
 // (src/components/symbol) and the Storybook fixtures.
 //
@@ -267,8 +267,8 @@ export function solveComponents(score: number, regime: FixtureRegime = regimeFor
 // Rating scale
 // ---------------------------------------------------------------------------
 
-/** Below this composite score GPS-guided fires are gated (Branding §3.3). */
-export const ROE_FLOOR = 0.6;
+/** Lowest score rated C — the default GPS-guided TSS minimum (DEFAULT_TSS_TABLE, lib/tss.ts). Display/band edge only; TSS compares letters. */
+export const TSS_MIN_GPS_SCORE = 0.6;
 
 /** Seconds without a good update before a track is STALE (AR = "NRT"). */
 export const STALE_AFTER_S = 10;
@@ -339,13 +339,13 @@ export const LINK_TRUST_SCALE: readonly RatingLevel[] = [
   {
     id: 'watch',
     name: 'WATCH',
-    min: ROE_FLOOR,
+    min: TSS_MIN_GPS_SCORE,
     band: 'watching',
     bandToken: 'var(--trust-watching)',
     reliability: 'C',
     credibility: '3',
     jCode: 'C3',
-    description: 'One or more detectors off baseline; still above the ROE floor.',
+    description: 'One or more detectors off baseline; still at/above the GPS-guided TSS minimum (C).',
   },
   {
     id: 'degraded',
@@ -356,7 +356,7 @@ export const LINK_TRUST_SCALE: readonly RatingLevel[] = [
     reliability: 'D',
     credibility: '4',
     jCode: 'D4',
-    description: 'Link evidence contradicts baseline; below the ROE floor — GPS-guided fires gated.',
+    description: 'Link evidence contradicts baseline; below the GPS-guided TSS minimum (C) — GPS missions on this source fail TSS.',
   },
   {
     id: 'unreliable',
@@ -367,7 +367,7 @@ export const LINK_TRUST_SCALE: readonly RatingLevel[] = [
     reliability: 'E',
     credibility: '5',
     jCode: 'E5',
-    description: 'Link data should not be used for targeting; GPS-guided fires gated.',
+    description: 'Link data should not be used for targeting; gated missions on this source fail TSS.',
   },
 ];
 
@@ -403,8 +403,8 @@ export interface RateOptions {
 
 export interface LinkTrustRating extends RatingLevel {
   score: number;
-  /** True below ROE_FLOOR. */
-  roeGated: boolean;
+  /** True below TSS_MIN_GPS_SCORE. */
+  belowTssMin: boolean;
   stale: boolean;
   corroboration: Corroboration;
   /** J the algorithm derived (letter from score/stale, digit from corroboration/stale). */
@@ -442,7 +442,7 @@ export function rateLinkTrust(score: number, opts: RateOptions = {}): LinkTrustR
   const level = ratingLevel(score);
   const stale = opts.stale ?? false;
   const corroboration = opts.corroboration ?? 'uncorroborated';
-  const roeGated = score < ROE_FLOOR;
+  const belowTssMin = score < TSS_MIN_GPS_SCORE;
   const auto = autoEvaluation(score, { stale, corroboration });
   const ov = opts.override ? parseJ(opts.override.j) : undefined;
   if (opts.override && !ov) throw new Error(`J override "${opts.override.j}" is not A–F × 1–6`);
@@ -455,12 +455,12 @@ export function rateLinkTrust(score: number, opts: RateOptions = {}): LinkTrustR
     autoJ: `${auto[0]}${auto[1]}`,
     override: ov ? opts.override : undefined,
     score,
-    roeGated,
+    belowTssMin,
     stale,
     corroboration,
     label: stale ? STALE_NAME : level.name,
     labelToken: stale ? 'var(--sym-ink-stale)' : level.bandToken,
-    visibleAtRest: roeGated || stale || !!ov,
+    visibleAtRest: belowTssMin || stale || !!ov,
     jMeaning: `${reliability}: ${RELIABILITY[reliability].label} · ${credibility}: ${CREDIBILITY[credibility].label}`,
   };
 }
@@ -592,7 +592,7 @@ export function engineTick(
 }
 
 export interface EngineBeat {
-  /** Scenario clock, seconds (comms-sim beat tick_seconds; 1:20 is the modal beat). */
+  /** Scenario clock, seconds (comms-sim beat tick_seconds; 1:20 is the TSS beat). */
   clockS: number;
   label: string;
   telemetry: Readonly<Record<AvdiivkaUnit, UnitTelemetry>>;
@@ -612,7 +612,7 @@ export const AVDIIVKA_BEATS: readonly EngineBeat[] = [
   beat(55, '0:55 B CRC 0.2 % → 6 % (WATCH)', T.watchCrc),
   beat(65, '1:05 spatial: localized, A and C unaffected', T.watchCrc),
   beat(75, '1:15 jammer at full power: 6.1 s gap, 14 % CRC, RF fingerprint 6/6', T.jammed),
-  beat(80, '1:20 modal beat (telemetry unchanged)', T.jammed),
+  beat(80, '1:20 TSS beat (telemetry unchanged)', T.jammed),
   beat(110, '1:50 B recovery initiates', T.recovering),
   beat(135, '2:15 B fully recovered', T.healthy),
 ];
@@ -624,7 +624,7 @@ export function beatAt(clockS: number): EngineBeat {
   return current;
 }
 
-/** Scenario clock of B's first score below ROE_FLOOR (1:15). */
+/** Scenario clock of B's first score below TSS_MIN_GPS_SCORE (1:15). */
 export function firstCrossingClock(): number | undefined {
-  return AVDIIVKA_BEATS.find((b) => b.units.unit_b.score < ROE_FLOOR)?.clockS;
+  return AVDIIVKA_BEATS.find((b) => b.units.unit_b.score < TSS_MIN_GPS_SCORE)?.clockS;
 }

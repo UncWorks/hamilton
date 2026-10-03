@@ -17,7 +17,7 @@ related:
 
 > **Scope boundary:** this FRS bounds **what the system must do for the 5-minute live demo at xTech 2026-05-03**. It is not a product spec. Out-of-scope items are listed explicitly in §6 so judge Q&A has a defensible answer for "does it do X?" — *no, by design — see path-forward (§7).*
 >
-> **Phrasing discipline (R16 mitigation):** the wedge is **continuous trust scoring + kill-chain gating** — never *"we render link health."* Every FR statement must preserve that framing.
+> **Phrasing discipline (R16 mitigation):** the wedge is **continuous trust scoring feeding the TSS check on each fire mission** — never *"we render link health."* Every FR statement must preserve that framing.
 >
 > **ML discipline (R14 mitigation):** jamming-fingerprint detection in the demo path is **threshold-based deterministic matching**, not ML classification. Any narration that drifts toward "trained model" is incorrect.
 
@@ -25,7 +25,7 @@ related:
 
 ## 1. System context
 
-The system is a **comms-integrity evaluation layer** that consumes per-source telemetry and emits a continuous trust score per source, gating kill-chain decisions on the score. It drops onto any C2 surface (MapLibre primary spine; Palantir AIP additive secondary surface, conditional on 1300 Saturday go/no-go gate).
+The system is a **comms-integrity evaluation layer** that consumes per-source telemetry and emits a continuous trust score per source, feeding the reliability and report-age terms of the target selection standards (TSS) on each fire mission. It drops onto any C2 surface (MapLibre primary spine; Palantir AIP additive secondary surface, conditional on 1300 Saturday go/no-go gate).
 
 **Architecture (already wired in the ~80%-built state):**
 
@@ -37,7 +37,7 @@ The system is a **comms-integrity evaluation layer** that consumes per-source te
 | Comms simulator | Python module (CHAOS-owned) | Drives both rendering layers — RSSI, packet loss, jamming events |
 | Primary render | Next.js + MapLibre GL (offline via PMTiles) | Track-level icon decay + decision-level trust trace |
 | Secondary render | Palantir AIP ontology objects (conditional) | Same score, different surface — proves *"drops onto any C2"* |
-| LLM | Anthropic Claude (function-calling) primary, Llama 3.2 3B local fallback | Trust trace narration + kill-chain interrupt prompts |
+| LLM | Anthropic Claude (function-calling) primary, Llama 3.2 3B local fallback | Trust trace narration (never the TSS verdict) |
 | Phone client | PWA over the Next.js app | Operator-on-phone story, no native Android |
 | Container | Single `docker compose up` | Reproducible across team laptops |
 
@@ -57,7 +57,7 @@ The system is a **comms-integrity evaluation layer** that consumes per-source te
 | **Statement** | The system shall flag a per-source temporal anomaly when inter-arrival time exceeds 3σ above the source's baseline cadence. |
 | **Input** | Per-source message timestamp stream from MQTT ingest |
 | **Output** | Anomaly event published to trust engine; contributes to source's trust score |
-| **Acceptance** | Demo: Unit B inter-arrival stretches from ~1.0s baseline to 1.17s (3.4σ) → temporal anomaly fires within 1 frame; trust score begins to decay (≈0.70, WATCH band, above the ROE floor). The gap widens to 6.1s at `B-1:15` |
+| **Acceptance** | Demo: Unit B inter-arrival stretches from ~1.0s baseline to 1.17s (3.4σ) → temporal anomaly fires within 1 frame; trust score begins to decay (≈0.70, WATCH band, at/above the GPS-guided TSS minimum C). The gap widens to 6.1s at `B-1:15` |
 | **Traces to** | `UR-02`, `UR-03`, `B-0:45` |
 | **Demo-scope** | Yes — Beat 0:45 |
 
@@ -69,7 +69,7 @@ The system is a **comms-integrity evaluation layer** that consumes per-source te
 | **Statement** | The system shall flag a per-source network-stability degradation when CRC error rate exceeds threshold (>5% rolling window) or duplicate-frame rate climbs above baseline. |
 | **Input** | Per-source CRC counters + duplicate-frame counters from comms simulator |
 | **Output** | Stability event into trust engine; further trust-score decay |
-| **Acceptance** | Demo: Unit B CRC rises 0.2% → 6% (past the 5% threshold); trust trace updates with *"B-link: 6% corrupted frames, cadence 1.17s"*; trust ≈0.65, still above the ROE floor. CRC peaks at 14% at `B-1:15` |
+| **Acceptance** | Demo: Unit B CRC rises 0.2% → 6% (past the 5% threshold); trust trace updates with *"B-link: 6% corrupted frames, cadence 1.17s"*; trust ≈0.65, still at/above the GPS-guided TSS minimum (C). CRC peaks at 14% at `B-1:15` |
 | **Traces to** | `UR-03`, `B-0:55` |
 | **Demo-scope** | Yes — Beat 0:55 |
 
@@ -110,7 +110,7 @@ The system is a **comms-integrity evaluation layer** that consumes per-source te
 | **Match function (R14-safe)** | `score = (count of fingerprint-dimension threshold booleans matched) / (total fingerprint dimensions for that entry)`. Each dimension is a discrete threshold check; with the 6-dimension schema, scores are `k/6` (0, 0.17, 0.33, 0.50, 0.67, 0.83, 1.00). Scores sorted descending; top 3 returned. Avdiivka demo jammer: `ground_based_gps_uhf_barrage` 1.00, `pulsed_uhf_wide` 0.50, `cellular_uhf_barrage` 0.17. **No training, no softmax, no learned weights.** Pure function — same input → same output. |
 | **Output** | `{ "candidates": [ { "method_id", "named_systems[]", "score", "munitions_affected[]", "source_citation" }, …×3 ] }` published on MQTT topic `integrity/fingerprint/candidates` |
 | **Inventory scope** | US/NATO **and** adversary munitions (Excalibur, JDAM-ER, Switchblade, GMLRS, Lancet, Shahed, FPV, ATAK CoT, etc.) — proves the layer is sensor-/munition-class-agnostic; R15 discipline preserved because the *seat* (FDC) does not change. |
-| **Acceptance** | Demo: at Beat 1:15, side panel renders three ranked candidates with normalized scores and per-candidate munitions-affected lists; per-candidate `source_citation` is visible on hover. Reinforces the Beat 1:20 modal — Adam picks (b) *"shift to non-GPS munition"* with grounded knowledge of which rounds are denied. |
+| **Acceptance** | Demo: at Beat 1:15, side panel renders three ranked candidates with normalized scores and per-candidate munitions-affected lists; per-candidate `source_citation` is visible on hover. Reinforces the TSS mission row — Adam picks branch `[1]` *"Shift → M795 HE, adjust fire"* with grounded knowledge of which rounds are denied. |
 | **Traces to** | `UR-04`, `UR-05`, `UR-07`, `UR-09`, `B-1:15`, `B-1:20` |
 | **Demo-scope** | **Conditional.** If the existing FR-04 matcher already returns top-N internally → demo-path (~25–35 min UI surface work, zero new deps; defer to Joseph/Evan, NOT Kristian per R13/R18 discipline). If matcher is hard-coded top-1 → spec lands as written but `Demo-scope` flips to **NO** and the feature is documented as path-forward (§7); pitch lead may still cite FR-04a verbatim as a stage Q&A defense. **Tech lead confirms before Sunday rehearsal block.** |
 | **Library source** | Upstream fingerprint catalog: [[../../06 - Research/White Paper/_evidence/prompts/P4 - Jammer Fingerprint Catalog]]. Underlying open characterizations cite Bronk RUSI 2024, JAPCC 2023, *WaPo* 2024. The library is data, not code — additions post-Sunday-6AM are documentation, not new dependencies (NFR-06 safe). |
@@ -149,16 +149,16 @@ The system is a **comms-integrity evaluation layer** that consumes per-source te
 | **Traces to** | `UR-01`, `UR-02`, `B-0:45` through `B-2:15` |
 | **Demo-scope** | Yes — load-bearing visual |
 
-### 4.2 Decision-level trust trace + kill-chain gating (Layer B)
+### 4.2 TSS mission check (Layer B)
 
 | Field | Value |
 |---|---|
 | **ID** | `FR-07` |
-| **Statement** | The system shall attach a 3-bullet trust trace to every AI kill-chain recommendation, and shall **interrupt** the recommendation flow with a modal when any source's trust score falls below the configured ROE floor for the action class (e.g., GPS-dependent fires). |
-| **Input** | Trust-score stream + AI recommendation event |
-| **Output** | (a) Trust-trace UI element beside the recommendation; (b) modal with three named options: `delay <N>s`, `shift to non-GPS munition`, `confirm via alt channel` |
-| **Acceptance** | Demo: B first crosses below the 0.60 ROE floor at 1:15 (0.13) when the jammer lands. Beat 1:20 — AI declines to recommend GPS-guided strike; modal renders three options; operator picks (b); decision logged with full trust state for after-action |
-| **Traces to** | `UR-05`, `UR-06`, `UR-07`, `B-1:20`, `B-1:50` |
+| **Statement** | The system shall evaluate the target selection standards (TSS) link-reliability and report-age checks for each fire mission whose dependency set (observer link, target-location source, firing-unit nav/GPS link) includes a rated source, against the TSS table in force for the mission's munition class, and render the result inline in the mission row with the recommended method of control and pre-planned branches. It shall not render a modal, scrim or blur, nor move focus. It recommends to the FDC and never issues a fire command. |
+| **Input** | Trust-score stream (`integrity/trust/+`) + fire missions (`fires/mission/{id}`, retained, `FireMissionSchema`) + the TSS table in force (version, DTG, approver, rows) |
+| **Output** | Per mission: per-check results (reliability = J letter vs the class minimum; report age vs the class maximum; accuracy "n/a — no TLE source"), PASS / FAIL, failing sources, recommended method of control (`DO NOT LOAD` for a gated munition; `AT MY COMMAND` while a re-rate runs; `CHECK FIRING / CEASE LOADING` if the mission is already firing; none for unguided). Branches `[1]` shift → M795 HE (re-run TSS), `[2]` confirm via alternate means (credibility → 1), `[3]` AT MY COMMAND — re-rate in 60 s, `[4]` accept risk (FSO / CDR, HPT exception row). Every branch is logged with mission id, TSS result, J, report age, role / initials and DTG. |
+| **Acceptance** | Defaults (TSS-1): GPS-guided C (≥ 0.60) / 10 s; laser-guided C / 30 s; unguided never gated; HPT exception D / 10 s with risk acceptance. Hysteresis: fail at once, pass after ≥ minimum for 5 s. Demo: AB1001 (OBS B, M982) arrives at 1:12 TSS PASS (B C3) and shows `TSS: FAIL — RELIABILITY E5 (min C)` · `Rec. method of control: DO NOT LOAD (M982)` from 1:15; the operator presses `1` → M795 HE, TSS PASS, logged. No open mission → no gate UI. |
+| **Traces to** | `HS-05` (was `UR-05`), `UR-06`, `UR-07`/`HS-07`, `B-1:12`, `B-1:15`, `B-1:20` |
 | **Demo-scope** | **Yes — load-bearing beat. The 30 seconds that win the demo (1:15 → 1:50).** |
 
 ### 4.3 Trust-trace LLM narration
@@ -230,7 +230,7 @@ A 6-month follow-on funded engagement would deliver, in priority order:
 | `FR-04a` | Munitions-impact mapping (top-3 ranked + affected rounds) | `UR-04`, `UR-05`, `UR-07`, `UR-09` | `B-1:15`, `B-1:20` |
 | `FR-05` | Continuous trust score (MQTT) | `UR-01`, `UR-06` | all beats |
 | `FR-06` | Track-level icon decay | `UR-01`, `UR-02` | `B-0:45..2:15` |
-| `FR-07` | Decision-level trace + kill-chain interrupt | `UR-05..07` | `B-1:20`, `B-1:50` |
+| `FR-07` | TSS mission check in the mission row (no modal) | `HS-05`, `UR-06`, `UR-07` | `B-1:12`..`B-1:20` |
 | `FR-08` | Trust-trace LLM narration | `UR-06`, `UR-07` | detection beats |
 | `NFR-01..07` | Non-functional | `UR-08` | demo-wide |
 

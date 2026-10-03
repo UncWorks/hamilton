@@ -28,7 +28,7 @@ Both scripts build `@hamilton/contracts` first (the web app imports its `dist/`)
     2525E / 2525C / CoT codes, declutter stack). The production code is in `src/components/symbol`, and both live
     COP renderers (COP/CesiumSpine billboards, COP/MapSpine SVG overlay) draw it — no circles, halo or pulse remain.
   - **Evidence/At-a-Glance** keeps the measurements behind it auditable.
-- **Brand / Panel / Modal / Terminal / Toggle / COP** — one story file per component, co-located as
+- **Brand / Panel / Fires / Terminal / Toggle / COP** — one story file per component, co-located as
   `*.stories.tsx` next to the component.
 - **Pages/COP** — the assembled single-screen COP, including a live replay of the 0:45 → 1:20 crescendo.
 - **Archive** — superseded explorations, kept for the record: Track Symbology options A/B/C/B′, Halo Options and the
@@ -37,7 +37,7 @@ Both scripts build `@hamilton/contracts` first (the web app imports its `dist/`)
 ## How stories get data (no broker, no engine)
 
 - **Fixtures**: `src/stories/fixtures/avdiivka.ts` — units A/B/C, trust bands, the three FR-04a candidates (and mock
-  candidate sites), terminal lines and gate events; `src/stories/fixtures/dense-tracks.ts` — the declutter set. Every payload is parsed through the real `@hamilton/contracts` zod schemas.
+  candidate sites), terminal lines; `src/stories/fixtures/missions.ts` — the calls for fire AB1001 / AB1002; `src/stories/fixtures/dense-tracks.ts` — the declutter set. Every payload is parsed through the real `@hamilton/contracts` zod schemas.
 - **Store**: a global `beforeEach` resets the Zustand store and applies `parameters.hamilton` (a partial state).
   Args-driven stories use `<StoreSeed>`. Docs pages render each story in its own iframe because the store is a
   module singleton.

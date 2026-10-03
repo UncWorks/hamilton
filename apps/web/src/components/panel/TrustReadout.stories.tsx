@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { TrustReadout } from './TrustReadout';
-import { BAND_EDGES, BAND_SAMPLES, ROE_FLOOR } from '@/stories/fixtures/avdiivka';
+import { BAND_EDGES, BAND_SAMPLES, TSS_MIN_GPS_SCORE } from '@/stories/fixtures/avdiivka';
 import { trustBand } from '@/lib/trust-gradient';
 
 const meta = {
@@ -11,16 +11,16 @@ const meta = {
       story: { inline: true },
       description: {
         component:
-          'The trust-score numeral (`--text-readout`, tabular mono, band-colored) plus the ROE-floor indicator ' +
-          '(1px `--trust-roe-line`; label turns `--gating-primary` below the floor). Includes the private ' +
-          '`RoeFloorIndicator` subcomponent.',
+          'The trust-score numeral (`--text-readout`, tabular mono, band-colored) plus the TSS-minimum indicator ' +
+          '(1px `--trust-roe-line`; the GPS-guided TSS minimum, C ≥ 0.60 from the TSS table in force; label turns ' +
+          '`--gating-primary` and reads "BELOW" under it). Includes the private `TssMinIndicator` subcomponent.',
       },
     },
   },
-  args: { score: BAND_SAMPLES.nominal, roeFloor: ROE_FLOOR },
+  args: { score: BAND_SAMPLES.nominal, tssMin: TSS_MIN_GPS_SCORE },
   argTypes: {
     score: { control: { type: 'range', min: 0, max: 1, step: 0.01 } },
-    roeFloor: { control: { type: 'range', min: 0, max: 1, step: 0.05 } },
+    tssMin: { control: { type: 'range', min: 0, max: 1, step: 0.05 } },
   },
 } satisfies Meta<typeof TrustReadout>;
 
@@ -31,16 +31,16 @@ type Story = StoryObj<typeof meta>;
 export const Nominal: Story = { args: { score: BAND_SAMPLES.nominal } };
 /** 0.85–0.60 · `--trust-watching`. */
 export const Watching: Story = { args: { score: BAND_SAMPLES.watching } };
-/** 0.60–0.30 · `--trust-degraded` — below ROE floor, label flips to gating amber. */
+/** 0.60–0.30 · `--trust-degraded` — below the GPS-guided TSS minimum, label flips to gating amber and reads BELOW. */
 export const Degraded: Story = { args: { score: BAND_SAMPLES.degraded } };
 /** < 0.30 · `--trust-failed`. */
 export const Failed: Story = { args: { score: BAND_SAMPLES.failed } };
 
-/** Exactly on the floor — still "above" (score >= roeFloor). */
-export const OnRoeFloor: Story = { args: { score: 0.6 } };
+/** Exactly on the TSS minimum — still "above" (score >= tssMin). */
+export const OnTssMinimum: Story = { args: { score: 0.6 } };
 
-/** Non-default ROE floor (NEXT_PUBLIC_ROE_FLOOR=0.75). */
-export const CustomRoeFloor: Story = { args: { score: 0.7, roeFloor: 0.75 } };
+/** Tightened TSS minimum (e.g. GPS-guided at B inside an RFA → 0.85). */
+export const TightenedTssMinimum: Story = { args: { score: 0.7, tssMin: 0.85 } };
 
 /** Every band edge in one view — checks tabular digits don't jitter. */
 export const BandEdges: Story = {
@@ -63,7 +63,7 @@ export const BandEdges: Story = {
           >
             {s.toFixed(3)} · {trustBand(s)}
           </code>
-          <TrustReadout score={s} roeFloor={args.roeFloor} />
+          <TrustReadout score={s} tssMin={args.tssMin} />
         </div>
       ))}
     </div>

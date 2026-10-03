@@ -68,7 +68,7 @@ export const Nominal: Story = {
 
 export const Watching: Story = { parameters: { hamilton: { tracks: PHASE_TRACKS.watching } } };
 
-/** 1:15 — B 0.13 (E5, gauge near empty), first below the ROE floor: bearing line toward the jammer. */
+/** 1:15 — B 0.13 (E5, gauge near empty), first below the GPS-guided TSS minimum: bearing line toward the jammer. */
 export const DirectionalVector: Story = {
   args: { directionalFrom: { lat: unitB.lat, lon: unitB.lon }, directionalTo: JAMMER_LOCATION },
   parameters: { hamilton: { tracks: PHASE_TRACKS.degraded } },
