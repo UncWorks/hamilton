@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react';
-import { expect, userEvent, waitFor, within } from '@storybook/test';
+import { expect, fireEvent, userEvent, waitFor, within } from '@storybook/test';
 import type { ReactNode } from 'react';
 import { MissionQueue } from './MissionQueue';
 import { EventTerminal } from '@/components/terminal/EventTerminal';
@@ -188,8 +188,9 @@ export const AcceptRisk: Story = {
     await waitFor(() => expect(r).toHaveAttribute('data-verdict', 'FAIL'));
     await userEvent.click(await c.findByTestId('fm-branch-4-AB1001'));
     const submit = await c.findByTestId('fm-risk-submit-AB1001');
-    await userEvent.type(c.getByTestId('fm-risk-initials-AB1001'), 'JD');
-    await userEvent.type(c.getByTestId('fm-risk-reason-AB1001'), 'HPT; mortar firing on A');
+    // fireEvent.change: deterministic in a background/unfocused preview iframe.
+    fireEvent.change(c.getByTestId('fm-risk-initials-AB1001'), { target: { value: 'JD' } });
+    fireEvent.change(c.getByTestId('fm-risk-reason-AB1001'), { target: { value: 'HPT; mortar firing on A' } });
     await expect(submit).toBeDisabled(); // role still FDC
     await userEvent.selectOptions(c.getByTestId('fm-risk-role-AB1001'), 'FSO');
     await expect(submit).toBeEnabled();
@@ -248,10 +249,12 @@ export const KeyboardPlay: Story = {
     await waitFor(() => expect(r).toHaveAttribute('data-verdict', 'FAIL'));
     await userEvent.tab();
     await expect(r).toHaveFocus();
-    await waitFor(() => expect(r.querySelector('[aria-live="polite"]')).not.toBeNull());
     await userEvent.keyboard('1');
     await waitFor(() => expect(r).toHaveAttribute('data-verdict', 'PASS'));
     await expect(r).toHaveFocus();
+    // The acted-on mission is the selected one: its status chip is the only polite live region.
+    await waitFor(() => expect(r.querySelector('[aria-live="polite"]')).not.toBeNull());
+    await expect(canvasElement.querySelectorAll('[aria-live="polite"]')).toHaveLength(1);
     await expect(r).toHaveTextContent('M795 (UNGUIDED)');
     await waitFor(() => expect(canvasElement).toHaveTextContent('[1] shift M982 → M795 HE'));
   },
