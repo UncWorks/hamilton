@@ -38,8 +38,14 @@ const meta = {
         component:
           'Primary 3D renderer (CesiumJS, System Design §6c). Loaded from the staged static build at ' +
           '`/public/cesium` (Storybook `staticDirs`; staged by `scripts/stage-cesium.mjs` on install) with ' +
-          '`baseLayer: false`, so it renders fully offline — no Ion token, no imagery. Requires WebGL. If ' +
+          '`baseLayer: false` and no Ion token. Requires WebGL. If ' +
           '`/public/cesium` is not staged the canvas stays empty (waitForCesium times out after 8s).\n\n' +
+          '**Imagery** (`lib/basemap.ts`, System Design §6c): `NEXT_PUBLIC_BASEMAP=offline` (default once ' +
+          '`make fetch-tiles` has provisioned `/public/tiles`) adds a `UrlTemplateImageryProvider` over ' +
+          '`/tiles/raster/{z}/{x}/{y}.png` — 512 px tiles z10–15 rendered locally with MapLibre Native from the ' +
+          'same Protomaps extract and Hamilton dark style as **COP/MapSpine**, so 2D and 3D match and nothing ' +
+          'leaves the origin. Outside the AO the globe stays `--surface-base`. `none` is the old bare globe (see ' +
+          '**Basemap off**); `online` is a dev-only, dimmed OSM raster. © OpenStreetMap contributors, Protomaps.\n\n' +
           '**Symbols** — the decided track symbol (**Decisions/Track Symbology**, `src/components/symbol`): FM 1-02 / ' +
           'MCRP 5-12A filled frame + function icon, T left, echelon / J / AR / H at ≥ 28 px (32 px here), the ' +
           'link-trust side gauge and J right of the frame. No circular halo, no pulse. Each symbol is a Cesium ' +
@@ -109,7 +115,7 @@ export const MixedAffiliations: Story = {
   parameters: { hamilton: { tracks: tracksRecord(...AFFILIATION_TRACKS) } },
 };
 
-/** Empty store — bare globe. */
+/** Empty store — the AO fallback view over the basemap, no symbols. */
 export const NoTracks: Story = {};
 
 /**
@@ -136,5 +142,18 @@ export const ZoomedOut: Story = {
     await userEvent.click(stack);
     await waitFor(() => expect(stack).toHaveAttribute('aria-expanded', 'true'));
     await expect(c.getAllByTestId('declutter-member')).toHaveLength(3);
+  },
+};
+
+/** Comparison: the jammer-overlay beat with `basemap="none"` — the pre-basemap dark globe. */
+export const BasemapOff: Story = {
+  name: 'Basemap off',
+  args: { ...JammerOverlay.args, basemap: 'none' },
+  parameters: { hamilton: { tracks: PHASE_TRACKS.failed } },
+  play: async ({ canvasElement }) => {
+    const c = within(canvasElement);
+    await waitFor(() => c.getByTestId('spine-overlay'), { timeout: 15_000 });
+    await expect(canvasElement.querySelector('[data-basemap]')?.getAttribute('data-basemap')).toBe('none');
+    await expect(c.queryByTestId('basemap-attribution')).toBeNull();
   },
 };

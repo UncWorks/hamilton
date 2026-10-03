@@ -587,7 +587,7 @@ function LiveSpineCop({ clock, s2Override }: Pick<Args, 'clock' | 's2Override'>)
       <div style={{ padding: 'var(--space-4)', background: 'var(--surface-panel)', display: 'grid', gap: 'var(--space-3)' }}>
         <div style={{ ...mono, fontSize: 12, color: 'var(--text-secondary)' }}>
           Scenario clock <span style={{ color: 'var(--text-primary)' }}>{fmtClock(clock)}</span> · engine beat {beat.label} · the production{' '}
-          <code>MapSpine</code> (CesiumSpine draws the same symbols as billboards). Hover or Tab to a unit for its breakdown.
+          <code>MapSpine</code> on the offline basemap (CesiumSpine draws the same symbols as billboards). Hover or Tab to a unit for its breakdown.
         </div>
         <div style={{ position: 'relative', height: 560 }} data-testid="cop-live-spine">
           <MapSpine
@@ -613,7 +613,9 @@ export const CopLiveSpine: Story = {
         story:
           'The COP story above, on the real renderer: the store is seeded with the PR #1 engine beat at **clock** and `MapSpine` draws ' +
           'the production symbols, declutter stacks and rating tooltips. From 1:15 the candidate sites (mock positions) appear as ' +
-          'anticipated EW symbols; from 1:20 the fix J1. B is selected (double frame).',
+          'anticipated EW symbols; from 1:20 the fix J1. B is selected (double frame). The spine draws over the offline ' +
+          'Protomaps basemap (`NEXT_PUBLIC_BASEMAP`, default offline once `make fetch-tiles` has provisioned `/public/tiles`; ' +
+          'see **COP/MapSpine › Basemap off** for the comparison).',
       },
     },
   },

@@ -251,6 +251,22 @@ flowchart LR
 | **What we keep on Cesium success** | All of the above, plus the 3D credibility jump in front of military judges |
 | **Risk** | **R2 (demo failure) — raised** by mid-rehearsal spine swap; **R-NEW Cesium unfamiliarity**; mitigated by maintaining MapLibre fallback through the 1100 gate |
 
+#### 6c.1 Basemap — both spines (2026-10-03, plan: `docs/plans/cop-basemap.md`)
+
+One data source, one style, two renderings — so the 2D fallback and the 3D primary show the same map, and neither leaves the origin (`NFR-01`).
+
+| Field | Value |
+|---|---|
+| **Source** | Protomaps daily planet build (OpenStreetMap + Natural Earth, basemap schema v4), extracted with `pmtiles extract` for the Avdiivka AO: bbox 37.60–37.90 E, 48.05–48.23 N, z0–15 → `apps/web/public/tiles/avdiivka.pmtiles` (~4 MB) |
+| **Style** | Generated from `@protomaps/basemaps` "dark" flavor (BSD-3-Clause) by `scripts/basemap/build-style.mjs`, re-coloured with the Branding §3 tokens: land within ~2.5 L of `--surface-base`, roads neutral grey ≤ L 40%, place labels `--text-secondary` / `--text-tertiary` on a `--surface-base` halo. No sprite (POI icons, shields, one-way arrows dropped); English labels falling back to the local name. Committed output: `apps/web/src/lib/basemap-layers.json` |
+| **Glyphs** | Noto Sans Regular / Medium / Italic PBFs (OFL-1.1) from `protomaps/basemaps-assets` (pinned commit), Latin + Latin Ext + Cyrillic + punctuation ranges only → `/tiles/glyphs` (~1.6 MB). No CDN |
+| **MapLibre spine** | `maplibre-gl` map with the `pmtiles://` protocol (`pmtiles` npm, +1 runtime dep); deck.gl area/line layers through `@deck.gl/mapbox` `MapboxOverlay` (overlaid); MapLibre owns the camera and each move is mirrored synchronously into the controlled view state that positions the SVG symbol overlay |
+| **Cesium spine** | Cesium cannot draw vector tiles, so `scripts/basemap/render-raster.mjs` renders the same extract + style with MapLibre Native into a 512 px PNG pyramid, z10–15 (labels z14+ only) → `/tiles/raster/{z}/{x}/{y}.png` (~10 MB), served by `UrlTemplateImageryProvider` restricted to the bbox. Still no Cesium ion; globe outside the AO stays `--surface-base` |
+| **Modes** | `NEXT_PUBLIC_BASEMAP=offline` (default when the assets exist) · `none` (default otherwise; the pre-basemap look) · `online` — **dev only, not NFR-01**: OSM standard raster tiles, dimmed, CSP opened for `tile.openstreetmap.org` in that mode only |
+| **Provisioning** | Assets are gitignored (`apps/web/public/tiles/*`); `make fetch-tiles` (`scripts/fetch-tiles.sh`) reproduces them (~25 s, online, once). `scripts/verify-assets.sh` fails when the mode is offline (explicit or defaulted) and any piece is missing |
+| **Licences / attribution** | Data © OpenStreetMap contributors (ODbL 1.0); Protomaps basemap tiles and style (ODbL data / BSD-3-Clause code); Noto Sans (OFL-1.1); MapLibre Native (BSD-2-Clause, build-time only). Both spines show "© OpenStreetMap contributors, Protomaps" bottom-right |
+| **Legibility** | T5 grayscale contrast re-run against the real basemap pixels (`scripts/basemap/contrast-check.mjs`): every symbol colour stays ≥ 3:1 against 99 % of AO pixels; the bearing line (40 % opacity by Branding §10.3) was already below 3:1 on the flat surface and is unchanged by the basemap |
+
 ---
 
 ## 7. Discipline annotations — where R14 / R15 / R16 sit in the architecture
