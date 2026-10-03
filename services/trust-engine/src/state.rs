@@ -22,7 +22,6 @@ pub struct SourceState {
     pub recent_arrivals: VecDeque<InterArrival>,
     pub stability: StabilityWindow,
     pub last_rf: Option<RfFingerprint>,
-    pub degrading: bool,
 }
 
 impl SourceState {
@@ -43,7 +42,6 @@ impl SourceState {
                 baseline_duplicate_rate: 0.0,
             },
             last_rf: None,
-            degrading: false,
         }
     }
 }

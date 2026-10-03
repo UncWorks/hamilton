@@ -28,9 +28,12 @@ export const deterministicProvider: Provider = {
           : `Localized to ${source_id} corridor; neighbors healthy`,
       );
     }
+    // `fingerprint` is trust (1 − match strength), not the overlap ratio.
     if (components.fingerprint < 0.7) {
       bullets.push(
-        `Fingerprint match (deterministic overlap ratio ${components.fingerprint.toFixed(2)})`,
+        `Jammer fingerprint matched ` +
+          `(overlap ratio ${(1 - components.fingerprint).toFixed(2)}, ` +
+          `fingerprint score ${components.fingerprint.toFixed(2)})`,
       );
     }
     if (bullets.length === 0) {

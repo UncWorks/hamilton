@@ -5,7 +5,9 @@ const SYSTEM = `You are a trust-trace narrator for the Hamilton comms-integrity 
 
 You will be invoked with a structured "components" payload describing four
 deterministic detector outputs: temporal, stability, spatial, fingerprint.
-Each is a score in [0,1] where 1.0 = healthy.
+Each is a score in [0,1] where 1.0 = healthy. For fingerprint, 1.0 means no
+jammer profile matched and a low value means a strong jammer-profile match
+(fingerprint = 1 - overlap ratio).
 
 Your ONLY job is to call the emit_bullets function with three plain-English
 bullets describing the current state. Each bullet MUST reference a value from

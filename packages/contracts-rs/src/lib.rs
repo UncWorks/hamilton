@@ -27,7 +27,11 @@ pub mod topics {
 }
 
 /// Per-detector breakdown that feeds the LLM narrator (FR-08). Each component
-/// is in `[0.0, 1.0]`.
+/// is a trust value in `[0.0, 1.0]` where 1.0 = healthy, 0.0 = bad.
+///
+/// `fingerprint` is fingerprint TRUST = `1 - match_strength` of the best
+/// library match (>= 0.5 threshold), or 1.0 when nothing matches. It is the
+/// inverse of the FR-04a candidate `score`, which is match strength.
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub struct TrustComponents {
     pub temporal: f64,
@@ -44,11 +48,18 @@ pub struct TrustScorePayload {
     pub score: f64,
     pub components: TrustComponents,
     pub timestamp: DateTime<Utc>,
+    /// Last reported source position (WGS-84 decimal degrees), echoed from
+    /// telemetry so the COP need not hard-code positions. Optional on the wire.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub lat: Option<f64>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub lon: Option<f64>,
 }
 
-/// One ranked candidate jamming method (FR-04a). `score` is a deterministic
-/// overlap ratio (matched threshold booleans / total dimensions). Not a
-/// probability, not a model output.
+/// One ranked candidate jamming method (FR-04a). `score` is match strength: a
+/// deterministic overlap ratio (matched threshold booleans / total dimensions,
+/// so k/6), higher = more like this jammer. Not a probability, not a model
+/// output, and not a trust value (see `TrustComponents::fingerprint`).
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FingerprintCandidate {
     pub method_id: String,
@@ -105,17 +116,22 @@ pub enum ModalOption {
 /// `telemetry/{source_id}/raw`. The Rust trust engine subscribes; the Python
 /// publisher must mirror this struct field-for-field. `deny_unknown_fields`
 /// catches drift early.
+///
+/// `lat`/`lon` are the source's reported position (WGS-84 decimal degrees),
+/// required: the spatial discriminator (FR-03) needs real positions.
+/// There is deliberately no self-reported `degrading` flag: the engine
+/// derives degradation from its own detectors.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct TelemetryPayload {
     pub source_id: String,
+    pub lat: f64,
+    pub lon: f64,
     pub inter_arrival_seconds: f64,
     pub crc_error_rate: f64,
     pub duplicate_rate: f64,
     #[serde(default)]
     pub rf: Option<RfObservation>,
-    #[serde(default)]
-    pub degrading: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -154,11 +170,58 @@ mod tests {
                 fingerprint: 0.19,
             },
             timestamp: "2026-05-03T18:42:14.221Z".parse().unwrap(),
+            lat: None,
+            lon: None,
         };
         let json = serde_json::to_string(&payload).unwrap();
         let back: TrustScorePayload = serde_json::from_str(&json).unwrap();
         assert_eq!(back.source_id, "unit_b");
         assert!((back.score - 0.42).abs() < f64::EPSILON);
+        assert!(!json.contains("\"lat\""), "absent position is omitted");
+    }
+
+    #[test]
+    fn trust_score_payload_carries_optional_position() {
+        let json = r#"{"source_id":"unit_b","score":1.0,
+            "components":{"temporal":1,"stability":1,"spatial":1,"fingerprint":1},
+            "timestamp":"2026-05-03T18:42:14.221Z","lat":48.14,"lon":37.745}"#;
+        let p: TrustScorePayload = serde_json::from_str(json).unwrap();
+        assert_eq!(p.lat, Some(48.14));
+        assert_eq!(p.lon, Some(37.745));
+        let back: TrustScorePayload =
+            serde_json::from_str(&serde_json::to_string(&p).unwrap()).unwrap();
+        assert_eq!(back.lat, Some(48.14));
+    }
+
+    // Exactly what comms-sim emits (services/comms-sim payloads.py).
+    const SIM_TELEMETRY: &str = r#"{"source_id":"unit_b","lat":48.14,"lon":37.745,
+        "inter_arrival_seconds":1.0,"crc_error_rate":0.002,"duplicate_rate":0.0}"#;
+
+    #[test]
+    fn telemetry_position_roundtrips() {
+        let p: TelemetryPayload = serde_json::from_str(SIM_TELEMETRY).unwrap();
+        assert!((p.lat - 48.14).abs() < f64::EPSILON);
+        assert!((p.lon - 37.745).abs() < f64::EPSILON);
+        let back: TelemetryPayload =
+            serde_json::from_str(&serde_json::to_string(&p).unwrap()).unwrap();
+        assert!((back.lat - p.lat).abs() < f64::EPSILON);
+        assert!((back.lon - p.lon).abs() < f64::EPSILON);
+        assert!(back.rf.is_none());
+    }
+
+    #[test]
+    fn telemetry_without_position_is_rejected() {
+        let json = r#"{"source_id":"unit_b","inter_arrival_seconds":1.0,
+            "crc_error_rate":0.002,"duplicate_rate":0.0}"#;
+        assert!(serde_json::from_str::<TelemetryPayload>(json).is_err());
+    }
+
+    #[test]
+    fn telemetry_self_reported_degrading_flag_is_rejected() {
+        let json = r#"{"source_id":"unit_b","lat":48.14,"lon":37.745,
+            "inter_arrival_seconds":1.0,"crc_error_rate":0.002,
+            "duplicate_rate":0.0,"degrading":true}"#;
+        assert!(serde_json::from_str::<TelemetryPayload>(json).is_err());
     }
 
     #[test]

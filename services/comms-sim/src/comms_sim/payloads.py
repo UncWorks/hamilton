@@ -35,20 +35,26 @@ class RfObservation:
 
 @dataclass(frozen=True)
 class TelemetryPayload:
+    """`lat`/`lon` (WGS-84 decimal degrees) are required by the engine's
+    spatial discriminator (FR-03). There is no self-reported `degrading`
+    flag: the engine measures degradation itself."""
+
     source_id: str
+    lat: float
+    lon: float
     inter_arrival_seconds: float
     crc_error_rate: float
     duplicate_rate: float
     rf: RfObservation | None = None
-    degrading: bool = False
 
     def to_wire(self) -> dict:
         body: dict = {
             "source_id": self.source_id,
+            "lat": self.lat,
+            "lon": self.lon,
             "inter_arrival_seconds": self.inter_arrival_seconds,
             "crc_error_rate": self.crc_error_rate,
             "duplicate_rate": self.duplicate_rate,
-            "degrading": self.degrading,
         }
         if self.rf is not None:
             body["rf"] = self.rf.to_wire()

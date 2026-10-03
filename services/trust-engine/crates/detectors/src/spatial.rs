@@ -1,5 +1,17 @@
 use serde::{Deserialize, Serialize};
 
+use crate::{stability::StabilityReading, temporal::TemporalReading};
+
+/// Default neighbour radius (FRS FR-03: "configurable radius (default 500m)").
+pub const DEFAULT_RADIUS_M: f64 = 500.0;
+
+/// Spatial trust while the target is degrading and every neighbour in radius
+/// is healthy (directional / localized event).
+pub const LOCALIZED_TRUST: f64 = 0.6;
+/// Spatial trust while the target AND at least one neighbour in radius are
+/// degrading (blanket, area-wide event).
+pub const BLANKET_TRUST: f64 = 0.3;
+
 /// Geographic position in decimal degrees.
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub struct Position {
@@ -19,13 +31,16 @@ pub struct SourceLocation {
 pub struct NeighborState {
     pub id: String,
     pub position: Position,
-    /// True when this neighbor is experiencing active degradation.
+    /// True when the ENGINE measured this neighbour as degrading
+    /// (see [`is_degrading`]). Never the source's self-report.
     pub degrading: bool,
 }
 
-/// Whether the degradation is localized to one source or blanket across neighbors.
+/// Spatial extent of a degradation event, if there is one.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum SpatialClassification {
+    /// The target itself is not degrading: there is no event to localize.
+    Nominal,
     /// Only the target is degraded; neighbors within radius are healthy.
     Localized,
     /// At least one neighbor within radius is also degrading.
@@ -35,26 +50,40 @@ pub enum SpatialClassification {
 /// Output of the spatial correlation classifier.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct SpatialResult {
-    /// Localized or Blanket classification.
+    /// Nominal, Localized or Blanket classification.
     pub classification: SpatialClassification,
     /// IDs of all neighbors that were within radius and evaluated.
     pub evaluated_neighbors: Vec<String>,
     /// IDs of neighbors within radius that are also degrading.
     pub degrading_neighbors: Vec<String>,
-    /// Component score: Localized → 0.6, Blanket → 0.3.
+    /// Trust component (1.0 = healthy): Nominal → 1.0, Localized → 0.6,
+    /// Blanket → 0.3.
     pub score: f64,
 }
 
-/// Classify spatial extent of a degradation event.
+/// Engine-measured "is this source degrading?" predicate used for spatial
+/// correlation. A source is degrading when its own temporal detector fires
+/// (> 3σ, FR-01) or its stability detector flags degradation (CRC > 5% or
+/// duplicate spike, FR-02). Derived from measurements only; the telemetry
+/// contract carries no self-reported flag.
+pub fn is_degrading(temporal: &TemporalReading, stability: &StabilityReading) -> bool {
+    temporal.anomaly || stability.degraded
+}
+
+/// Classify the spatial extent of a degradation event (FRS FR-03) and map it
+/// to a trust component.
 ///
-/// Neighbors outside `radius_m` are ignored. If any neighbor within `radius_m`
-/// is degrading, the event is classified `Blanket`; otherwise `Localized`.
+/// - `target_degrading == false` → `Nominal`, score 1.0. A healthy source is
+///   not penalised for where it is, nor for its neighbours' problems.
+/// - target degrading, no degrading neighbour within `radius_m` → `Localized`,
+///   score 0.6 (directional event near this unit).
+/// - target degrading, ≥1 degrading neighbour within `radius_m` → `Blanket`,
+///   score 0.3 (area-wide event, no healthy neighbour to corroborate).
 ///
-/// Score mapping per FRS §2.3:
-///   Localized → 0.6
-///   Blanket   → 0.3
+/// Neighbors outside `radius_m` are ignored.
 pub fn classify_spatial(
     target: &SourceLocation,
+    target_degrading: bool,
     neighbors: &[NeighborState],
     radius_m: f64,
 ) -> SpatialResult {
@@ -71,15 +100,18 @@ pub fn classify_spatial(
         }
     }
 
-    let classification = if degrading.is_empty() {
+    let classification = if !target_degrading {
+        SpatialClassification::Nominal
+    } else if degrading.is_empty() {
         SpatialClassification::Localized
     } else {
         SpatialClassification::Blanket
     };
 
     let score = match classification {
-        SpatialClassification::Localized => 0.6,
-        SpatialClassification::Blanket => 0.3,
+        SpatialClassification::Nominal => 1.0,
+        SpatialClassification::Localized => LOCALIZED_TRUST,
+        SpatialClassification::Blanket => BLANKET_TRUST,
     };
 
     SpatialResult {
@@ -139,7 +171,7 @@ mod tests {
             },
         ];
 
-        let result = classify_spatial(&target, &neighbors, 500.0);
+        let result = classify_spatial(&target, true, &neighbors, 500.0);
 
         assert_eq!(result.classification, SpatialClassification::Localized);
         assert!(result.evaluated_neighbors.contains(&"A".to_string()));
@@ -168,7 +200,7 @@ mod tests {
             },
         ];
 
-        let result = classify_spatial(&target, &neighbors, 500.0);
+        let result = classify_spatial(&target, true, &neighbors, 500.0);
 
         assert_eq!(result.classification, SpatialClassification::Blanket);
         assert!((result.score - 0.3).abs() < f64::EPSILON);
@@ -188,7 +220,7 @@ mod tests {
             degrading: true,
         };
 
-        let result = classify_spatial(&target, &[far_neighbor], 500.0);
+        let result = classify_spatial(&target, true, &[far_neighbor], 500.0);
 
         assert_eq!(result.classification, SpatialClassification::Localized);
         assert!(
@@ -204,7 +236,7 @@ mod tests {
             id: "B".into(),
             position: unit_b_pos(),
         };
-        let result = classify_spatial(&target, &[], 500.0);
+        let result = classify_spatial(&target, true, &[], 500.0);
         assert_eq!(result.classification, SpatialClassification::Localized);
         assert!((result.score - 0.6).abs() < f64::EPSILON);
     }
@@ -222,7 +254,7 @@ mod tests {
             position: offset(&unit_b_pos(), 0.0, 500.0),
             degrading: false,
         };
-        let result = classify_spatial(&target, &[neighbor], 500.0);
+        let result = classify_spatial(&target, true, &[neighbor], 500.0);
         // Should be included (dist ≤ radius)
         assert!(!result.evaluated_neighbors.is_empty());
     }
@@ -236,7 +268,7 @@ mod tests {
         };
 
         // Localized case
-        let r_local = classify_spatial(&target, &[], 500.0);
+        let r_local = classify_spatial(&target, true, &[], 500.0);
         assert!((r_local.score - 0.6).abs() < f64::EPSILON);
 
         // Blanket case
@@ -245,7 +277,107 @@ mod tests {
             position: offset(&unit_b_pos(), 0.0, 10.0),
             degrading: true,
         };
-        let r_blanket = classify_spatial(&target, &[degrading_neighbor], 500.0);
+        let r_blanket = classify_spatial(&target, true, &[degrading_neighbor], 500.0);
         assert!((r_blanket.score - 0.3).abs() < f64::EPSILON);
+    }
+
+    fn neighbors_a_c(a_degrading: bool, c_degrading: bool) -> Vec<NeighborState> {
+        vec![
+            NeighborState {
+                id: "A".into(),
+                position: offset(&unit_b_pos(), 245.0, 0.0),
+                degrading: a_degrading,
+            },
+            NeighborState {
+                id: "C".into(),
+                position: offset(&unit_b_pos(), -245.0, 0.0),
+                degrading: c_degrading,
+            },
+        ]
+    }
+
+    // A healthy source scores full spatial trust, whatever its neighbours do.
+    #[test]
+    fn healthy_target_is_nominal_with_full_trust() {
+        let target = SourceLocation {
+            id: "B".into(),
+            position: unit_b_pos(),
+        };
+        for (a, c) in [(false, false), (true, false), (true, true)] {
+            let r = classify_spatial(&target, false, &neighbors_a_c(a, c), 500.0);
+            assert_eq!(r.classification, SpatialClassification::Nominal);
+            assert!((r.score - 1.0).abs() < f64::EPSILON);
+        }
+    }
+
+    // Regression: B degrading must not drag healthy A to "blanket". A is the
+    // target here, B its degrading neighbour.
+    #[test]
+    fn healthy_neighbor_of_degrading_source_stays_at_full_trust() {
+        let a = SourceLocation {
+            id: "A".into(),
+            position: offset(&unit_b_pos(), 245.0, 0.0),
+        };
+        let b = NeighborState {
+            id: "B".into(),
+            position: unit_b_pos(),
+            degrading: true,
+        };
+        let r = classify_spatial(&a, false, &[b], 500.0);
+        assert_eq!(r.classification, SpatialClassification::Nominal);
+        assert!((r.score - 1.0).abs() < f64::EPSILON);
+        assert_eq!(r.degrading_neighbors, vec!["B".to_string()]);
+    }
+
+    // Everyone degrading → blanket penalty, stronger than localized.
+    #[test]
+    fn all_degraded_gives_blanket_penalty() {
+        let target = SourceLocation {
+            id: "B".into(),
+            position: unit_b_pos(),
+        };
+        let r = classify_spatial(&target, true, &neighbors_a_c(true, true), 500.0);
+        assert_eq!(r.classification, SpatialClassification::Blanket);
+        assert!((r.score - BLANKET_TRUST).abs() < f64::EPSILON);
+        const { assert!(BLANKET_TRUST < LOCALIZED_TRUST) };
+    }
+
+    // The radius is a parameter: shrink it below the A/C spacing and B's
+    // event becomes localized even with degrading neighbours.
+    #[test]
+    fn radius_is_configurable() {
+        let target = SourceLocation {
+            id: "B".into(),
+            position: unit_b_pos(),
+        };
+        let wide = classify_spatial(&target, true, &neighbors_a_c(true, true), 500.0);
+        let narrow = classify_spatial(&target, true, &neighbors_a_c(true, true), 200.0);
+        assert_eq!(wide.classification, SpatialClassification::Blanket);
+        assert_eq!(narrow.classification, SpatialClassification::Localized);
+    }
+
+    #[test]
+    fn is_degrading_uses_measured_detectors() {
+        use crate::stability::{detect_stability, StabilityWindow};
+        use crate::temporal::{detect_temporal, InterArrival, TemporalBaseline};
+        let base = TemporalBaseline {
+            mean_seconds: 1.0,
+            stddev_seconds: 0.05,
+        };
+        let healthy_s = detect_stability(&StabilityWindow {
+            crc_error_rate: 0.002,
+            duplicate_rate: 0.0,
+            baseline_duplicate_rate: 0.0,
+        });
+        let faulty_s = detect_stability(&StabilityWindow {
+            crc_error_rate: 0.14,
+            duplicate_rate: 0.0,
+            baseline_duplicate_rate: 0.0,
+        });
+        let healthy_t = detect_temporal(&[InterArrival { seconds: 1.01 }], &base);
+        let slow_t = detect_temporal(&[InterArrival { seconds: 6.1 }], &base);
+        assert!(!is_degrading(&healthy_t, &healthy_s));
+        assert!(is_degrading(&slow_t, &healthy_s));
+        assert!(is_degrading(&healthy_t, &faulty_s));
     }
 }

@@ -15,7 +15,6 @@ import paho.mqtt.client as mqtt
 
 from comms_sim.payloads import TelemetryPayload
 from comms_sim.scenarios.avdiivka import (
-    SourceTelemetryState,
     ScenarioBeat,
     avdiivka_beats,
     initial_state,
@@ -67,7 +66,7 @@ def run_scenario(config: RunnerConfig, beats: Iterable[ScenarioBeat] | None = No
                 log.info("beat applied (t=%.1fs): %s", beat.tick_seconds, beat.label)
                 next_beat_idx += 1
 
-            for payload in _jittered(render_telemetry(state), state, rng):
+            for payload in _jittered(render_telemetry(state), rng):
                 client.publish(
                     _telemetry_topic(payload.source_id),
                     json.dumps(payload.to_wire()),
@@ -85,26 +84,29 @@ def run_scenario(config: RunnerConfig, beats: Iterable[ScenarioBeat] | None = No
 
 def _jittered(
     payloads: list[TelemetryPayload],
-    state: dict[str, SourceTelemetryState],
     rng: np.random.Generator,
 ) -> list[TelemetryPayload]:
     """Add seeded RNG jitter to inter-arrival + CRC so the engine's
-    detectors see real noise, not a step function. Healthy state stays
-    near nominal; degraded state stays degraded."""
+    detectors see real noise, not a step function.
+
+    Jitter is proportional to the value (0.5% on cadence, 5% on CRC, CRC
+    floor 0.0005). The engine's temporal band is narrow (3σ = 1.15 s,
+    6σ = 1.30 s), so absolute jitter of a few tenths of a second would make
+    temporal trust, and with it the ROE gate, flicker at random."""
 
     jittered = []
     for p in payloads:
-        s = state[p.source_id]
-        ia_jitter = float(rng.normal(0.0, 0.02 if not s.degrading else 0.4))
-        crc_jitter = float(rng.normal(0.0, 0.0005 if not s.degrading else 0.01))
+        ia_jitter = float(rng.normal(0.0, 0.005 * p.inter_arrival_seconds))
+        crc_jitter = float(rng.normal(0.0, max(0.0005, 0.05 * p.crc_error_rate)))
         jittered.append(
             TelemetryPayload(
                 source_id=p.source_id,
+                lat=p.lat,
+                lon=p.lon,
                 inter_arrival_seconds=max(0.05, p.inter_arrival_seconds + ia_jitter),
                 crc_error_rate=min(1.0, max(0.0, p.crc_error_rate + crc_jitter)),
                 duplicate_rate=p.duplicate_rate,
                 rf=p.rf,
-                degrading=p.degrading,
             )
         )
     return jittered

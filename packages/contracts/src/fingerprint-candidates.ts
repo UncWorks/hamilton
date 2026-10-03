@@ -1,5 +1,9 @@
 import { z } from 'zod';
 
+/**
+ * FR-04a candidate. `score` is MATCH STRENGTH (k/6 overlap ratio): higher =
+ * more like this jammer. Not a trust value; see TrustComponents.fingerprint.
+ */
 export const FingerprintCandidateSchema = z.object({
   method_id: z.string().min(1),
   named_systems: z.array(z.string()),
