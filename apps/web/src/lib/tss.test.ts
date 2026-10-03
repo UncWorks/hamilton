@@ -207,3 +207,16 @@ test('thresholds are configuration: a tightened table changes the verdict', () =
   assert.equal(r.verdict, 'FAIL');
   assert.equal(r.tableVersion, 'TSS-2');
 });
+
+test('shifting a failing mission to an unguided round clears it at once (no hold)', () => {
+  const failed = run({ score: 0.1, last_update: ago(1) });
+  const r = T.evaluateTss({
+    mission: { ...AB1001, munition: M795 },
+    sources: { unit_b: { score: 0.1, last_update: ago(1) }, unit_a: healthyA },
+    table: T.DEFAULT_TSS_TABLE,
+    now: NOW,
+    hysteresis: failed.hysteresis,
+  });
+  assert.equal(r.verdict, 'PASS');
+  assert.deepEqual(r.failingSources, []);
+});

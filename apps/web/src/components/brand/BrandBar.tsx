@@ -2,12 +2,12 @@
 
 import { Wordmark } from './Wordmark';
 import { LlmToggle } from '@/components/toggle/LlmToggle';
-import { useGateHasFired } from '@/store/hamilton';
+import { useTssFailedThisSession } from '@/store/hamilton';
 
 const BAR_HEIGHT = 56;
 
 export function BrandBar() {
-  const gateHasFired = useGateHasFired();
+  const tssFailed = useTssFailedThisSession();
 
   return (
     <header
@@ -35,20 +35,20 @@ export function BrandBar() {
             letterSpacing: 0,
           }}
         >
-          trust gating for the kill chain
+          link reliability for fires
         </span>
         {/* Hairline rule — Branding §8.1 / §10.6.
-         * Activates when a kill-chain modal has fired, stays on for the
-         * rest of the session. The visual stamp of "Hamilton was on its
+         * Activates when any fire mission has failed TSS this session, and
+         * stays on for the rest of the session. The visual stamp of "Hamilton was on its
          * feet."
          */}
         <div
           aria-hidden
-          className={gateHasFired ? 'motion-hairline-extend' : undefined}
+          className={tssFailed ? 'motion-hairline-extend' : undefined}
           style={{
             height: 1,
             background: 'var(--gating-primary)',
-            opacity: gateHasFired ? 0.6 : 0,
+            opacity: tssFailed ? 0.6 : 0,
             transition: 'opacity 240ms var(--ease-out-expo)',
           }}
         />

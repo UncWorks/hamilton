@@ -282,7 +282,8 @@ export function evaluateTss(input: TssEvaluateInput): TssResult {
     const rawPass = reliabilityCheck !== 'fail' && reportAgeCheck !== 'fail';
 
     // Hysteresis: fail at once; pass again only after `hold` s continuously at/above the minimum.
-    const prev = prevMemory[source_id];
+    // Not gated (unguided): nothing to hold — memory resets.
+    const prev = row.gated ? prevMemory[source_id] : undefined;
     let failing = !rawPass;
     let passing_since: string | null = null;
     let recoveringS: number | null = null;

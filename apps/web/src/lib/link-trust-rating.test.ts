@@ -31,7 +31,7 @@ test('scale names, J codes and edges', () => {
     const r = rating.rateLinkTrust(score);
     assert.equal(r.name, name, `name @ ${score}`);
     assert.equal(r.jCode, j, `J @ ${score}`);
-    assert.equal(r.roeGated, gated, `roeGated @ ${score}`);
+    assert.equal(r.belowTssMin, gated, `belowTssMin @ ${score}`);
     assert.equal(r.jCode, `${r.reliability}${r.credibility}`);
   }
 });
@@ -79,7 +79,7 @@ test('J split: score sets the letter, corroboration sets the digit', () => {
     assert.equal(c.jCode, confirmed, `confirmed @ ${score} → credibility 1`);
     assert.equal(c.reliability, u.reliability, 'corroboration never moves the letter');
     assert.equal(c.name, u.name, 'rating names are unchanged');
-    assert.equal(c.roeGated, u.roeGated);
+    assert.equal(c.belowTssMin, u.belowTssMin);
     assert.match(c.jMeaning, /· 1: Confirmed$/);
   }
 });
@@ -106,7 +106,7 @@ test('S2 override: shown and exported, automatic value kept, invalid codes rejec
   assert.equal(r.credibility, '3');
   assert.deepEqual(r.override, override);
   assert.equal(r.name, 'UNRELIABLE', 'the score band (and its name) is not rewritten');
-  assert.equal(r.roeGated, true, 'the ROE floor stays score-based');
+  assert.equal(r.belowTssMin, true, 'the ROE floor stays score-based');
   assert.equal(r.visibleAtRest, true);
   assert.equal(rating.exportAmplifiers(r, '2024-02-15T18:42:41.000Z').J, 'C3');
   // Override also wins over STALE (the S2 owns J).
@@ -218,7 +218,7 @@ test('engine beats: exact values from the detector mappings + avdiivka.py teleme
   }
   assert.equal(rating.firstCrossingClock(), 75);
   assert.equal(rating.rateLinkTrust(b(75).score).name, 'UNRELIABLE');
-  assert.ok(b(110).score > b(80).score && b(110).score < rating.ROE_FLOOR, '1:50 recovering but gated');
+  assert.ok(b(110).score > b(80).score && b(110).score < rating.TSS_MIN_GPS_SCORE, '1:50 recovering but gated');
   // A and C never leave Nominal spatial: no false blanket.
   for (const beat of rating.AVDIIVKA_BEATS) {
     for (const u of ['unit_a', 'unit_c'] as const) assert.equal(beat.units[u].score, 1, `${beat.label} ${u}`);

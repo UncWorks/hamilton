@@ -13,7 +13,7 @@ import {
   J_CODE_CITATION,
   NRT,
   RELIABILITY,
-  ROE_FLOOR,
+  TSS_MIN_GPS_SCORE,
   STALE_AFTER_S,
   STABILITY_CRC,
   TEMPORAL_BASELINE,
@@ -241,8 +241,8 @@ export function RatingExplanation(p: ExplanationProps) {
           </span>
         ) : null}
       </div>
-      <div style={{ fontSize: 11, color: rating.roeGated ? 'var(--gating-primary)' : 'var(--text-tertiary)' }}>
-        {rating.roeGated ? `Below ROE floor ${ROE_FLOOR.toFixed(2)} → GPS-guided fires gated` : `At/above ROE floor ${ROE_FLOOR.toFixed(2)} — fires not gated by link trust`}
+      <div style={{ fontSize: 11, color: rating.belowTssMin ? 'var(--gating-primary)' : 'var(--text-tertiary)' }}>
+        {rating.belowTssMin ? `Below TSS minimum (GPS-guided, C ≥ ${TSS_MIN_GPS_SCORE.toFixed(2)}) → GPS missions on this source fail TSS` : `At/above TSS minimum (GPS-guided, C ≥ ${TSS_MIN_GPS_SCORE.toFixed(2)})`}
       </div>
       {p.components.fingerprint <= agg.worst && p.components.fingerprint < 1 && p.topCandidate?.method_id && (
         <div style={{ fontSize: 11 }}>

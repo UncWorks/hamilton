@@ -1,0 +1,18 @@
+/* Fire-mission queue (TSS mission row). No animation anywhere: the row is
+ * attention-by-text, never by motion (HS-15). */
+
+.fm-row:focus-visible,
+.fm-branch:focus-visible,
+.fm-field:focus-visible {
+  outline: 2px solid var(--sym-select);
+  outline-offset: 2px;
+}
+
+.fm-branch:not(:disabled):hover {
+  background: var(--surface-elevated);
+}
+
+.fm-branch:disabled {
+  cursor: not-allowed;
+  color: var(--text-tertiary);
+}
