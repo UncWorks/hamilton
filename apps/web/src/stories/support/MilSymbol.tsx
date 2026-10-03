@@ -1,22 +1,25 @@
-// Story-only APP-6(E) / MIL-STD-2525E track symbol, used by
-// Explorations/Track Symbology. Geometry follows the symbology research spec
-// (frames + interior icons from milsymbol, scaled to a 32-unit box: frame
-// centre = (16,16)). NOT used by the live renderers — the user has not picked
-// an option yet.
+// ARCHIVED story-only APP-6(E) / MIL-STD-2525E track symbol (options A/B/C,
+// Archive/Track Symbology). Superseded by the decided production symbol in
+// src/components/symbol (Decisions/Track Symbology). Geometry follows the
+// symbology research spec (frames + interior icons from milsymbol, scaled to a
+// 32-unit box: frame centre = (16,16)); the frame-refitted icon paths are
+// shared with production.
 //
 // Every stroke/dash is specified in SCREEN px and converted to user units with
 // k = 32 / sizePx, which is what vector-effect: non-scaling-stroke would give
 // but also holds for dash arrays and works in every engine.
 
 import type { CSSProperties, ReactNode } from 'react';
-import type { Affiliation, SensorType } from '@hamilton/contracts';
+import type { SensorType } from '@hamilton/contracts';
 import { haloPeriodMs, shouldHaloPulse, trustBand } from '@/lib/trust-gradient';
+import { FRAME_AFFILIATION, type Echelon, type FrameKind } from '@/lib/track-sidc';
+import { AIRDEF_PATH, RECON_PATH, trustStrokeVar } from '@/components/symbol/geometry';
 import { HaloSvg, trackPolygonPoints } from './TrackGlyph';
 
 export type SymbologyOption = 'A' | 'B' | 'C';
-export type FrameKind = 'friend' | 'hostile' | 'neutral' | 'unknown';
+export type { Echelon, FrameKind };
+export { AIRDEF_PATH, RECON_PATH, trustStrokeVar };
 export type IconKind = 'fa' | 'fa-observer' | 'fa-radar' | 'recon' | 'radar' | 'airdef' | 'ew' | 'jamming' | 'none';
-export type Echelon = 'team' | 'platoon' | 'battery';
 
 export const FRAME_PATH: Record<FrameKind, string> = {
   friend: 'M4,8h24v16h-24z',
@@ -34,12 +37,7 @@ export const FRAME_BOX: Record<FrameKind, [number, number, number, number]> = {
   unknown: [4.92, 4.92, 27.08, 27.08],
 };
 
-export const FRAME_TO_AFFILIATION: Record<FrameKind, Affiliation> = {
-  friend: 'friendly',
-  hostile: 'enemy',
-  neutral: 'neutral',
-  unknown: 'unknown',
-};
+export const FRAME_TO_AFFILIATION = FRAME_AFFILIATION;
 
 /** Trust band → dash pattern in screen px (Option B). */
 export const BAND_DASH = {
@@ -49,11 +47,6 @@ export const BAND_DASH = {
   failed: [0.1, 3],
 } as const;
 
-/** Trust colour for strokes/bars: failed uses the 5.1:1 stroke variant. */
-export function trustStrokeVar(score: number): string {
-  const band = trustBand(score);
-  return band === 'failed' ? 'var(--trust-failed-stroke)' : `var(--trust-${band})`;
-}
 
 export interface MilSymbolProps {
   option: SymbologyOption;
@@ -90,24 +83,6 @@ export function strokeW(sizePx: number) {
 export function fontPx(sizePx: number) {
   return sizePx >= 32 ? 11 : sizePx >= 24 ? 10 : 9;
 }
-
-/**
- * Frame-dependent icon parts, 200-unit space, verified against milsymbol 3.0.4
- * src/iconparts/ground.js (GR.IC.FF.RECONNAISSANCE, GR.IC.FF.AIR DEFENCE):
- * the slash / dome is re-fitted to each affiliation frame.
- */
-export const RECON_PATH: Record<FrameKind, string> = {
-  friend: 'M25,150L175,50',
-  hostile: 'M60,130L140,70',
-  neutral: 'M45,155L155,45',
-  unknown: 'M50,135L150,65',
-};
-export const AIRDEF_PATH: Record<FrameKind, string> = {
-  friend: 'M25,150 C25,110 175,110 175,150',
-  hostile: 'M70,140 C70,115 130,115 130,140',
-  neutral: 'M45,150 C45,110 155,110 155,150',
-  unknown: 'm 55,135 c 10,-20 80,-20 90,0',
-};
 
 export function Icon({ kind, frame, color, k }: { kind: IconKind; frame: FrameKind; color: string; k: number }) {
   if (kind === 'none') return null;
@@ -267,7 +242,7 @@ export function MilSymbol(p: MilSymbolProps) {
       />
     );
   } else if (below) {
-    // A / C: the fixed circular halo (Option 1 of Explorations/Halo Options),
+    // A / C: the fixed circular halo (Option 1 of Archive/Halo Options),
     // drawn in screen px inside a k-scaled group centred on the frame.
     halo = (
       <g transform={`translate(16 16) scale(${k})`}>

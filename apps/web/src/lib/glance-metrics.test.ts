@@ -59,19 +59,6 @@ test('meanResult averages pair scores and re-derives verdicts', () => {
   assert.equal(m.pairs[0]!.verdict, M.verdict(m.pairs[0]!.similarity));
 });
 
-test('SIDC assembly (2525E, version 13) — codes verified against milsymbol 3.0.4', () => {
-  assert.equal(M.buildSidc({ identity: '3', entity: '130300' }), '13031000001303000000');
-  assert.equal(M.buildSidc({ identity: '6', entity: '121300', modifier2: '51' }), '13061000001213000051');
-  assert.equal(M.buildSidc({ identity: '3', entity: '130302', modifier1: '50', echelon: '14' }), '13031000141303025000');
-  assert.throws(() => M.buildSidc({ identity: '33', entity: '130300' }));
-  assert.equal(M.formatSidc('13031000001303000000'), '13 0 3 10 0 0 00 130300 00 00');
-  // 2525B letter codes, validated with milsymbol 3.0.4 (isValid) — echelon E = company/battery.
-  assert.equal(M.buildLetterSidc({ affiliation: 'F', fn: 'UCF---' }), 'SFGPUCF--------');
-  assert.equal(M.buildLetterSidc({ affiliation: 'H', fn: 'UCFTR-', echelon: 'E' }), 'SHGPUCFTR--E---');
-  assert.equal(M.buildLetterSidc({ affiliation: 'U', fn: 'UCRVM-', status: 'A' }).length, 15);
-  assert.throws(() => M.buildLetterSidc({ affiliation: 'F', fn: 'UCF' }));
-});
-
 test('seeded odd-one-out position is deterministic and in range', () => {
   const a = M.oddOneOutIndex(42, 100);
   assert.equal(a, M.oddOneOutIndex(42, 100));

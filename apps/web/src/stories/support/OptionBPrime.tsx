@@ -1,6 +1,8 @@
-// Option B′ — US MIL-STD-2525E / FM 1-02.2 conformant track symbology
-// (Explorations/Track Symbology). Story-only; the live renderers
-// (CesiumSpine / MapSpine) are untouched.
+// ARCHIVED — Option B′, US MIL-STD-2525E / FM 1-02.2 conformant track
+// symbology (Archive/Track Symbology). Superseded by Decisions/Track Symbology:
+// the decided symbol is filled (V1) with a side gauge + J instead of the halo.
+// The rating tooltip it introduced is now production
+// (src/components/symbol/RatingTooltip.tsx) and is re-exported here.
 //
 // Rules (us-symbology-findings.md, "modified Option B"):
 //  - Monochrome standard frames in --sym-ink, SOLID regardless of trust.
@@ -14,34 +16,19 @@
 //    text amplifiers are pushed outside its extent so it never sits under them.
 //  - ROE / Excalibur gate lives in the fire-mission popup, not on the symbol.
 
-import { useId, useRef, useState, type CSSProperties, type FocusEvent, type KeyboardEvent, type MouseEvent, type ReactNode } from 'react';
-import type { FingerprintCandidate } from '@hamilton/contracts';
+import type { CSSProperties, ReactNode } from 'react';
 import { haloOuterRadiusPx, shouldHaloPulse } from '@/lib/trust-gradient';
+import { CREDIBILITY, J_CODE_CITATION, LINK_TRUST_SCALE, NRT, RELIABILITY, ROE_FLOOR, STALE_AFTER_S, rateLinkTrust, type LinkTrustRating } from '@/lib/link-trust-rating';
 import {
-  AVG_BLEND,
-  CREDIBILITY,
-  J_CODE_CITATION,
-  LINK_TRUST_SCALE,
-  NRT,
-  RELIABILITY,
-  ROE_FLOOR,
-  STALE_AFTER_S,
-  STABILITY_CRC,
-  TEMPORAL_BASELINE,
-  TEMPORAL_SIGMA,
-  WORST_BLEND,
-  aggregateTrust,
-  cadenceForTemporalTrust,
-  cadenceSigma,
-  crcForStabilityTrust,
-  exportAmplifiers,
-  formatDtg,
-  rateLinkTrust,
-  secondsSince,
-  type LinkTrustRating,
-  type TrustComponentsLike,
-  type TrustFactor,
-} from '@/lib/link-trust-rating';
+  RatingExplanation,
+  TRIGGER_CSS,
+  evidenceFor,
+  explainRating,
+  tooltipSurface,
+  useAnchoredTips,
+  useHoverTip,
+  type ExplanationProps,
+} from '@/components/symbol/RatingTooltip';
 import { mono } from './foundation-ui';
 import { Amplifier, EchelonMark, FRAME_BOX, FRAME_PATH, Icon, fontPx, strokeW, type Echelon, type FrameKind, type IconKind } from './MilSymbol';
 import { HaloSvg } from './TrackGlyph';
@@ -219,269 +206,20 @@ export function MilSymbolPrimeSvg({ margin = 8, ...p }: MilSymbolPrimeProps & { 
 }
 
 // ---------------------------------------------------------------------------
-// Evidence strings — derived from component values via the real detector
-// mappings (services/trust-engine/crates/detectors/src/*.rs).
+// Rating tooltip — production (src/components/symbol/RatingTooltip.tsx)
 // ---------------------------------------------------------------------------
 
-/** "1.0", "1.17", "6.1" — at least one decimal, at most two. */
-const fmtS = (x: number) => {
-  const t = x.toFixed(2);
-  return t.endsWith('0') ? x.toFixed(1) : t;
-};
-/** "0.2", "6", "14" — CRC as a percentage, integer when it is one. */
-const fmtPct = (frac: number) => {
-  const pct = Math.round(frac * 1000) / 10;
-  return Number.isInteger(pct) ? pct.toFixed(0) : pct.toFixed(1);
-};
-const fmtSigma = (s: number) => (s >= 10 ? s.toFixed(0) : s.toFixed(1));
-
-export interface EvidenceContext {
-  /** e.g. "neighbours A, C". */
-  neighbours?: string | undefined;
-  topCandidate?: FingerprintCandidate | undefined;
-  /**
-   * Raw telemetry behind the components (comms-sim avdiivka.py), when known.
-   * Needed for exact strings where the trust mapping saturates (temporal 0 at
-   * ≥ 6σ hides whether the gap is 1.3 s or 6.1 s).
-   */
-  telemetry?: { cadenceS: number; crc: number } | undefined;
-}
-
-/**
- * Evidence line per factor, derived through the engine's own detector mappings
- * (temporal.rs baseline 1.0 s ± 0.05 s, 1σ → 1.0, 6σ → 0.0; stability.rs
- * 0.5 % → 1.0, 20 % → 0.0) — e.g. temporal 0.52 ⇔ 1.17 s (3.4σ), stability
- * 0.72 ⇔ 6 % CRC, 0.31 ⇔ 14 %.
- */
-export function evidenceFor(f: TrustFactor, c: number, ctx: EvidenceContext = {}): string {
-  const healthy = c >= 0.999;
-  const base = fmtS(TEMPORAL_BASELINE.meanS);
-  switch (f) {
-    case 'temporal': {
-      if (healthy && !ctx.telemetry) return `Message cadence ${base}s, within 1σ of baseline`;
-      const observed = ctx.telemetry?.cadenceS ?? (c > 0 ? cadenceForTemporalTrust(c) : undefined);
-      if (observed === undefined) {
-        const atZero = TEMPORAL_BASELINE.meanS + TEMPORAL_SIGMA.zero * TEMPORAL_BASELINE.stdS;
-        return `Message cadence ${base}s → ≥ ${fmtS(atZero)}s (≥ ${TEMPORAL_SIGMA.zero}σ above baseline, >3σ)`;
-      }
-      const sigma = cadenceSigma(observed);
-      if (sigma <= TEMPORAL_SIGMA.full) return `Message cadence ${fmtS(observed)}s, within 1σ of baseline`;
-      return `Message cadence ${base}s → ${fmtS(observed)}s (${fmtSigma(sigma)}σ above baseline${sigma > TEMPORAL_SIGMA.anomaly ? ', >3σ' : ''})`;
-    }
-    case 'stability': {
-      const crc = ctx.telemetry?.crc ?? (c > 0 ? crcForStabilityTrust(c) : undefined);
-      if (healthy && (crc === undefined || crc <= STABILITY_CRC.full)) return 'CRC errors 0.2% (baseline)';
-      if (crc === undefined) return `CRC errors 0.2% → ≥ ${fmtPct(STABILITY_CRC.zero)}%`;
-      return `CRC errors 0.2% → ${fmtPct(crc)}%${crc > STABILITY_CRC.degraded ? ' (>5% degraded threshold)' : ''}`;
-    }
-    case 'spatial': {
-      // spatial.rs (PR #1): Nominal 1.0 (not degrading), Localized 0.6, Blanket 0.3.
-      const n = ctx.neighbours ?? 'neighbours';
-      if (healthy) return 'Nominal — link not degrading (no FR-01 / FR-02 flag)';
-      return c >= 0.6 ? `Localized — ${n} within 500 m unaffected` : `Blanket — ${n} also degrading`;
-    }
-    case 'fingerprint': {
-      // `components.fingerprint` IS trust (PR #1): 1 − match strength, 1.0 when
-      // nothing matches at ≥ 0.5. The overlap ratio is derived as 1 − trust,
-      // as services/llm-narrator providers/deterministic.ts does.
-      if (healthy) return 'No jammer fingerprint match (no library entry ≥ 3/6)';
-      const overlap = 1 - c;
-      const dims = Math.round(overlap * 6);
-      const top = ctx.topCandidate;
-      const m = top?.method_id && Math.abs(top.score - overlap) < 0.01 ? top.method_id : 'library entry';
-      return `Jammer fingerprint matched: ${m} (overlap ratio ${overlap.toFixed(2)} = ${dims}/6 dimensions, fingerprint score ${c.toFixed(2)})`;
-    }
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Rating explanation (tooltip body)
-// ---------------------------------------------------------------------------
-
-export interface ExplanationProps extends EvidenceContext {
-  /** e.g. "B · FA battery". */
-  title: string;
-  components: TrustComponentsLike;
-  /** The payload score; the panel recomputes it from components and flags a mismatch. */
-  payloadScore?: number | undefined;
-  lastGoodIso: string;
-  nowIso: string;
-}
-
-const f3 = (n: number) => n.toFixed(3);
-
-function Bar({ value }: { value: number }) {
-  const r = rateLinkTrust(value);
-  return (
-    <span aria-hidden style={{ display: 'inline-block', width: 56, height: 6, background: 'var(--surface-base)', verticalAlign: 'middle' }}>
-      <span style={{ display: 'block', width: `${Math.max(0, Math.min(1, value)) * 100}%`, height: '100%', background: r.bandToken }} />
-    </span>
-  );
-}
-
-export function explainRating(p: ExplanationProps): { rating: LinkTrustRating; agg: ReturnType<typeof aggregateTrust>; ageS: number } {
-  const agg = aggregateTrust(p.components);
-  const ageS = secondsSince(p.lastGoodIso, p.nowIso);
-  return { rating: rateLinkTrust(agg.score, { stale: ageS > STALE_AFTER_S }), agg, ageS };
-}
-
-export function RatingExplanation(p: ExplanationProps) {
-  const { rating, agg, ageS } = explainRating(p);
-  const mismatch = p.payloadScore !== undefined && Math.abs(p.payloadScore - agg.score) > 0.005;
-  const amps = exportAmplifiers(rating, p.lastGoodIso);
-  const cell: CSSProperties = { padding: '2px 6px 0 0', ...mono, fontSize: 11, fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' };
-  return (
-    <div style={{ display: 'grid', gap: 'var(--space-2)', fontSize: 12, color: 'var(--text-secondary)' }}>
-      <div style={{ display: 'flex', alignItems: 'baseline', gap: 'var(--space-2)', flexWrap: 'wrap' }}>
-        <span style={{ color: 'var(--text-primary)' }}>{p.title}</span>
-        <span style={{ ...mono, fontWeight: 600, color: rating.labelToken }}>{rating.label}</span>
-        <span style={{ ...mono, color: 'var(--text-primary)' }}>{rating.score.toFixed(2)}</span>
-        <span style={{ ...mono, color: 'var(--text-tertiary)' }}>J {rating.jCode}</span>
-      </div>
-      {rating.stale && (
-        <div style={{ ...mono, fontSize: 11 }}>
-          STALE (AR {NRT}) — last rating {rating.name} {rating.score.toFixed(2)}
-        </div>
-      )}
-      <div style={{ fontSize: 11 }}>
-        <span style={{ ...mono, color: 'var(--text-primary)' }}>{rating.jCode}</span>: {RELIABILITY[rating.reliability].label.toLowerCase()} /{' '}
-        {CREDIBILITY[rating.credibility].label.toLowerCase()} <span style={{ color: 'var(--text-tertiary)' }}>— {J_CODE_CITATION}</span>
-      </div>
-
-      <table style={{ borderCollapse: 'collapse' }}>
-        <thead>
-          <tr style={{ color: 'var(--text-tertiary)' }}>
-            {['factor', 'cᵢ', 'wᵢ', 'wᵢ·cᵢ', ''].map((h) => (
-              <th key={h} style={{ ...cell, fontWeight: 400, textAlign: 'left' }}>
-                {h}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {agg.factors.flatMap((f) => [
-            <tr key={f.factor} data-factor={f.factor} data-weakest={f.weakest || undefined}>
-              <td style={{ ...cell, color: f.weakest ? 'var(--text-primary)' : 'var(--text-secondary)' }}>
-                {f.fr} {f.label}
-              </td>
-              <td style={cell}>{f.value.toFixed(2)}</td>
-              <td style={cell}>×{f.weight.toFixed(1)}</td>
-              <td style={cell}>{f3(f.contribution)}</td>
-              <td style={cell}>
-                <Bar value={f.value} />
-                {f.weakest && <span style={{ marginLeft: 6, color: 'var(--text-primary)' }}>◂ weakest link</span>}
-              </td>
-            </tr>,
-            <tr key={`${f.factor}-ev`}>
-              <td colSpan={5} style={{ padding: '0 0 4px 12px', fontSize: 11, color: 'var(--text-tertiary)' }}>
-                {evidenceFor(f.factor, f.value, p)}
-              </td>
-            </tr>,
-          ])}
-          <tr style={{ borderTop: '1px solid var(--surface-panel)' }}>
-            <td style={{ ...cell, color: 'var(--text-tertiary)' }} colSpan={3}>
-              weighted avg Σ wᵢ·cᵢ
-            </td>
-            <td style={cell}>{f3(agg.weightedAvg)}</td>
-            <td />
-          </tr>
-        </tbody>
-      </table>
-
-      <div data-testid="formula" style={{ ...mono, fontSize: 11, color: 'var(--text-primary)' }}>
-        {AVG_BLEND} × weighted avg ({f3(agg.weightedAvg)}) + {WORST_BLEND} × weakest ({f3(agg.worst)}) = {f3(AVG_BLEND * agg.weightedAvg)} +{' '}
-        {f3(WORST_BLEND * agg.worst)} = {f3(agg.score)}
-      </div>
-      <div style={{ fontSize: 11, color: 'var(--text-tertiary)' }}>
-        {WORST_BLEND * 100}% of the score is the weakest factor alone (aggregator/src/lib.rs).
-      </div>
-      {mismatch && (
-        <div role="alert" style={{ ...mono, fontSize: 11, color: 'var(--trust-failed-stroke)' }}>
-          Mismatch: payload score {p.payloadScore?.toFixed(3)} ≠ recomputed {f3(agg.score)}
-        </div>
-      )}
-
-      <div style={{ fontSize: 11 }}>
-        Last good update (W) <span style={{ ...mono, color: 'var(--text-primary)' }}>{formatDtg(p.lastGoodIso)}</span> · {Math.round(ageS)} s ago
-        {rating.stale ? (
-          <span style={{ color: 'var(--text-primary)' }}>
-            {' '}
-            → STALE (&gt;{STALE_AFTER_S} s), AR {NRT}
-          </span>
-        ) : null}
-      </div>
-      <div style={{ fontSize: 11, color: rating.roeGated ? 'var(--gating-primary)' : 'var(--text-tertiary)' }}>
-        {rating.roeGated
-          ? `Below ROE floor ${ROE_FLOOR.toFixed(2)} → GPS-guided fires gated`
-          : `At/above ROE floor ${ROE_FLOOR.toFixed(2)} — fires not gated by link trust`}
-      </div>
-      {p.components.fingerprint <= agg.worst && p.components.fingerprint < 1 && p.topCandidate?.method_id && (
-        <div style={{ fontSize: 11 }}>
-          Top jammer candidate: <span style={{ ...mono, color: 'var(--text-primary)' }}>{p.topCandidate.method_id}</span> (
-          {p.topCandidate.named_systems.join(', ')}) · match {p.topCandidate.score.toFixed(2)}
-        </div>
-      )}
-      <div style={{ ...mono, fontSize: 10, color: 'var(--text-tertiary)' }}>
-        export: J={amps.J} W={amps.W}
-        {amps.AR ? ` AR=${amps.AR}` : ''} · overlay stripped
-      </div>
-    </div>
-  );
-}
-
-export const tooltipSurface: CSSProperties = {
-  width: 400,
-  padding: 'var(--space-3)',
-  background: 'var(--surface-elevated)',
-  border: '1px solid var(--surface-panel)',
-  boxShadow: '0 8px 24px var(--surface-modal-scrim)',
-  textAlign: 'left',
-};
-
-// ---------------------------------------------------------------------------
-// Hover / focus tooltip plumbing (no deps)
-// ---------------------------------------------------------------------------
-
-export function useHoverTip(closeDelayMs = 120) {
-  const id = `rating-tip-${useId().replace(/:/g, '')}`;
-  const [open, setOpen] = useState(false);
-  const timer = useRef<number | undefined>(undefined);
-  const show = () => {
-    window.clearTimeout(timer.current);
-    setOpen(true);
-  };
-  const hide = () => {
-    window.clearTimeout(timer.current);
-    timer.current = window.setTimeout(() => setOpen(false), closeDelayMs);
-  };
-  return {
-    id,
-    open,
-    triggerProps: {
-      tabIndex: 0,
-      'aria-describedby': id,
-      onMouseEnter: show,
-      onMouseLeave: hide,
-      onFocus: show,
-      onBlur: hide,
-      onKeyDown: (e: KeyboardEvent) => {
-        if (e.key === 'Escape') setOpen(false);
-      },
-    },
-    // Hoverable per WCAG 1.4.13: moving onto the tooltip keeps it open.
-    tipProps: { id, role: 'tooltip' as const, onMouseEnter: show, onMouseLeave: hide },
-  };
-}
+export { RatingExplanation, TRIGGER_CSS, evidenceFor, explainRating, tooltipSurface, useAnchoredTips, useHoverTip, type ExplanationProps };
 
 export interface RatingCellProps extends MilSymbolPrimeProps {
-  explanation?: Omit<ExplanationProps, 'components'> & { components: TrustComponentsLike };
+  explanation?: ExplanationProps;
   /** Render the tooltip open, in flow (Rating Tooltip story). */
   forceOpen?: boolean | undefined;
   testId?: string | undefined;
   margin?: number | undefined;
 }
 
-/** HTML cell: symbol + hover/focus tooltip (aria-describedby). */
+/** HTML cell: B′ symbol + hover/focus tooltip (aria-describedby). */
 export function RatingCell({ explanation, forceOpen = false, testId, margin, ...sym }: RatingCellProps) {
   const tip = useHoverTip();
   if (!explanation || sym.score === undefined) {
@@ -491,14 +229,7 @@ export function RatingCell({ explanation, forceOpen = false, testId, margin, ...
   const label = `${sym.designation ?? ''} ${sym.frame}: link trust — hover or focus for the explanation`;
   return (
     <span style={{ position: 'relative', display: forceOpen ? 'flex' : 'inline-block', gap: 'var(--space-3)', alignItems: 'flex-start' }}>
-      <span
-        {...tip.triggerProps}
-        role="button"
-        aria-label={label}
-        data-testid={testId}
-        className="bprime-trigger"
-        style={{ display: 'inline-block', cursor: 'help' }}
-      >
+      <span {...tip.triggerProps} role="button" aria-label={label} data-testid={testId} className="symbol-trigger" style={{ display: 'inline-block', cursor: 'help' }}>
         <MilSymbolPrimeSvg {...sym} active={sym.active || open} margin={margin} />
       </span>
       <div
@@ -513,66 +244,6 @@ export function RatingCell({ explanation, forceOpen = false, testId, margin, ...
       </div>
     </span>
   );
-}
-
-/** Focus ring for SVG / HTML triggers (no hex — tokens only). */
-export const TRIGGER_CSS = `
-.bprime-trigger { outline: none; }
-.bprime-trigger:focus-visible { outline: 2px solid var(--text-primary); outline-offset: 2px; }
-`;
-
-// ---------------------------------------------------------------------------
-// Anchored tooltip for SVG scenes (COP): one open tip at a time, rendered in
-// the HTML layer above the SVG.
-// ---------------------------------------------------------------------------
-
-export function useAnchoredTips(containerRef: { current: HTMLElement | null }, tipWidth = 400) {
-  const [open, setOpen] = useState<{ key: string; x: number; y: number } | null>(null);
-  const timer = useRef<number | undefined>(undefined);
-  const show = (key: string, el: Element) => {
-    window.clearTimeout(timer.current);
-    const c = containerRef.current?.getBoundingClientRect();
-    if (!c) return;
-    const r = el.getBoundingClientRect();
-    const flip = r.right - c.left + 12 + tipWidth > c.width;
-    setOpen({ key, x: flip ? Math.max(0, r.left - c.left - 12 - tipWidth) : r.right - c.left + 12, y: Math.max(0, r.top - c.top - 8) });
-  };
-  const hide = () => {
-    window.clearTimeout(timer.current);
-    timer.current = window.setTimeout(() => setOpen(null), 150);
-  };
-  const keep = () => window.clearTimeout(timer.current);
-  return {
-    open,
-    trigger: (key: string, tipId: string) => ({
-      tabIndex: 0,
-      role: 'button',
-      'aria-describedby': tipId,
-      className: 'bprime-trigger',
-      style: { cursor: 'help' } as CSSProperties,
-      onMouseEnter: (e: MouseEvent<Element>) => show(key, e.currentTarget),
-      onMouseLeave: hide,
-      onFocus: (e: FocusEvent<Element>) => show(key, e.currentTarget),
-      onBlur: hide,
-      onKeyDown: (e: KeyboardEvent) => {
-        if (e.key === 'Escape') setOpen(null);
-      },
-    }),
-    tip: (key: string, tipId: string): { id: string; role: 'tooltip'; onMouseEnter: () => void; onMouseLeave: () => void; style: CSSProperties } => ({
-      id: tipId,
-      role: 'tooltip',
-      onMouseEnter: keep,
-      onMouseLeave: hide,
-      style: {
-        ...tooltipSurface,
-        position: 'absolute',
-        zIndex: 30,
-        display: open?.key === key ? 'block' : 'none',
-        left: open?.key === key ? open.x : 0,
-        top: open?.key === key ? open.y : 0,
-      },
-    }),
-  };
 }
 
 // ---------------------------------------------------------------------------
@@ -702,7 +373,7 @@ export function RatingScaleTable() {
         <tr style={{ borderTop: '1px solid var(--surface-elevated)' }}>
           <td style={{ ...tdS, color: 'var(--sym-ink-stale)', fontWeight: 600 }}>STALE</td>
           <td style={tdS}>&gt; {STALE_AFTER_S} s since last good update</td>
-          <td style={tdS}>unchanged</td>
+          <td style={tdS}>F6 (since the J split)</td>
           <td style={{ ...tdS, fontFamily: 'inherit' }}>AR = {NRT} (non-real-time); frame greys out; W = last good DTG</td>
           <td style={tdS}>per score</td>
         </tr>

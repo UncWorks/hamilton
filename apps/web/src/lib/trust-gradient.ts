@@ -56,7 +56,7 @@ export function haloPeriodMs(score: number): number {
 
 /**
  * Live halo animation — Branding §5.2, "Option 1 (spec-faithful)" in
- * Storybook Explorations/Halo Options. ONE definition shared by every
+ * Storybook Archive/Halo Options. ONE definition shared by every
  * renderer (deck.gl, Cesium, the SVG reference glyph via motion.css
  * `halo-pulse`) so the halo is identical and always concentric with the icon.
  *

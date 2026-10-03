@@ -29,7 +29,9 @@ import {
   beatAt,
   solveComponents,
   type AvdiivkaUnit,
+  type Corroboration,
   type EngineBeat,
+  type JOverride,
   type UnitTelemetry,
 } from '@/lib/link-trust-rating';
 
@@ -203,6 +205,33 @@ export const PHASE_TRACKS = {
 export const SYMBOL_FUNCTION_OVERRIDES: Record<string, 'ew-jamming'> = {
   hostile_ew_1: 'ew-jamming',
 };
+
+/**
+ * J evaluation inputs (decision 3, J split) — OPTIONAL per-unit fields. Absent =
+ * uncorroborated (the band's digit) and no override.
+ * - `corroboration: 'confirmed'` → credibility 1 (confirmed on an alternate
+ *   channel / by a second sensor).
+ * - `jOverride` → the S2's evaluation rating, shown and exported instead of the
+ *   automatic one (HS-14); the automatic value is kept for the log.
+ */
+export interface UnitEvaluation {
+  corroboration?: Corroboration;
+  jOverride?: JOverride;
+}
+
+/** A's observer reports are cross-checked by C's radar (second sensor) → credibility 1 (B1). */
+export const UNIT_EVALUATION: Partial<Record<AvdiivkaUnit, UnitEvaluation>> = {
+  unit_a: { corroboration: 'confirmed' },
+};
+
+/** Example S2 override on B from 1:25: automatic E5 → D3 (the scenario has no such beat; mock). */
+export const S2_OVERRIDE_B: JOverride = {
+  j: 'D3',
+  by: 'S2',
+  reason: "B's last fix agrees with A and C; link is jammed, not spoofed",
+  at: clockIso(85),
+};
+export const S2_OVERRIDE_CLOCK = 85;
 
 /** Mixed-affiliation track list for icon/halo coverage. */
 export const AFFILIATION_TRACKS: TrackState[] = [

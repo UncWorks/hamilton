@@ -49,15 +49,72 @@ test('names avoid reserved 2525 / FM 1-02.2 terms', () => {
   assert.ok(!reserved.includes(rating.STALE_NAME));
 });
 
-test('stale overrides the label, keeps the J code, sets AR=NRT', () => {
+test('stale overrides the label, becomes F6 (J split), sets AR=NRT', () => {
   const r = rating.rateLinkTrust(0.31, { stale: true });
   assert.equal(r.label, 'STALE');
-  assert.equal(r.jCode, 'D4');
+  assert.equal(r.name, 'DEGRADED', 'the last band name is kept for the tooltip');
+  assert.equal(r.jCode, 'F6');
+  assert.equal(r.jCode, rating.STALE_J);
   assert.equal(r.visibleAtRest, true);
   const amp = rating.exportAmplifiers(r, '2024-02-15T18:42:41.000Z');
-  assert.deepEqual(amp, { J: 'D4', W: '15184241ZFEB2024', AR: 'NRT' });
+  assert.deepEqual(amp, { J: 'F6', W: '15184241ZFEB2024', AR: 'NRT' });
   assert.equal(rating.exportAmplifiers(rating.rateLinkTrust(0.9), '2024-02-15T18:42:41.000Z').AR, undefined);
   assert.equal(rating.rateLinkTrust(0.9).visibleAtRest, false);
+  // Stale wins over corroboration: no basis to judge either axis.
+  assert.equal(rating.rateLinkTrust(0.95, { stale: true, corroboration: 'confirmed' }).jCode, 'F6');
+});
+
+test('J split: score sets the letter, corroboration sets the digit', () => {
+  const cases: [number, string, string][] = [
+    [1.0, 'B2', 'B1'],
+    [0.7, 'C3', 'C1'],
+    [0.45, 'D4', 'D1'],
+    [0.13, 'E5', 'E1'],
+  ];
+  for (const [score, uncorroborated, confirmed] of cases) {
+    const u = rating.rateLinkTrust(score);
+    const c = rating.rateLinkTrust(score, { corroboration: 'confirmed' });
+    assert.equal(u.jCode, uncorroborated, `uncorroborated @ ${score} keeps today's digit`);
+    assert.equal(u.corroboration, 'uncorroborated');
+    assert.equal(c.jCode, confirmed, `confirmed @ ${score} → credibility 1`);
+    assert.equal(c.reliability, u.reliability, 'corroboration never moves the letter');
+    assert.equal(c.name, u.name, 'rating names are unchanged');
+    assert.equal(c.roeGated, u.roeGated);
+    assert.match(c.jMeaning, /· 1: Confirmed$/);
+  }
+});
+
+test('an algorithm never emits reliability A', () => {
+  for (let i = 0; i <= 100; i++) {
+    for (const corroboration of ['confirmed', 'uncorroborated'] as const) {
+      for (const stale of [false, true]) {
+        const r = rating.rateLinkTrust(i / 100, { corroboration, stale });
+        assert.notEqual(r.reliability, 'A', `score ${i / 100}`);
+        assert.equal(r.autoJ, r.jCode, 'no override → shown J is the automatic J');
+        assert.ok(rating.parseJ(r.jCode), `valid J ${r.jCode}`);
+      }
+    }
+  }
+});
+
+test('S2 override: shown and exported, automatic value kept, invalid codes rejected', () => {
+  const override = { j: 'C3', by: 'S2', reason: 'FM voice check with B confirms position', at: '2024-02-15T18:42:45.000Z' };
+  const r = rating.rateLinkTrust(0.13, { override });
+  assert.equal(r.jCode, 'C3');
+  assert.equal(r.autoJ, 'E5');
+  assert.equal(r.reliability, 'C');
+  assert.equal(r.credibility, '3');
+  assert.deepEqual(r.override, override);
+  assert.equal(r.name, 'UNRELIABLE', 'the score band (and its name) is not rewritten');
+  assert.equal(r.roeGated, true, 'the ROE floor stays score-based');
+  assert.equal(r.visibleAtRest, true);
+  assert.equal(rating.exportAmplifiers(r, '2024-02-15T18:42:41.000Z').J, 'C3');
+  // Override also wins over STALE (the S2 owns J).
+  assert.equal(rating.rateLinkTrust(0.9, { stale: true, override: { j: 'b2', by: 'S2', reason: 'r' } }).jCode, 'B2');
+  assert.throws(() => rating.rateLinkTrust(0.5, { override: { j: 'G7', by: 'S2', reason: 'x' } }));
+  assert.equal(rating.parseJ('A1')?.join(''), 'A1', 'a human may still rate A');
+  assert.equal(rating.parseJ('A0'), undefined);
+  assert.equal(rating.rateLinkTrust(0.5).override, undefined);
 });
 
 test('isStale uses STALE_AFTER_S', () => {

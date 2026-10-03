@@ -1,6 +1,8 @@
-// In-browser evaluator for Explorations/At-a-Glance Symbols — the research
-// protocol T1–T7 (glance-symbology-research.md §5). Every image is drawn from
-// GlanceSymbol.cellPrims(), i.e. exactly what the stories show. Story-only.
+// In-browser evaluator for the At-a-Glance bench (Decisions/Evidence,
+// Archive/At-a-Glance Variants) — the research protocol T1–T7
+// (glance-symbology-research.md §5). Every image is drawn from
+// GlanceSymbol.cellPrims(), i.e. exactly what the stories show; for FINAL that
+// is the production describeTrackSymbol(). Story-only.
 //
 // Setup (§5.1): canvas 2s × 2s at DPR 1, symbol centred, composited on the map
 // colour #06090d in linear RGB. Each image is rendered ONCE; vision channels
@@ -53,6 +55,7 @@ import {
   type CellOpts,
   type PPrim,
 } from './GlanceSymbol';
+import type { IconOpts } from '@/components/symbol/geometry';
 
 export const MAP_RGB: [number, number, number] = [6, 9, 13];
 export type Vision = 'normal' | 'grayscale' | 'deuteranopia' | 'protanopia';
@@ -168,6 +171,12 @@ export function renderRaw(prims: PPrim[], box: number, opts: RenderOpts = {}): R
   ctx.lineJoin = 'round';
   for (const p of prims) {
     const path = new Path2D(p.d);
+    ctx.save();
+    if (p.scale) {
+      ctx.translate(100, 100);
+      ctx.scale(p.scale, p.scale);
+      ctx.translate(-100, -100);
+    }
     ctx.globalAlpha = p.opacity ?? 1;
     if (p.mode === 'fill') {
       ctx.fillStyle = resolveCss(p.color);
@@ -179,6 +188,7 @@ export function renderRaw(prims: PPrim[], box: number, opts: RenderOpts = {}): R
       ctx.setLineDash(p.dash ?? []);
       ctx.stroke(path);
     }
+    ctx.restore();
   }
   ctx.globalAlpha = 1;
   const data = ctx.getImageData(0, 0, px, px).data;
@@ -480,14 +490,20 @@ export const SEARCH_CONDITIONS: Record<SearchCondition, string> = {
   iv: '(i) with mixed trust overlays',
 };
 
+export type PrimBuilder = (s: SensorType, f: FrameKind, score: number, overlay: boolean) => PPrim[];
+
 function t7(v: AnyVariant, cond: SearchCondition, n: number, seed = 7): number {
   const size = T.t1.sizePx;
-  const box = renderBoxPx(v, size);
+  return t7Salience((s, f, score, overlay) => cellPrims(v, s, f, score, size, { overlay, blinkOn: false }), renderBoxPx(v, size), cond, n, seed);
+}
+
+/** T7 salience ratio R for any primitive builder (same seeds / jitter as the suite). */
+export function t7Salience(build: PrimBuilder, box: number, cond: SearchCondition, n: number, seed = 7): number {
   const rnd = mulberry32(seed + n * 31 + cond.charCodeAt(0));
   const bands = [0.95, 0.7, 0.45, 0.2];
   const px = 2 * box;
   const item = (s: SensorType, f: FrameKind, score: number, overlay: boolean) => {
-    const raw = renderRaw(cellPrims(v, s, f, score, size, { overlay, blinkOn: false }), box, {
+    const raw = renderRaw(build(s, f, score, overlay), box, {
       dx: Math.floor(rnd() * 4) / 4,
       dy: Math.floor(rnd() * 4) / 4,
       tilePhase: [Math.floor(rnd() * 48), Math.floor(rnd() * 48)],
@@ -540,6 +556,13 @@ export interface SuiteResult {
   t7: Record<SearchCondition, Record<number, number>>;
   t7pass: boolean;
   ms: number;
+}
+
+/** Decision 5: T7 condition (iii) FA among TA radar for a variant, or FINAL with custom radar geometry. */
+export function t7RadarCheck(v: AnyVariant, icon?: IconOpts): Record<number, number> {
+  const size = T.t1.sizePx;
+  const build: PrimBuilder = (s, f, score, overlay) => cellPrims(v, s, f, score, size, { overlay, blinkOn: false, icon });
+  return Object.fromEntries(T.t7.sizes.map((n) => [n, t7Salience(build, renderBoxPx(v, size), 'iii', n)]));
 }
 
 export function t4Pass(v: AnyVariant, r: ClassifierResult[]): boolean {

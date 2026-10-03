@@ -1,6 +1,7 @@
-// At-a-glance symbol metrics: silhouette similarity, SIDC assembly and a
-// seeded RNG for the odd-one-out search task. Used by
-// Explorations/At-a-Glance Symbols (story tooling — not imported by the app).
+// At-a-glance symbol metrics: silhouette similarity, colour science and a
+// seeded RNG for the odd-one-out search task. Used by the At-a-Glance bench
+// (Decisions/Evidence, Archive/At-a-Glance Variants) — story tooling, not
+// imported by the app. SIDC assembly lives in track-sidc.ts.
 //
 // Deliberately dependency-free (no '@/…' imports, no DOM) so it runs under
 // `node --test` with native type stripping. Rasterisation happens in the
@@ -219,63 +220,6 @@ export function meanMatrix(ms: number[][][]): number[][] {
   return Array.from({ length: n }, (_, i) =>
     Array.from({ length: n }, (_, j) => ms.reduce((a, m) => a + (m[i]?.[j] ?? 0), 0) / ms.length),
   );
-}
-
-// ---------------------------------------------------------------------------
-// MIL-STD-2525E SIDC (20-digit numeric; milsymbol: version 13 = edition E)
-// ---------------------------------------------------------------------------
-
-export interface SidcParts {
-  /** 10 = 2525D, 13 = 2525E (milsymbol numbersidc/metadata.js). */
-  version?: string | undefined;
-  /** Context: 0 reality, 1 exercise, 2 simulation. */
-  context?: string | undefined;
-  /** Standard identity 2: 1 unknown, 3 friend, 4 neutral, 6 hostile. */
-  identity: string;
-  /** Symbol set: 10 land unit. */
-  symbolSet?: string | undefined;
-  /** Status: 0 present, 1 planned/anticipated. */
-  status?: string | undefined;
-  hqTfDummy?: string | undefined;
-  /** Echelon / mobility, 2 digits (11 team, 14 platoon, 15 battery). */
-  echelon?: string | undefined;
-  /** 6-digit entity / type / subtype. */
-  entity: string;
-  modifier1?: string | undefined;
-  modifier2?: string | undefined;
-}
-
-export function buildSidc(p: SidcParts): string {
-  const s =
-    (p.version ?? '13') +
-    (p.context ?? '0') +
-    p.identity +
-    (p.symbolSet ?? '10') +
-    (p.status ?? '0') +
-    (p.hqTfDummy ?? '0') +
-    (p.echelon ?? '00') +
-    p.entity +
-    (p.modifier1 ?? '00') +
-    (p.modifier2 ?? '00');
-  if (!/^\d{20}$/.test(s)) throw new Error(`SIDC must be 20 digits, got "${s}" (${s.length})`);
-  return s;
-}
-
-/** "13 0 3 10 0 0 00 130300 00 00" — field-separated for reading in tables. */
-export function formatSidc(sidc: string): string {
-  return [sidc.slice(0, 2), sidc[2], sidc[3], sidc.slice(4, 6), sidc[6], sidc[7], sidc.slice(8, 10), sidc.slice(10, 16), sidc.slice(16, 18), sidc.slice(18, 20)].join(' ');
-}
-
-/**
- * MIL-STD-2525B 15-character letter SIDC, the code set FM 1-02 / MCRP 5-12A
- * (2004) aligns with: S · affiliation (F/H/N/U) · dimension (G) · status
- * (P present / A anticipated) · 6-char function · HQ/TF/feint · echelon letter
- * (A team … D platoon, E company/battery) · 2-char country · order of battle.
- */
-export function buildLetterSidc(p: { affiliation: 'F' | 'H' | 'N' | 'U'; fn: string; status?: 'P' | 'A'; echelon?: string }): string {
-  const s = `S${p.affiliation}G${p.status ?? 'P'}${p.fn}-${p.echelon ?? '-'}---`;
-  if (!/^S[FHNU]G[PA][A-Z-]{6}-[A-Z-]---$/.test(s)) throw new Error(`bad 2525B SIDC "${s}"`);
-  return s;
 }
 
 // ---------------------------------------------------------------------------
