@@ -248,7 +248,7 @@ export const KeyboardPlay: Story = {
     await waitFor(() => expect(r).toHaveAttribute('data-verdict', 'FAIL'));
     await userEvent.tab();
     await expect(r).toHaveFocus();
-    await expect(r.querySelector('[aria-live="polite"]')).not.toBeNull();
+    await waitFor(() => expect(r.querySelector('[aria-live="polite"]')).not.toBeNull());
     await userEvent.keyboard('1');
     await waitFor(() => expect(r).toHaveAttribute('data-verdict', 'PASS'));
     await expect(r).toHaveFocus();
