@@ -22,6 +22,8 @@ interface SpineProps {
   jammerLocation?: { lat: number; lon: number; method_id: string };
   directionalFrom?: { lat: number; lon: number };
   directionalTo?: { lat: number; lon: number };
+  /** Candidate NAI centre — both spines frame it in their camera fit. */
+  candidateNai?: { lat: number; lon: number };
 }
 
 function pickRenderer(): 'cesium' | 'maplibre' {
@@ -34,10 +36,8 @@ export function Spine(props: SpineProps) {
   if (renderer === 'cesium') {
     return <CesiumSpine {...props} />;
   }
-  const mapProps: Pick<SpineProps, 'directionalFrom' | 'directionalTo'> = {};
-  if (props.directionalFrom) mapProps.directionalFrom = props.directionalFrom;
-  if (props.directionalTo) mapProps.directionalTo = props.directionalTo;
-  return <MapSpine {...mapProps} />;
+  // MapSpine takes the same props now (jammer ring + camera fit included).
+  return <MapSpine {...props} />;
 }
 
 function SpineLoader({ label }: { label: string }) {
