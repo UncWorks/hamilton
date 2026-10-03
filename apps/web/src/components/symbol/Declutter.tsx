@@ -35,19 +35,21 @@ export interface StackGeometry {
  * Bracketed stack to the right of `at` (the true / centroid location).
  * Row pitch 0.8·s keeps the hostile diamond (0.72·s tall) clear of its
  * neighbour; in the detail state (≥ 28 px) it also clears the echelon mark.
+ * `labelPx` reserves a gutter between the bracket and the frames for the T
+ * labels (left of each frame), so they never sit on the bracket.
  */
 export function stackGeometry(
   at: readonly [number, number],
   count: number,
   sizePx: number,
-  opts: { maxShown?: number | undefined; offsetPx?: number | undefined; detail?: boolean | undefined } = {},
+  opts: { maxShown?: number | undefined; offsetPx?: number | undefined; detail?: boolean | undefined; labelPx?: number | undefined } = {},
 ): StackGeometry {
   const shown = Math.min(count, opts.maxShown ?? STACK_MAX_SHOWN);
   const rowH = 0.8 * sizePx + (isDetail(sizePx, opts.detail) ? 2 + 0.165 * sizePx : 0);
   const bx = at[0] + (opts.offsetPx ?? 2.5 * sizePx);
   const top = at[1] - (shown * rowH) / 2;
   const bottom = top + shown * rowH;
-  const slots = Array.from({ length: shown }, (_, i) => [bx + 6 + sizePx / 2, top + rowH * (i + 0.5)] as [number, number]);
+  const slots = Array.from({ length: shown }, (_, i) => [bx + 6 + (opts.labelPx ?? 0) + sizePx / 2, top + rowH * (i + 0.5)] as [number, number]);
   return {
     slots,
     bracket: `M${bx + 4},${top} h-4 V${count > shown ? bottom + 16 : bottom} h4`,
@@ -96,10 +98,17 @@ export function DeclutterStack({
   tracks,
   maxShown,
   offsetPx,
+  labelPx,
   ...opts
-}: SymbolOptions & { at: readonly [number, number]; tracks: readonly SymbolTrack[]; maxShown?: number | undefined; offsetPx?: number | undefined }): ReactNode {
+}: SymbolOptions & {
+  at: readonly [number, number];
+  tracks: readonly SymbolTrack[];
+  maxShown?: number | undefined;
+  offsetPx?: number | undefined;
+  labelPx?: number | undefined;
+}): ReactNode {
   const ordered = stackOrder(tracks);
-  const g = stackGeometry(at, ordered.length, opts.sizePx, { maxShown, offsetPx, detail: opts.detail });
+  const g = stackGeometry(at, ordered.length, opts.sizePx, { maxShown, offsetPx, detail: opts.detail, labelPx });
   return (
     <g data-declutter="stack" data-count={ordered.length}>
       <StackBracket g={g} at={at} />

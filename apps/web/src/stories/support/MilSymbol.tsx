@@ -11,7 +11,8 @@
 
 import type { CSSProperties, ReactNode } from 'react';
 import type { SensorType } from '@hamilton/contracts';
-import { haloPeriodMs, shouldHaloPulse, trustBand } from '@/lib/trust-gradient';
+import { trustBand } from '@/lib/trust-gradient';
+import { haloPeriodMs, shouldHaloPulse } from '@/stories/archive/halo';
 import { FRAME_AFFILIATION, type Echelon, type FrameKind } from '@/lib/track-sidc';
 import { AIRDEF_PATH, RECON_PATH, trustStrokeVar } from '@/components/symbol/geometry';
 import { HaloSvg, trackPolygonPoints } from './TrackGlyph';

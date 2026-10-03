@@ -79,6 +79,9 @@ export const useHamilton = create<HamiltonState>((set, get) => ({
         prev_score: prev.score,
         score: payload.score,
         components: payload.components,
+        // Engine echoes telemetry positions; seeds are only the fallback.
+        lat: payload.lat ?? prev.lat,
+        lon: payload.lon ?? prev.lon,
         last_update: payload.timestamp,
       };
       const tracks = { ...state.tracks, [payload.source_id]: next };

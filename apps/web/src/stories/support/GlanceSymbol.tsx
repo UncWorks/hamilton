@@ -17,7 +17,8 @@
 
 import type { CSSProperties, ReactNode } from 'react';
 import type { SensorType } from '@hamilton/contracts';
-import { haloOuterRadiusPx, shouldHaloPulse, trustBand } from '@/lib/trust-gradient';
+import { trustBand } from '@/lib/trust-gradient';
+import { haloOuterRadiusPx, shouldHaloPulse } from '@/stories/archive/halo';
 import { FRAME_AFFILIATION, SENSOR_FUNCTION, toCotType, toSidc2525C, toSidc2525E, type Echelon, type FrameKind } from '@/lib/track-sidc';
 import { rateLinkTrust } from '@/lib/link-trust-rating';
 import {

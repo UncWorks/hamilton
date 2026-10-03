@@ -4,9 +4,12 @@
 // Switched via NEXT_PUBLIC_RENDERER=cesium|maplibre.
 //
 // Both spines subscribe to the same Zustand store and the same MQTT topics.
-// The contract boundary is the store, not the renderer.
+// The contract boundary is the store, not the renderer. Both draw the
+// production track symbol (src/components/symbol): Cesium as billboards,
+// deck.gl as a viewport-projected SVG overlay (see each file's header).
 
 import dynamic from 'next/dynamic';
+import type { CandidateSite, Evaluations } from './spine-symbols';
 
 const CesiumSpine = dynamic(
   () => import('./CesiumSpine').then((m) => m.CesiumSpine),
@@ -22,6 +25,14 @@ interface SpineProps {
   jammerLocation?: { lat: number; lon: number; method_id: string };
   directionalFrom?: { lat: number; lon: number };
   directionalTo?: { lat: number; lon: number };
+  /** Candidate NAI centre — both spines frame it in their camera fit. */
+  candidateNai?: { lat: number; lon: number };
+  /** Geolocated FR-04a candidate sites, drawn as anticipated (dashed) hostile EW symbols. */
+  candidateSites?: readonly CandidateSite[];
+  /** S2 evaluation inputs (corroboration / J override) per source. */
+  evaluations?: Evaluations;
+  /** Symbol box, px (default 32). */
+  symbolSizePx?: number;
 }
 
 function pickRenderer(): 'cesium' | 'maplibre' {
@@ -34,10 +45,7 @@ export function Spine(props: SpineProps) {
   if (renderer === 'cesium') {
     return <CesiumSpine {...props} />;
   }
-  const mapProps: Pick<SpineProps, 'directionalFrom' | 'directionalTo'> = {};
-  if (props.directionalFrom) mapProps.directionalFrom = props.directionalFrom;
-  if (props.directionalTo) mapProps.directionalTo = props.directionalTo;
-  return <MapSpine {...mapProps} />;
+  return <MapSpine {...props} />;
 }
 
 function SpineLoader({ label }: { label: string }) {

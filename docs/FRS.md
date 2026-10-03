@@ -57,7 +57,7 @@ The system is a **comms-integrity evaluation layer** that consumes per-source te
 | **Statement** | The system shall flag a per-source temporal anomaly when inter-arrival time exceeds 3σ above the source's baseline cadence. |
 | **Input** | Per-source message timestamp stream from MQTT ingest |
 | **Output** | Anomaly event published to trust engine; contributes to source's trust score |
-| **Acceptance** | Demo: Unit B inter-arrival jumps from ~1.0s baseline to 6.1s → temporal anomaly fires within 1 frame; trust score begins to decay |
+| **Acceptance** | Demo: Unit B inter-arrival stretches from ~1.0s baseline to 1.17s (3.4σ) → temporal anomaly fires within 1 frame; trust score begins to decay (≈0.70, WATCH band, above the ROE floor). The gap widens to 6.1s at `B-1:15` |
 | **Traces to** | `UR-02`, `UR-03`, `B-0:45` |
 | **Demo-scope** | Yes — Beat 0:45 |
 
@@ -69,7 +69,7 @@ The system is a **comms-integrity evaluation layer** that consumes per-source te
 | **Statement** | The system shall flag a per-source network-stability degradation when CRC error rate exceeds threshold (>5% rolling window) or duplicate-frame rate climbs above baseline. |
 | **Input** | Per-source CRC counters + duplicate-frame counters from comms simulator |
 | **Output** | Stability event into trust engine; further trust-score decay |
-| **Acceptance** | Demo: Unit B CRC rises 0.2% → 14% in <10s; trust trace updates with *"B-link: 14% corrupted frames, 6.2s gap"* |
+| **Acceptance** | Demo: Unit B CRC rises 0.2% → 6% (past the 5% threshold); trust trace updates with *"B-link: 6% corrupted frames, cadence 1.17s"*; trust ≈0.65, still above the ROE floor. CRC peaks at 14% at `B-1:15` |
 | **Traces to** | `UR-03`, `B-0:55` |
 | **Demo-scope** | Yes — Beat 0:55 |
 
@@ -79,8 +79,8 @@ The system is a **comms-integrity evaluation layer** that consumes per-source te
 |---|---|
 | **ID** | `FR-03` |
 | **Statement** | The system shall localize a degradation event by checking whether neighbors within a configurable radius (default 500m) experience correlated degradation. If neighbors are healthy, the event is classified as **directional/localized**, not blanket atmospheric/EMI. |
-| **Input** | Trust scores of all sources within radius of degraded source |
-| **Output** | Spatial classification (`localized` / `blanket`) attached to the degradation event |
+| **Input** | Reported position (`lat`/`lon` on every telemetry payload) and **engine-measured** degradation of every source within radius. A source counts as degrading when its own `FR-01` temporal anomaly (> 3σ) or `FR-02` stability flag fires. A self-reported flag from the source is never used. Radius: `TRUST_ENGINE_SPATIAL_RADIUS_M`, default 500. |
+| **Output** | Spatial classification (`nominal` / `localized` / `blanket`) attached to the degradation event. Into `FR-05` as **spatial trust**: `1.0` when the source itself is not degrading (`nominal`), `0.6` when it degrades and every neighbour in radius is healthy (`localized`), `0.3` when it degrades and ≥ 1 neighbour in radius degrades too (`blanket`). A healthy source is never penalised for a neighbour's degradation. |
 | **Acceptance** | Demo: Unit B degrades; A and C (240m from B) remain healthy → side panel renders *"Degradation directional, vicinity B's flank corridor. Neighbors A, C unaffected."* |
 | **Traces to** | `UR-04`, `B-1:05` |
 | **Demo-scope** | Yes — Beat 1:05 |
@@ -92,8 +92,8 @@ The system is a **comms-integrity evaluation layer** that consumes per-source te
 | **ID** | `FR-04` |
 | **Statement** | The system shall match the active degradation pattern against a **deterministic threshold-based fingerprint library** (noise-floor band + frequency-hop spread + GPS L1/L2 overlap booleans), emitting a match score and named profile when threshold criteria are met. |
 | **Input** | Composite of `FR-01`, `FR-02`, `FR-03` outputs + RF telemetry from comms simulator |
-| **Output** | Named jammer profile (e.g., `ground_based_gps_uhf_barrage`) + match score |
-| **Acceptance** | Demo: Unit B's pattern matches `ground_based_gps_uhf_barrage` profile at score 0.81; banner reads *"Suspected ground-based GPS+UHF barrage jammer, vicinity B's corridor."* |
+| **Output** | Named jammer profile (e.g., `ground_based_gps_uhf_barrage`) + match score (**match strength**: higher = more like that jammer; only matches ≥ 0.5 count). Into `FR-05` it enters as **fingerprint trust** = `1 − match strength`, or `1.0` when nothing matches. |
+| **Acceptance** | Demo: Unit B's pattern matches `ground_based_gps_uhf_barrage` profile at match strength 1.00 (6/6 dimensions), so fingerprint trust = 0.00; banner reads *"Suspected ground-based GPS+UHF barrage jammer, vicinity B's corridor."* |
 | **Traces to** | `UR-04`, `UR-05`, `B-1:15` |
 | **Demo-scope** | Yes — Beat 1:15. **NOT** ML classification. R14 mitigation: if a judge probes, answer is *"deterministic threshold detection — Army's data-volume problem on time-series ML informed this choice"* |
 | **Path-forward** | ML-based fingerprint classification — explicitly out-of-scope for the demo (§6, §7) |
@@ -107,7 +107,7 @@ The system is a **comms-integrity evaluation layer** that consumes per-source te
 | **Wedge framing** | FR-04 answers *"what is jamming us?"* — a single named profile. FR-04a answers *"and which rounds in our inventory does that jammer deny?"* — the operator-actionable next step. The two are siblings sharing one input stream. |
 | **Input** | Same degradation-pattern stream consumed by `FR-04` (composite of `FR-01..03` + RF telemetry) + the static fingerprint library described below |
 | **Fingerprint-library schema (per entry)** | `method_id` (e.g., `ground_based_gps_uhf_barrage`); `named_systems[]` (e.g., `R-330Zh Zhitel`, `Pole-21`); `frequency_band_mhz` (range or set); `hop_spread_hz` (threshold); `gps_l1_overlap` (boolean threshold); `gps_l2_overlap` (boolean threshold); `time_domain_pattern` (enum: `continuous` \| `pulsed` \| `barrage` \| `swept`); `effective_range_km` (threshold); `munitions_affected[]` (e.g., `Excalibur`, `JDAM-ER`, `Switchblade 300`, `GMLRS-U`, `Lancet`, `Shahed`, `ATAK position-share`, `FPV C2 link`); `source_citation` (e.g., `Bronk RUSI 2024`, `JAPCC 2023`, `WaPo 2024`) |
-| **Match function (R14-safe)** | `score = (count of fingerprint-dimension threshold booleans matched) / (total fingerprint dimensions for that entry)`. Each dimension is a discrete threshold check; scores sorted descending; top 3 returned. **No training, no softmax, no learned weights.** Pure function — same input → same output. |
+| **Match function (R14-safe)** | `score = (count of fingerprint-dimension threshold booleans matched) / (total fingerprint dimensions for that entry)`. Each dimension is a discrete threshold check; with the 6-dimension schema, scores are `k/6` (0, 0.17, 0.33, 0.50, 0.67, 0.83, 1.00). Scores sorted descending; top 3 returned. Avdiivka demo jammer: `ground_based_gps_uhf_barrage` 1.00, `pulsed_uhf_wide` 0.50, `cellular_uhf_barrage` 0.17. **No training, no softmax, no learned weights.** Pure function — same input → same output. |
 | **Output** | `{ "candidates": [ { "method_id", "named_systems[]", "score", "munitions_affected[]", "source_citation" }, …×3 ] }` published on MQTT topic `integrity/fingerprint/candidates` |
 | **Inventory scope** | US/NATO **and** adversary munitions (Excalibur, JDAM-ER, Switchblade, GMLRS, Lancet, Shahed, FPV, ATAK CoT, etc.) — proves the layer is sensor-/munition-class-agnostic; R15 discipline preserved because the *seat* (FDC) does not change. |
 | **Acceptance** | Demo: at Beat 1:15, side panel renders three ranked candidates with normalized scores and per-candidate munitions-affected lists; per-candidate `source_citation` is visible on hover. Reinforces the Beat 1:20 modal — Adam picks (b) *"shift to non-GPS munition"* with grounded knowledge of which rounds are denied. |
@@ -128,7 +128,7 @@ The system is a **comms-integrity evaluation layer** that consumes per-source te
 | **ID** | `FR-05` |
 | **Statement** | The system shall publish a continuous trust score in `[0.0, 1.0]` per source, updated at least once per second per active source, on MQTT topic `integrity/trust/{source_id}`. |
 | **Input** | Aggregated outputs of `FR-01..04` |
-| **Output** | JSON payload `{source_id, score, components: [temporal, stability, spatial, fingerprint], timestamp}` to MQTT |
+| **Output** | JSON payload `{source_id, score, components: [temporal, stability, spatial, fingerprint], timestamp}` to MQTT. Every component is a **trust** value in `[0.0, 1.0]` (1 = healthy, 0 = bad); `fingerprint` = `1 − match strength` of the best `FR-04` match, `1.0` when nothing matches (inverse of the `FR-04a` candidate `score`). |
 | **Acceptance** | Demo: numeric score visible on hover (≤10-min UI label sharpening per v5.1.1); score behavior is monotonic-down during degradation, monotonic-up during recovery |
 | **Traces to** | `UR-01`, `UR-06`, all demo beats |
 | **Demo-scope** | Yes — engine already publishing in 80%-built state |
@@ -145,7 +145,7 @@ The system is a **comms-integrity evaluation layer** that consumes per-source te
 | **Statement** | The system shall render each track icon with opacity proportional to its source's current trust score, with a pulsing halo at `score < 0.6` and full fade at `score < 0.3`. |
 | **Input** | MQTT trust-score stream (`FR-05`) |
 | **Output** | MapLibre layer updates per frame; same payload feeds the conditional AIP secondary surface |
-| **Acceptance** | Demo: Unit B icon visibly fades during 0:45 → 1:50; snaps back to full opacity at 2:15 recovery |
+| **Acceptance** | Demo: Unit B icon visibly fades during 0:45 → 1:50 (≈0.70 at 0:45, ≈0.65 at 0:55, 0.13 at 1:15, 0.22 at 1:50); snaps back to full opacity (1.00) at 2:15 recovery. A and C stay at 1.00 throughout |
 | **Traces to** | `UR-01`, `UR-02`, `B-0:45` through `B-2:15` |
 | **Demo-scope** | Yes — load-bearing visual |
 
@@ -157,7 +157,7 @@ The system is a **comms-integrity evaluation layer** that consumes per-source te
 | **Statement** | The system shall attach a 3-bullet trust trace to every AI kill-chain recommendation, and shall **interrupt** the recommendation flow with a modal when any source's trust score falls below the configured ROE floor for the action class (e.g., GPS-dependent fires). |
 | **Input** | Trust-score stream + AI recommendation event |
 | **Output** | (a) Trust-trace UI element beside the recommendation; (b) modal with three named options: `delay <N>s`, `shift to non-GPS munition`, `confirm via alt channel` |
-| **Acceptance** | Demo: Beat 1:20 — AI declines to recommend GPS-guided strike; modal renders three options; operator picks (b); decision logged with full trust state for after-action |
+| **Acceptance** | Demo: B first crosses below the 0.60 ROE floor at 1:15 (0.13) when the jammer lands. Beat 1:20 — AI declines to recommend GPS-guided strike; modal renders three options; operator picks (b); decision logged with full trust state for after-action |
 | **Traces to** | `UR-05`, `UR-06`, `UR-07`, `B-1:20`, `B-1:50` |
 | **Demo-scope** | **Yes — load-bearing beat. The 30 seconds that win the demo (1:15 → 1:50).** |
 

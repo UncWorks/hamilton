@@ -343,7 +343,7 @@ Trust score updates at ≥1Hz. The icon `opacity` interpolates **between ticks**
 │                                                  │                 │ │
 │                                                  │  Selected unit: │ │
 │         M A P   ( MapLibre + deck.gl )           │   Unit B        │ │
-│         12-col grid, cols 1–8                    │  Score: 0.42    │ │
+│         12-col grid, cols 1–8                    │  Score: 0.13    │ │
 │         spans full height under brand bar         │  ▼ trust trace │ │
 │                                                  │  ▼ candidates  │ │
 │                                                  │   (FR-04a top-3)│ │
@@ -353,8 +353,8 @@ Trust score updates at ≥1Hz. The icon `opacity` interpolates **between ticks**
 │                                                                      │
 ├──────────────────────────────────────────────────────────────────────┤
 │  EVENT TERMINAL  (cols 1–8, sticky bottom, 160px tall)               │
-│  [18:42:14] unit_b · temporal_anomaly · cadence 1.0s → 6.1s          │
-│  [18:42:22] unit_b · stability · CRC 0.2% → 14%                      │
+│  [18:42:14] unit_b · temporal_anomaly · cadence 1.0s → 1.17s         │
+│  [18:42:24] unit_b · stability · CRC 0.2% → 6%                       │
 │  ...                                                                 │
 └──────────────────────────────────────────────────────────────────────┘
 ```
@@ -462,23 +462,23 @@ Slide 4 → live demo. The transition is:
 
 - **Enters viewport:** Unit B icon begins fading. Trust trace bullet appears beside it: *"B-link cadence degraded 18s ago — investigating."*
 - **Exits viewport:** nothing.
-- **Active tokens:** `--trust-watching` gradient on B's icon; `--text-secondary` on the trust trace.
+- **Active tokens:** `--trust-watching` gradient on B's icon (engine score ≈0.70: cadence 1.0s → 1.17s); `--text-secondary` on the trust trace.
 - **Motion:** `trust-decay` primitive on B's icon. `fingerprint-candidate-reveal` is **not** firing yet.
 - **Verbatim text:** *"B-link cadence degraded 18s ago — investigating."* (one bullet, no others.)
 - **Composition:** the operator's eye should land on B's icon dimming — it is the only thing changing on the map. The side panel is empty.
 
 ### 10.2 0:55 — the network signal
 
-- **Enters viewport:** second bullet in the trust trace: *"B-link: 14% corrupted frames, 6.2s gap."* The first bullet stays visible.
-- **Active tokens:** B's icon gradient enters `--trust-degraded` band (~0.65 → 0.55). The pulsing halo activates at score 0.6.
+- **Enters viewport:** second bullet in the trust trace: *"B-link: 6% corrupted frames, cadence 1.17s."* The first bullet stays visible.
+- **Active tokens:** B's icon stays in the `--trust-watching` band (engine score ≈0.65: CRC 0.2% → 6%), above the 0.60 floor. The pulsing halo does **not** activate yet; it activates when B crosses 0.6 at 1:15.
 - **Motion:** `trust-decay` continues; halo pulse begins at 1200ms period. Score numeral on hover transitions via `score-numeral-tick`.
-- **Verbatim text:** *"B-link: 14% corrupted frames, 6.2s gap."*
+- **Verbatim text:** *"B-link: 6% corrupted frames, cadence 1.17s."*
 - **Composition:** still B-icon-dominant. Side panel updates with the cumulative trust trace (now 2 bullets).
 
 ### 10.3 1:05 — the spatial discrimination
 
 - **Enters viewport:** side panel reveals the spatial-classification line: *"Degradation directional, vicinity B's flank corridor. Neighbors A, C unaffected."* A subtle directional vector renders on the map from B's heading toward the suspected jammer location (a thin `--gating-primary` line, dashed, 40% opacity).
-- **Active tokens:** A and C remain `--trust-nominal`. The vector line on the map is `--gating-primary` at 40%.
+- **Active tokens:** A and C remain `--trust-nominal` (engine 1.00). B holds at ≈0.65 (WATCH). The vector line on the map is `--gating-primary` at 40%.
 - **Motion:** the directional vector renders via `clip-path: inset()` (the line draws itself outward from B's icon over 400ms).
 - **Verbatim text:** *"Degradation directional, vicinity B's flank corridor. Neighbors A, C unaffected."*
 - **Composition:** the operator's eye is being walked from B's icon → the directional vector → the side panel. The first time the side panel pulls focus.
@@ -486,12 +486,13 @@ Slide 4 → live demo. The transition is:
 ### 10.4 1:15 — the candidate reveal (FR-04a)
 
 - **Enters viewport:** side panel reveals top-3 candidate jamming methods, **staggered**:
-  - Candidate 1: `ground_based_gps_uhf_barrage (0.81)` → affected: `Excalibur, JDAM-ER, Switchblade 300` (60ms in)
-  - Candidate 2: `cellular_uhf_barrage (0.42)` → affected: `ATAK position-share, FPV C2 link` (120ms in)
-  - Candidate 3: `swept_uhf_low_power (0.18)` → affected: *(none in inventory)* (180ms in)
-- **Active tokens:** the trust score readout for each candidate uses the gradient — 0.81 reads in `--trust-nominal`-adjacent (this is *fingerprint match strength*, repurposing the gradient to mean "deterministic overlap"), 0.42 in `--trust-degraded`, 0.18 in `--trust-failed`. Per-candidate citations rendered in `--text-citation`.
+  - Candidate 1: `ground_based_gps_uhf_barrage (1.00)` → affected: `Excalibur, JDAM-ER, Switchblade 300, GMLRS-U` (60ms in)
+  - Candidate 2: `pulsed_uhf_wide (0.50)` → affected: `FPV C2 link, Switchblade 300` (120ms in)
+  - Candidate 3: `cellular_uhf_barrage (0.17)` → affected: `ATAK position-share, FPV C2 link` (180ms in)
+- **Active tokens:** the score readout for each candidate uses the gradient — 1.00 reads in `--trust-nominal` (this is *fingerprint match strength*, repurposing the gradient to mean "deterministic overlap"; it is NOT the trust component, which is `1 − match strength`), 0.50 in `--trust-degraded`, 0.17 in `--trust-failed`. Per-candidate citations rendered in `--text-citation`.
 - **Motion:** `fingerprint-candidate-reveal` primitive — left-to-right `clip-path: inset()` reveal, staggered 60ms.
 - **Verbatim text:** the candidate strings above, exactly as they appear in `[[Specs/FRS|FRS]]` §2.4a acceptance.
+- **Engine state:** the jammer reaches full power with the reveal. B's link shows a 6.1s gap and 14% CRC, fingerprint trust falls to 0.00, and B's score drops 0.65 → 0.13. This is its **first crossing below the 0.60 ROE floor**: the halo starts pulsing and the gate arms.
 - **Composition:** **the side panel takes the floor.** The map B-icon continues fading silently in the periphery. The operator's eye is being trained for the modal arrival 5 seconds later.
 
 ### 10.5 **1:20 — THE LOAD-BEARING BEAT**
@@ -525,7 +526,7 @@ Slide 4 → live demo. The transition is:
 
 ### 10.7 2:15 — recovery + outcome
 
-- **Enters viewport:** B's icon snaps back to `opacity: 1.0` via the `recovery-pulse` primitive. The trust readout numeral animates from `0.18 → 1.00` via rapid tabular ticks (~600ms total). The pulsing halo decelerates and dissolves.
+- **Enters viewport:** B's icon snaps back to `opacity: 1.0` via the `recovery-pulse` primitive. The trust readout numeral animates from `0.22 → 1.00` via rapid tabular ticks (~600ms total). The pulsing halo decelerates and dissolves.
 - **Exits viewport:** the directional vector fades.
 - **Active tokens:** `--trust-nominal` everywhere. The gating tokens stand down.
 - **Motion:** `recovery-pulse` on B; `score-numeral-tick` running fast on the readout.

@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { AffiliationSchema } from '@hamilton/contracts';
-import { affiliationRgb } from '@/components/cop/track-symbol';
+import { affiliationRgb } from '@/stories/archive/track-symbol';
 import { trustRgb } from '@/lib/trust-gradient';
 import { BAND_SAMPLES } from '@/stories/fixtures/avdiivka';
 import { Page, Section, Swatch, grid, mono, useTokens } from '@/stories/support/foundation-ui';
@@ -31,7 +31,7 @@ const GROUPS: Array<{ prefix: string; title: string; note: string }> = [
   { prefix: '--text-', title: '§3.2 Text emphasis', note: 'Color tokens only (the --text-* size scale is on Typography).' },
   { prefix: '--trust-', title: '§3.3 Trust gradient', note: 'Load-bearing. Phosphor appears only in --trust-nominal and --gating-secondary.' },
   { prefix: '--gating-', title: '§3.4 Kill-chain gating accent', note: 'Amber primary, phosphor secondary. Not red.' },
-  { prefix: '--affiliation-', title: '§3.5 Track affiliation', note: 'Defined in CSS but unused by components — renderers use RGB mirrors (see below).' },
+  { prefix: '--affiliation-', title: '§3.5 Track affiliation', note: 'Defined in CSS but unused by components. The live map symbols use the doctrinal fills (components/symbol DOCTRINAL_FILL), not these tokens; the old RGB mirrors below are archived.' },
   { prefix: '--status-', title: '§3.6 Status states', note: 'Defined but unused anywhere in components.' },
   { prefix: '--citation-', title: '§3.7 Citation / provenance', note: '--citation-bg-hover is unused.' },
 ];
@@ -107,7 +107,7 @@ function RendererMirrorTable() {
     <Page>
       <Section
         title="Renderer RGB mirrors vs. OKLCH source tokens"
-        note="deck.gl and Cesium cannot consume CSS colors, so trust-gradient.ts (trustRgb) and track-symbol.ts (affiliationRgb) hand-copy RGB triples. Left chip = CSS token, right chip = what the map actually draws. Δ is sRGB Euclidean distance; >20 is visible, >40 is a different color."
+        note="HISTORIC: the circle renderers hand-copied RGB triples (trust-gradient.ts trustRgb, the archived track-symbol.ts affiliationRgb). The live spines now draw the decided symbol from components/symbol, whose image colours are resolved from tokens.css literals (SYMBOL_COLOR_LITERALS, trustOklch), so the drift below no longer reaches the map symbols. Left chip = CSS token, right chip = the old mirror. Δ is sRGB Euclidean distance; >20 is visible, >40 is a different color."
       >
         <table style={{ borderCollapse: 'collapse' }}>
           <tbody>

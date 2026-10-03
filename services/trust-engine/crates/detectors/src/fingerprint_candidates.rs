@@ -6,7 +6,9 @@ use serde::{Deserialize, Serialize};
 pub struct RankedCandidate {
     pub method_id: String,
     pub named_systems: Vec<String>,
-    /// Normalized overlap ratio in [0.0, 1.0].
+    /// Match strength: normalized overlap ratio in [0.0, 1.0]. Higher = MORE
+    /// like this jammer. Published as-is on the FR-04a candidates topic; it is
+    /// not a trust value (see `fingerprint::fingerprint_trust`).
     pub score: f64,
     pub munitions_affected: Vec<String>,
     pub source_citation: String,
@@ -158,6 +160,24 @@ mod tests {
         // Remaining two are padding
         assert!((candidates[1].score - 0.0).abs() < f64::EPSILON);
         assert!((candidates[2].score - 0.0).abs() < f64::EPSILON);
+    }
+
+    // Demo top-3 for the Avdiivka jammer RF are k/6 values (documented in
+    // FRS FR-04a / System Design §5.2): 6/6, 3/6, 1/6.
+    #[test]
+    fn demo_top_three_are_k_over_six() {
+        let lib = library();
+        let c = rank_candidates(&unit_b_observed(), &lib);
+        let got: Vec<(&str, f64)> = c.iter().map(|c| (c.method_id.as_str(), c.score)).collect();
+        let want = [
+            ("ground_based_gps_uhf_barrage", 6.0 / 6.0),
+            ("pulsed_uhf_wide", 3.0 / 6.0),
+            ("cellular_uhf_barrage", 1.0 / 6.0),
+        ];
+        for ((gid, gs), (wid, ws)) in got.iter().zip(want.iter()) {
+            assert_eq!(gid, wid);
+            assert!((gs - ws).abs() < 1e-10, "{gid}: {gs} != {ws}");
+        }
     }
 
     // All scores in [0.0, 1.0]

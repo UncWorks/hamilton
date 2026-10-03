@@ -63,12 +63,12 @@ make demo-fallback
 | Beat | What you see |
 |---|---|
 | `B-0:00` | Three healthy units (A, B, C) at full opacity |
-| `B-0:45` | Unit B's icon begins to fade (temporal anomaly fires) |
-| `B-0:55` | Trust trace: "B-link: 14% corrupted frames" (stability fault) |
+| `B-0:45` | Unit B's icon begins to fade: cadence 1.0s → 1.17s, temporal anomaly fires, trust ≈0.70 (WATCH, above the 0.60 floor) |
+| `B-0:55` | Trust trace: "B-link: 6% corrupted frames, cadence 1.17s" (stability fault; trust ≈0.65, still WATCH) |
 | `B-1:05` | Side panel: "Degradation directional, vicinity B's flank corridor. Neighbors A, C unaffected." |
-| `B-1:15` | Top-3 candidate cards reveal — `ground_based_gps_uhf_barrage (0.81)` → Excalibur, JDAM-ER, Switchblade 300 |
+| `B-1:15` | Jammer at full power (6.1s gap, 14% CRC). Top-3 candidate cards reveal — `ground_based_gps_uhf_barrage (1.00)` → Excalibur, JDAM-ER, Switchblade 300, GMLRS-U. Trust 0.13: first crossing below the ROE floor |
 | `B-1:20` | **Kill-chain modal**. Subtitle: ***"Kill-chain gated below ROE floor."*** Three options: delay 60s / shift to non-GPS munition / confirm via alt channel |
-| `B-1:50 → B-2:15` | Operator selects (b); icon recovers; brand-bar hairline rule stays on |
+| `B-1:50 → B-2:15` | Operator selects (b); B still gated at 0.22 while recovering, back to 1.00 at 2:15; brand-bar hairline rule stays on |
 
 ## Verify
 

@@ -1,17 +1,25 @@
 import type { Meta, StoryObj } from '@storybook/react';
+import { expect, userEvent, waitFor, within } from '@storybook/test';
 import { MapSpine } from './MapSpine';
 import {
   AFFILIATION_TRACKS,
+  CANDIDATE_SITES,
   JAMMER_LOCATION,
   PHASE_TRACKS,
+  UNIT_EVALUATION,
+  track,
   tracksRecord,
 } from '@/stories/fixtures/avdiivka';
+import { denseTracks } from '@/stories/fixtures/dense-tracks';
+import { spinePlay } from '@/stories/support/spine-play';
 
 const unitB = PHASE_TRACKS.degraded.unit_b!;
+const JAMMER = { ...JAMMER_LOCATION, method_id: 'ground_based_gps_uhf_barrage' };
 
 const meta = {
   title: 'COP/MapSpine',
   component: MapSpine,
+  args: { evaluations: UNIT_EVALUATION },
   decorators: [
     (Story) => (
       <div style={{ height: '100vh', width: '100%', position: 'relative' }}>
@@ -26,9 +34,20 @@ const meta = {
       description: {
         component:
           '2D fallback renderer (deck.gl `MapView`, `NEXT_PUBLIC_RENDERER=maplibre`). No basemap ships yet ' +
-          '(PMTiles pending), so it renders offline against `--surface-base`. Requires WebGL. Tracks are ' +
-          '`ScatterplotLayer` circles (affiliation fill, alpha = score, trust-band stroke); halos pulse via a ' +
-          'single RAF loop below 0.60. Note: `jammerLocation` is not supported by this renderer.',
+          '(PMTiles pending), so it renders offline against `--surface-base`. Requires WebGL.\n\n' +
+          '**Symbols** — the decided track symbol (**Decisions/Track Symbology**): the same React component ' +
+          '(`TrackSymbolG`) drawn in an SVG overlay positioned by the deck.gl viewport in the same render as the ' +
+          'layers (the view state is controlled), so it never lags the map. Chosen over an `IconLayer` because ' +
+          'it is pixel-identical to the decided symbol (web-font T / J, dashed anticipated frame), needs no async ' +
+          'icon-atlas packing, and is in the DOM for hover / keyboard / screen readers. No circular halo, no pulse. ' +
+          'The jammer is the hostile EW jamming symbol J1 inside its 120 m area ring; `candidateSites` draw as ' +
+          'anticipated (dashed) EW symbols. Hover or Tab to a symbol for the rating breakdown; Escape closes.\n\n' +
+          '**Camera fit** (`lib/camera-fit.ts`): Web-Mercator bounds fit of tracks + jammer / candidate NAI, ' +
+          '64 px padding, ≥ 1.5 km framed, max zoom 17. Re-fits only on a new point or one leaving the frame, ' +
+          'never after you pan or zoom; **Fit to tracks** (button or `F`) re-frames.\n\n' +
+          '**Declutter** (`lib/declutter.ts` grouping, production `DeclutterStack`): three or more symbols within ' +
+          '1.5 symbol sizes collapse into a bracketed stack with one locator line, hostile first, three frames + ' +
+          '"+n"; hover or click to list every member.',
       },
     },
   },
@@ -37,20 +56,46 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const Nominal: Story = { parameters: { hamilton: { tracks: PHASE_TRACKS.nominal } } };
+export const Nominal: Story = {
+  parameters: { hamilton: { tracks: PHASE_TRACKS.nominal } },
+  play: async (ctx) => {
+    await spinePlay.symbolsAndTooltip('unit_a')(ctx);
+    // The overlay draws the production symbol (2525E SIDC on the group), not a circle.
+    const g = ctx.canvasElement.querySelector('[data-cop-symbol="unit_b"] [data-sidc]');
+    await expect(g?.getAttribute('data-sidc')).toBe('13031000151303000000');
+  },
+};
 
 export const Watching: Story = { parameters: { hamilton: { tracks: PHASE_TRACKS.watching } } };
 
-/** 1:15 — B 0.13, first below the ROE floor: pulsing halo + directional vector (drawn when B < 0.60). */
+/** 1:15 — B 0.13 (E5, gauge near empty), first below the ROE floor: bearing line toward the jammer. */
 export const DirectionalVector: Story = {
   args: { directionalFrom: { lat: unitB.lat, lon: unitB.lon }, directionalTo: JAMMER_LOCATION },
   parameters: { hamilton: { tracks: PHASE_TRACKS.degraded } },
 };
 
-/** 1:50 — B 0.22, still gated — fastest halo period. */
+/** 1:50 — B 0.22, still gated; jammer fix J1 (hostile EW) with the top FR-04a method as H. */
 export const Failed: Story = {
-  args: { directionalFrom: { lat: unitB.lat, lon: unitB.lon }, directionalTo: JAMMER_LOCATION },
+  args: { directionalFrom: { lat: unitB.lat, lon: unitB.lon }, directionalTo: JAMMER_LOCATION, jammerLocation: JAMMER },
   parameters: { hamilton: { tracks: PHASE_TRACKS.failed } },
+};
+
+/** 1:15 — FR-04a candidate sites (MOCK geolocations) as anticipated, dashed hostile EW symbols C1–C3. */
+export const CandidateSites: Story = {
+  args: {
+    directionalFrom: { lat: unitB.lat, lon: unitB.lon },
+    directionalTo: JAMMER_LOCATION,
+    candidateSites: CANDIDATE_SITES,
+    candidateNai: JAMMER_LOCATION,
+  },
+  parameters: { hamilton: { tracks: PHASE_TRACKS.degraded } },
+  play: async ({ canvasElement }) => {
+    const c = within(canvasElement);
+    await waitFor(() => c.getByTestId('cop-symbol-__candidate_0'), { timeout: 15_000 });
+    // Status 1 (anticipated): 2525E status digit 1 — the dashed frame.
+    const sidc = canvasElement.querySelector('[data-cop-symbol="__candidate_0"] [data-sidc]')?.getAttribute('data-sidc');
+    await expect(sidc).toBe('13061010001505040000');
+  },
 };
 
 export const MixedAffiliations: Story = {
@@ -58,3 +103,23 @@ export const MixedAffiliations: Story = {
 };
 
 export const NoTracks: Story = {};
+
+/** Fifteen tracks + jammer: three knots stack (hostile first, J1 in the hostile one); the NE pair stays two singles. */
+export const Dense: Story = {
+  args: { jammerLocation: JAMMER, directionalFrom: { lat: unitB.lat, lon: unitB.lon }, directionalTo: JAMMER_LOCATION },
+  parameters: { hamilton: { tracks: tracksRecord(...denseTracks(track)) } },
+  play: spinePlay.dense,
+};
+
+/** Opened at zoom 10 (~51 m/px): A/B/C collapse into one stack. The play function expands it. */
+export const ZoomedOut: Story = {
+  args: { initialZoom: 10 },
+  parameters: { hamilton: { tracks: PHASE_TRACKS.watching } },
+  play: async ({ canvasElement }) => {
+    const c = within(canvasElement);
+    const stack = await waitFor(() => c.getByTestId('declutter-stack'), { timeout: 15_000 });
+    await userEvent.click(stack);
+    await waitFor(() => expect(stack).toHaveAttribute('aria-expanded', 'true'));
+    await expect(c.getAllByTestId('declutter-member')).toHaveLength(3);
+  },
+};
