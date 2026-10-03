@@ -3,20 +3,25 @@ import { expect, userEvent, waitFor, within } from '@storybook/test';
 import { CesiumSpine } from './CesiumSpine';
 import {
   AFFILIATION_TRACKS,
+  CANDIDATE_SITES,
   JAMMER_LOCATION,
   PHASE_TRACKS,
+  UNIT_EVALUATION,
   track,
   tracksRecord,
 } from '@/stories/fixtures/avdiivka';
-import { denseTracks } from '@/lib/dense-tracks.fixture';
+import { denseTracks } from '@/stories/fixtures/dense-tracks';
 import { cesiumLoader } from '@/stories/support/cesium';
+import { spinePlay } from '@/stories/support/spine-play';
 
 const unitB = PHASE_TRACKS.degraded.unit_b!;
+const JAMMER = { ...JAMMER_LOCATION, method_id: 'ground_based_gps_uhf_barrage' };
 
 const meta = {
   title: 'COP/CesiumSpine',
   component: CesiumSpine,
   loaders: [cesiumLoader],
+  args: { evaluations: UNIT_EVALUATION },
   decorators: [
     (Story) => (
       // Any aspect: the camera fits the tracks (lib/camera-fit.ts), so the old near-square box for audit A26 is gone.
@@ -33,18 +38,24 @@ const meta = {
         component:
           'Primary 3D renderer (CesiumJS, System Design §6c). Loaded from the staged static build at ' +
           '`/public/cesium` (Storybook `staticDirs`; staged by `scripts/stage-cesium.mjs` on install) with ' +
-          '`baseLayer: false`, so it renders fully offline — no Ion token, no imagery. Requires WebGL. ' +
-          'Tracks render as Cesium `point`s (circles) with an affiliation fill, trust-band outline and a ' +
-          'screen-space halo below 0.60. If `/public/cesium` is not staged the canvas stays empty (waitForCesium ' +
-          'times out after 8s).\n\n' +
+          '`baseLayer: false`, so it renders fully offline — no Ion token, no imagery. Requires WebGL. If ' +
+          '`/public/cesium` is not staged the canvas stays empty (waitForCesium times out after 8s).\n\n' +
+          '**Symbols** — the decided track symbol (**Decisions/Track Symbology**, `src/components/symbol`): FM 1-02 / ' +
+          'MCRP 5-12A filled frame + function icon, T left, echelon / J / AR / H at ≥ 28 px (32 px here), the ' +
+          'link-trust side gauge and J right of the frame. No circular halo, no pulse. Each symbol is a Cesium ' +
+          '**billboard**: `trackSymbolSvg` rasterised at the device pixel ratio, anchored on the frame centre and ' +
+          'cached by key (band / gauge step, STALE, J, selection, hover) — a tick that keeps the key only moves the ' +
+          'entity. The jammer is the hostile **EW jamming** symbol J1 with the FR-04a method as its H field; ' +
+          '`candidateSites` draw as anticipated (dashed) EW symbols. Hover or Tab to a symbol for the rating ' +
+          'breakdown (`RatingExplanation`); Escape closes; click / Enter selects.\n\n' +
           '**Camera fit** (`lib/camera-fit.ts`): frames every track plus the jammer / candidate NAI at the ' +
           'fixed −55° pitch (bounding circle → HeadingPitchRange, min range 1.5 km). It re-fits only when a new ' +
           'point appears or one leaves the frame, and never after you pan or zoom; **Fit to tracks** (button or ' +
           '`F`) re-frames and resumes auto-fit.\n\n' +
-          '**Declutter** (`lib/declutter.ts`, FM 1-02 / MCRP 5-12A ¶5-8): symbols whose 30 px boxes overlap or ' +
-          'sit within 6 px collapse into a bracketed stack with an offset locator line to their true position ' +
-          'and a +n count, hostile first. Hover or click a stack to list its members; Escape closes. The stack ' +
-          'uses placeholder circles until the production symbol component is wired.',
+          '**Declutter** (`lib/declutter.ts` grouping, production `DeclutterStack`): three or more symbols whose ' +
+          'centres sit within 1.5 symbol sizes collapse into a bracketed stack with one locator line to their true ' +
+          'location, hostile first, three frames + "+n" (FM 1-02 / MCRP 5-12A ¶5-8, decision 6). Hover or click a ' +
+          'stack to list every member; Escape closes.',
       },
     },
   },
@@ -54,14 +65,17 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 /** 0:00 — A/B/C at 1.00 over Avdiivka (engine). */
-export const Nominal: Story = { parameters: { hamilton: { tracks: PHASE_TRACKS.nominal } } };
+export const Nominal: Story = {
+  parameters: { hamilton: { tracks: PHASE_TRACKS.nominal } },
+  play: spinePlay.symbolsAndTooltip('unit_a'),
+};
 
 /** 0:45 — B WATCH 0.70 (cadence 1.17 s); A and C 1.00. */
 export const Watching: Story = { parameters: { hamilton: { tracks: PHASE_TRACKS.watching } } };
 
 /**
- * 1:15 — B 0.13, first below the ROE floor: halo + directional vector toward the suspected jammer.
- * The web draws the vector when B < 0.60, i.e. from 1:15; Branding §10.3 places it at 1:05 (open UX
+ * 1:15 — B 0.13 (E5, gauge near empty), first below the ROE floor: bearing line toward the suspected jammer.
+ * The web draws the line when B < 0.60, i.e. from 1:15; Branding §10.3 places it at 1:05 (open UX
  * item, Branding Audit F02).
  */
 export const DirectionalVector: Story = {
@@ -69,17 +83,28 @@ export const DirectionalVector: Story = {
   parameters: { hamilton: { tracks: PHASE_TRACKS.degraded } },
 };
 
-/** 1:50 — B 0.22, still gated; jammer overlay labelled with the top FR-04a method. */
+/** 1:50 — B 0.22, still gated; the jammer fix J1 (hostile EW) with the top FR-04a method as its H field. */
 export const JammerOverlay: Story = {
   args: {
     directionalFrom: { lat: unitB.lat, lon: unitB.lon },
     directionalTo: JAMMER_LOCATION,
-    jammerLocation: { ...JAMMER_LOCATION, method_id: 'ground_based_gps_uhf_barrage' },
+    jammerLocation: JAMMER,
   },
   parameters: { hamilton: { tracks: PHASE_TRACKS.failed } },
 };
 
-/** Friendly / enemy / neutral / unknown across all four bands. */
+/** 1:15 — FR-04a candidate sites (MOCK geolocations) as anticipated, dashed hostile EW symbols C1–C3. */
+export const CandidateSites: Story = {
+  args: {
+    directionalFrom: { lat: unitB.lat, lon: unitB.lon },
+    directionalTo: JAMMER_LOCATION,
+    candidateSites: CANDIDATE_SITES,
+    candidateNai: JAMMER_LOCATION,
+  },
+  parameters: { hamilton: { tracks: PHASE_TRACKS.degraded } },
+};
+
+/** Friendly / hostile / neutral / unknown frames across all four bands (hostile_ew_1 draws as EW jamming). */
 export const MixedAffiliations: Story = {
   parameters: { hamilton: { tracks: tracksRecord(...AFFILIATION_TRACKS) } },
 };
@@ -88,12 +113,14 @@ export const MixedAffiliations: Story = {
 export const NoTracks: Story = {};
 
 /**
- * Twelve tracks + jammer. After the fit, A/B/C stand apart but three knots still overlap (two friendlies on
- * Unit B, a hostile/unknown knot on the jammer, a NW pair) → three bracketed stacks, hostile listed first.
+ * Fifteen tracks + the jammer fix. After the fit, three knots still hold ≥ 3 symbols
+ * within 1.5·s → three bracketed stacks, hostile first. The jammer J1 joins the hostile knot's stack, so its
+ * method label (H) can no longer cross that stack's locator line. The north-east pair stays two singles.
  */
 export const Dense: Story = {
-  args: { jammerLocation: { ...JAMMER_LOCATION, method_id: 'ground_based_gps_uhf_barrage' } },
+  args: { jammerLocation: JAMMER },
   parameters: { hamilton: { tracks: tracksRecord(...denseTracks(track)) } },
+  play: spinePlay.dense,
 };
 
 /**

@@ -279,6 +279,21 @@ export const CANDIDATES_PAYLOAD: FingerprintCandidatesPayload = FingerprintCandi
 export const CANDIDATES: FingerprintCandidate[] = CANDIDATES_PAYLOAD.candidates;
 
 /**
+ * MOCK geolocations for the three FR-04a candidates (the engine publishes
+ * scores only), best match first. Drawn as anticipated (status 1, dashed)
+ * hostile EW jamming symbols — Decisions/Track Symbology COP and the spines'
+ * candidateSites prop.
+ */
+export const CANDIDATE_SITES = [
+  { lat: JAMMER_LOCATION.lat - 0.0012, lon: JAMMER_LOCATION.lon - 0.0035, label: 'C1' },
+  { lat: JAMMER_LOCATION.lat + 0.0022, lon: JAMMER_LOCATION.lon + 0.0035, label: 'C2' },
+  { lat: JAMMER_LOCATION.lat - 0.0024, lon: JAMMER_LOCATION.lon + 0.0045, label: 'C3' },
+].map((site, i) => {
+  const c = [...CANDIDATES].sort((p, q) => q.score - p.score)[i]!;
+  return { ...site, method_id: `${i === 0 ? '#1 ' : ''}${c.method_id}`, score: c.score };
+});
+
+/**
  * Library entry with no munitions in inventory (library.json swept_uhf_low_power).
  * It scores 0/6 against the Avdiivka jammer, so the 3/6 here is a hypothetical
  * RF observation used only to exercise the "(none in current inventory)" path.

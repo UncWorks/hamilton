@@ -11,7 +11,7 @@ const meta = {
   loaders: [cesiumLoader],
   decorators: [
     (Story) => (
-      // Near-square box — see audit A26 (Cesium camera framing on wide aspects).
+      // Any aspect works since the camera fit (audit A26 fixed).
       <div style={{ height: 'min(100vh, 900px)', width: 'min(100%, 900px)', position: 'relative' }}>
         <Story />
       </div>
@@ -26,7 +26,8 @@ const meta = {
           'Renderer switch: `NEXT_PUBLIC_RENDERER=cesium|maplibre` (build-time env, Cesium default). Both ' +
           'renderers are `next/dynamic` with `ssr:false`; while the chunk loads the private `SpineLoader` ' +
           'shows "LOADING CESIUM SPINE…" in tertiary mono caps. The env var is fixed per Storybook build, so ' +
-          'see COP/CesiumSpine and COP/MapSpine for each renderer.',
+          'see COP/CesiumSpine and COP/MapSpine for each renderer. Both draw the decided track symbol ' +
+          '(Decisions/Track Symbology): CesiumSpine as billboards, MapSpine as an SVG overlay — no circles, halo or pulse.',
       },
     },
   },

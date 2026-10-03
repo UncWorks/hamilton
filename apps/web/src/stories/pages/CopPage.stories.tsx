@@ -25,7 +25,9 @@ const meta = {
         component:
           'The full single-screen COP (`app/page.tsx`): BrandBar / Spine (2fr) + TrustPanel (1fr) / ' +
           'EventTerminal (160px) / KillChainGate. `useHamiltonMqtt` runs for real against a scripted, ' +
-          'broker-free MQTT mock (`.storybook/mocks/mqtt-client.ts`); the engine HTTP API is mocked too.',
+          'broker-free MQTT mock (`.storybook/mocks/mqtt-client.ts`); the engine HTTP API is mocked too. The spine draws the ' +
+          'decided track symbol (Decisions/Track Symbology): B\'s side gauge drains and J appears at rest as it crosses the ROE ' +
+          'floor — no halo, no pulse. Hover or Tab to a unit for its rating breakdown.',
       },
     },
   },
