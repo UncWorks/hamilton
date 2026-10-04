@@ -87,8 +87,8 @@ bash scripts/airplane-mode-test.sh   # NFR-01 live verification (needs docker)
 
 ## Open items (deliberate scope)
 
-- **Cesium 3D Tiles for Avdiivka AO** — the spine ships with the default ellipsoid globe (no terrain) and procedural jammer stand-ins (labeled translucent ellipses at named coordinates). Drop a 3D Tiles tileset under `apps/web/public/cesium/tiles/` and a `CesiumTerrainProvider` swap is a one-line change in `CesiumSpine.tsx`.
-- **Photoreal glTF jammer models** — current jammer overlay is a procedural ellipse + label (`R-330Zh Zhitel`, `Pole-21`). Replace with `Cesium3DTileset` glTF models when sourced.
+- **Cesium 3D Tiles for Avdiivka AO** — the spine ships with the default ellipsoid globe (no terrain) and procedural jammer stand-ins (labeled translucent ellipses at named coordinates; *superseded by `HS-20`: the stand-ins and the hard-coded jammer point are removed by the AoE MVP, `docs/plans/jammer-aoe.md`*). Drop a 3D Tiles tileset under `apps/web/public/cesium/tiles/` and a `CesiumTerrainProvider` swap is a one-line change in `CesiumSpine.tsx`.
+- **Photoreal glTF jammer models** — *superseded by `HS-20`*: the C2 does not know where the jammer is, so no model is placed. The AoE MVP draws the estimated area of effect instead (`docs/plans/jammer-aoe.md`).
 - **Anthropic API key** — leave `ANTHROPIC_API_KEY` blank in `.env` to skip the Claude provider entirely. The chain auto-falls-back: Claude → Llama → deterministic strings.
 - **Self-hosted .woff2 fonts** — `Inter Tight` and `JetBrains Mono` files belong in `apps/web/public/fonts/`. The fallback stack carries the design until they land.
 - **Pre-recorded `~/demo-fallback.mp4`** — NFR-04 fallback. Record after stage rehearsal.

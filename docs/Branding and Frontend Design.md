@@ -485,6 +485,8 @@ Slide 4 → live demo. The transition is:
 
 ### 10.3 1:05 — the spatial discrimination
 
+> **Superseded in part by `HS-20` (AoE plan review 2026-10-04, `docs/plans/jammer-aoe.md` §0.3 a / e).** The directional vector "toward the suspected jammer location" presumes a location nobody measured and is removed with the AoE MVP; no map line is drawn at 1:05 (or 1:15, 10.4, 10.7). With the km-scale layout the verbatim line becomes *"Degradation localized at B — no degrading unit within 500 m. A, C healthy."* The 1:15 map graphic is the estimated civil-GNSS area of effect (`FR-06a`). The 10.4 "reposition out of the jammer lobe" becomes B's 1:50 move, which is simulator-driven, not a known lobe.
+
 - **Enters viewport:** side panel reveals the spatial-classification line: *"Degradation directional, vicinity B's flank corridor. Neighbors A, C unaffected."* A subtle directional vector renders on the map from B's heading toward the suspected jammer location (a thin `--gating-primary` line, dashed, 40% opacity).
 - **Active tokens:** A and C remain `--trust-nominal` (engine 1.00). B holds at ≈0.65 (WATCH). The vector line on the map is `--gating-primary` at 40%.
 - **Motion:** the directional vector renders via `clip-path: inset()` (the line draws itself outward from B's icon over 400ms).

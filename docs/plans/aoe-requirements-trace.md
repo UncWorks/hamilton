@@ -1,6 +1,7 @@
 # AoE requirements trace and necessity matrix
 
 **Branch:** `feat/aoe-preview` (PR #6, base `review/combined`). **Plan under test:** `docs/plans/jammer-aoe.md` (identical to `tmp/aoe-plan.md`).
+**Review (2026-10-04):** the plan review (`jammer-aoe.md` §0) changed 9 classifications (marked **[rev]** in §3), applied cuts 1–11, did not apply 12–13, and resolved every §5 item. Counts in §3.3 are updated.
 **Purpose:** write the minimum operator-outcome requirements for the suspected-jammer area of effect (AoE), then test every part of the plan against them. Anything that traces to no MUST is a candidate cut. This doc does **not** edit `jammer-aoe.md`; a reviewer applies the cuts.
 
 > **User intent (verbatim):** *"Make the scenario more real: the origin of the jammer would not be known to us. I want to communicate through the C2 by showing a visualization of the estimated area of effect of the suspected jammer if the fingerprint is a high match."* The requirements are to be used *"as a guideline to ensure we are not wasting resources on unnecessary components."*
@@ -108,7 +109,7 @@ Classes: **REQUIRED** → traces to a MUST · **SUPPORTING** → SHOULD · **DEF
 | E14 | `src/telemetry.rs` | HS-21 | REQUIRED | S | — |
 | E15 | `src/ticker.rs` | HS-21, HS-25, FR-04b (5)(7)(8) | REQUIRED | M → **S–M** | Partial: replace the IoU < 0.9 / mode > 250 m publish gate with "evidence hash changed (positions on the 250 m grid) or 10 s heartbeat" — binary evidence makes the IoU gate redundant, and `mode` is deferred |
 | E16 | `transport/src/mqtt.rs` | HS-21, HS-25 | REQUIRED | S | — |
-| E17 | `transport/src/log.rs` | HS-24 | REQUIRED | S | Partial: sim `eval` table → SUPPORTING (HS-24 SHOULD) |
+| E17 | `transport/src/log.rs` | HS-24 | REQUIRED | S | Partial: sim `eval` table → **DEFER [rev]**, and moved out of the engine to a sim-side post-run script (the engine must never read `truth.json`, HS-20) |
 | E18 | `server/src/lib.rs` (`GET` estimate, `POST` dismiss) | GET: — (the retained topic already serves late joiners); dismiss: HS-25 COULD | **UNNECESSARY** (GET) / DEFER (dismiss) | S | — |
 | E19 | `detectors/src/spatial.rs` (method-aware radius) | — (FR-03 unchanged; no AoE MUST) | **UNNECESSARY** | S | Its only effect is B spatial 0.6 → 0.3, which forces the High-risk re-baselines E23 / W14 |
 | E20 | `detectors/src/fingerprint.rs` (dimension 6) | FR-04 rev → HS-20, HS-21 | REQUIRED | S | Keep 6/6 at 1:15 so fingerprint trust stays 0.00 |
@@ -120,7 +121,7 @@ Classes: **REQUIRED** → traces to a MUST · **SUPPORTING** → SHOULD · **DEF
 
 | # | Path | Traces to | Class | Effort | Partial cut / note |
 |---|---|---|---|---|---|
-| A1 | `library.json` → v0.2 | HS-21 (emitter envelope for the demo method) | REQUIRED | M → **S** | Partial: the Pole-21 / R-330Zh split and the verification §5 corrections to other entries fix **UR-09** citations, not the AoE → SUPPORTING, separate data PR. Note the method-id ripple (§5) |
+| A1 | `library.json` → v0.2 | HS-21 (emitter envelope for the demo method) | REQUIRED | M → **S** | Partial: the Pole-21 / R-330Zh split and the verification §5 corrections to other entries fix **UR-09** citations, not the AoE → SUPPORTING, separate data PR. **[rev]** id kept; `affects_rx_classes` on every entry (dimension 6) |
 | A2 | `receivers.json` | HS-21, HS-22 | REQUIRED | S | Partial: `gnss_civil` REQUIRED; `gnss_mil` SUPPORTING; `gnss_mil_crpa`, `uhf_*` → DEFER |
 
 #### §2.5 `apps/web`
@@ -130,20 +131,20 @@ Classes: **REQUIRED** → traces to a MUST · **SUPPORTING** → SHOULD · **DEF
 | W1 | `app/page.tsx` (delete `JAMMER_LOCATION`, vector) | HS-20 | REQUIRED | S | — |
 | W2 | `store/hamilton.ts` | HS-21, HS-25 (stale timer) | REQUIRED | S | Partial: `aoeLayers` / `showNai` toggles and dismiss → DEFER |
 | W3 | `hooks/useHamiltonMqtt.ts` | HS-21, HS-25 | REQUIRED | S | — |
-| W4 | `lib/aoe.ts` | HS-22 (point-in-MultiPolygon, `contourLevelAt`) | REQUIRED | S | Partial: extent-for-fit → DEFER; footprint test → SUPPORTING |
+| W4 | `lib/aoe.ts` | HS-22 (point-in-MultiPolygon, `contourLevelAt`) | REQUIRED | S | Partial: extent-for-fit → DEFER; footprint test → **DEFER [rev]** (footprint clip deferred) |
 | W5 | `lib/aoe.test.ts` | HS-22 | REQUIRED | S | — |
 | W6 | `components/cop/Spine.tsx` | HS-20, HS-21 | REQUIRED | S | Partial: `bearings?` prop → DEFER |
-| W7 | `components/cop/MapSpine.tsx` | HS-20, HS-21, HS-25 | REQUIRED | M | Partial: NAI path → SUPPORTING (HS-27); footprint clip → SUPPORTING; ce90 and bearing wedges → DEFER |
-| W8 | `components/cop/CesiumSpine.tsx` | HS-20 (remove ring), HS-21 | REQUIRED | M | Conditional: if §6c leaves MapLibre on stage, the Cesium AoE drawing can slip; the removal cannot |
+| W7 | `components/cop/MapSpine.tsx` | HS-20, HS-21, HS-25 | REQUIRED | M | Partial: NAI path → **DEFER [rev]** (HS-27); footprint clip → **DEFER [rev]**; ce90 and bearing wedges → DEFER |
+| W8 | `components/cop/CesiumSpine.tsx` | HS-20 (remove ring), HS-21 | REQUIRED | M | **[rev]** Unconditional: `Spine.tsx` `pickRenderer()` defaults to Cesium, so the Cesium AoE is in M1 |
 | W9 | `components/cop/spine-symbols.ts` | HS-20 (remove solid `jammer`) | REQUIRED | S | Partial: status-1 `J1?` → DEFER (HS-26) |
 | W10 | `components/cop/SpineOverlay.tsx` (chip row, Fit to NAI) | HS-27 / COULD | DEFER | S | With civil (+ DAGR) only, there is nothing to toggle; disabled UHF / FPV chips advertise WON'T layers |
 | W11 | `components/cop/AoeLegend.tsx` | HS-21 (confidence + estimate statement) | REQUIRED | M → **S** | Partial: keep a two-swatch key (90% fill, 50% dash); the label already carries method / level / age / counts. Dashed-symbol rule → DEFER; radius-band provenance → SUPPORTING |
 | W12 | `lib/camera-fit.ts` (+ test) | — (8 units sit inside the current fit and bbox; the far AoE edge is extrapolated) | DEFER | S | — |
 | W13 | `lib/cop-symbols.ts`, `lib/display-names.ts` (units d…h) | HS-21 (8 units) | REQUIRED | S | — |
 | W14 | `lib/link-trust-rating.ts` (+ test) | HS-20 (positions mirror) | REQUIRED | M → **S** | Partial: method-aware `SPATIAL_RADIUS_M` → UNNECESSARY; beats stay pinned. Risk High → Med |
-| W15 | `components/panel/CandidateCards.tsx` (AoE block) | HS-21, HS-22 | REQUIRED | S | Partial: NAI "located-or-not" line → SUPPORTING |
-| W16 | `lib/tss.ts` (+ test) `advisories[]` | HS-23 | SUPPORTING | M | — |
-| W17 | `components/fires/MissionRow.tsx` | HS-23 | SUPPORTING | S | — |
+| W15 | `components/panel/CandidateCards.tsx` (AoE block) | HS-21, HS-22 | REQUIRED | S | **[rev]** The "Emitter not located (90% region ~N km²)" line is kept (HS-20 / HS-21 honesty, cheap); "not assessed" and "edge not observed" states added |
+| W16 | `lib/tss.ts` (+ test) `advisories[]` | HS-23 | **DEFER [rev]** | M | Not cheap; the HS-22 card line carries the fact; ground-only advisory at a GPS round's target understates in-flight exposure |
+| W17 | `components/fires/MissionRow.tsx` | HS-23 | **DEFER [rev]** | S | With W16 |
 | W18 | `components/terminal/EventTerminal.tsx`, `display-names.ts` | HS-24 | REQUIRED | S | Partial: "task DF on NAI J1" wording → SUPPORTING (HS-27) |
 | W19 | `styles/tokens.css` (AoE palette, D2) | FR-06a (4) | REQUIRED | S | Partial: `--aoe-uhf`, `--aoe-fpv` → DEFER |
 | W20 | `scripts/basemap/contrast-check.mjs` | FR-06a (4) | REQUIRED | S | — |
@@ -168,9 +169,9 @@ Classes: **REQUIRED** → traces to a MUST · **SUPPORTING** → SHOULD · **DEF
 | # | Item (plan section) | Traces to | Class |
 |---|---|---|---|
 | G1 | §1 per-receiver-class AoE, 50% / 90% contours | HS-21, HS-22 | REQUIRED |
-| G2 | §1 90% emitter region drawn as NAI | HS-27 | SUPPORTING |
+| G2 | §1 90% emitter region drawn as NAI | HS-27 | **DEFER [rev]** (region stays in the payload) |
 | G3 | §1 status-1 hostile EW symbol under the gate | HS-26 | DEFER |
-| G4 | §1 advisory TSS geometry term | HS-23 | SUPPORTING |
+| G4 | §1 advisory TSS geometry term | HS-23 | **DEFER [rev]** |
 | G5 | §1 soft set-based grid estimator | HS-21 | REQUIRED |
 | G6 | §1 link-budget radius band per method × class | HS-21 | REQUIRED |
 | G7 | §1 engine computes polygons (no web deps) | HS-21, NFR-07 | REQUIRED |
@@ -178,14 +179,14 @@ Classes: **REQUIRED** → traces to a MUST · **SUPPORTING** → SHOULD · **DEF
 | G9 | §3.1 graded telemetry fields (C/N0, AGC, jam_ind, SNR, noise, RLQ) | v2 | DEFER |
 | G10 | §3.2 reserved estimate fields (`mode`, `bearings_used`, `ref_link_km`, AOA / ITM enums) | HS-26 / v2–v3 | DEFER |
 | G11 | §2.3 publish gate "IoU < 0.9 or mode moves > 250 m" | — (redundant under binary evidence) | UNNECESSARY |
-| G12 | §5.1 performance test < 50 ms | FR-04b (5) | SUPPORTING |
+| G12 | §5.1 performance test < 50 ms | FR-04b (5) (MUST acceptance) | **REQUIRED [rev]** |
 | G13 | §5.2 CI grep for `JAMMER_LOCATION` / `AOE_TRUTH` | HS-20 | REQUIRED |
 | T1 | §5.4 story 1:15 | HS-20, HS-21 | REQUIRED |
 | T2 | §5.4 story 1:35 | HS-26 | DEFER |
 | T3 | §5.4 story 1:50 ("earlier" mark) | moving-unit history, v2 | DEFER |
 | T4 | §5.4 story 2:15 (stale) | HS-25 | REQUIRED |
 | T5 | §5.4 story Receiver layers (disabled UHF chip) | WON'T layers | DEFER |
-| T6 | §5.4 story Mission row | HS-23 | SUPPORTING |
+| T6 | §5.4 story Mission row | HS-23 | **DEFER [rev]** |
 | T7 | §5.4 story Evaluation (truth contained) | HS-24 SHOULD (golden.rs carries the MUST) | SUPPORTING |
 | T8 | §5.4 story Colour vision | FR-06a (4) | REQUIRED |
 | B1 | §6 0:00 — 8 units, no EW layers | HS-20, HS-21 | REQUIRED |
@@ -193,7 +194,7 @@ Classes: **REQUIRED** → traces to a MUST · **SUPPORTING** → SHOULD · **DEF
 | B3 | §6 1:05 — "localized" at 500 m | UR-04 (open item §5) | REQUIRED |
 | B4 | §6 1:12 — AB1001 unchanged | HS-05 | REQUIRED |
 | B5 | §6 1:15 — civil AoE + label, no symbol (NAI and row advisory are SUPPORTING, FFIR-2 line SUPPORTING) | HS-20, HS-21, HS-22, HS-24 | REQUIRED |
-| B6 | §6 1:20 — FFIR "task DF on NAI J1" | HS-27 | SUPPORTING |
+| B6 | §6 1:20 — FFIR "task DF on NAI J1" | HS-27 | **DEFER [rev]** |
 | B7 | §6 1:35 — DF bearings B + H, `J1?` | HS-26, v3 | DEFER |
 | B8 | §6 1:50 — B moves, estimate updates | HS-21 (publish on evidence change) | REQUIRED |
 | B9 | §6 2:15 — stale, retire (AAR truth vs estimate SUPPORTING) | HS-25, HS-24 | REQUIRED |
@@ -206,16 +207,18 @@ Classes: **REQUIRED** → traces to a MUST · **SUPPORTING** → SHOULD · **DEF
 | D7 | IoU target 0.4 binary | FR-04b (2) | REQUIRED |
 | D8 | Sector fitting | v2 | DEFER |
 | D9 | Hand-rolled marching squares | NFR-07 | REQUIRED |
-| D10 | TSS advisory uses the AoE level | HS-23 | SUPPORTING |
+| D10 | TSS advisory uses the AoE level | HS-23 | **DEFER [rev]** (the "never changes the verdict" rule stays binding when built) |
 
 ### 3.3 Counts
 
 | Class | §2 file rows (70) | Other items (40) | **Total (110)** |
 |---|---|---|---|
-| REQUIRED | 58 | 23 | **81** |
-| SUPPORTING | 3 | 7 | **10** |
-| DEFER | 6 | 9 | **15** |
+| REQUIRED | 58 | 24 | **82** |
+| SUPPORTING | 1 | 1 | **2** |
+| DEFER | 8 | 14 | **22** |
 | UNNECESSARY | 3 | 1 | **4** |
+
+*Before review: 81 / 10 / 15 / 4. Moves: G12 SUPPORTING → REQUIRED; W16, W17, G2, G4, T6, B6, D10 SUPPORTING → DEFER. The two SUPPORTING items left are W24 (preview support files) and T7 (Evaluation story).*
 
 Most REQUIRED rows carry a **partial cut** (column above): 27 of the 58 REQUIRED file rows contain a deferrable or unnecessary part.
 
@@ -244,16 +247,21 @@ Row estimates in the plan sum to ~48 upper-bound dev-days (S = ½ d, M = 1½ d),
 | 12 | *Conditional:* Cesium AoE drawing if MapLibre is the stage spine | W8 (M) | ~1½ d | Removal of the hard-coded ring stays REQUIRED |
 | 13 | *Reviewer option:* replay a generated per-beat J/S schedule instead of runtime `propagation.py` | C2 S–M → S | ~½ d | Truth still drives degradation; trades runtime fidelity for simplicity |
 
+**Review outcome (`jammer-aoe.md` §0.2):**
+- **Applied:** cuts 1–9, 10 (R1, TSS advisory) and 11 (R2, NAI graphic), plus R3 (footprint clip) and R4 (eval table out of the engine).
+- **Not applied:** cut 12, because Cesium is the default renderer. Option 13 is rejected, because a runtime model also has to drive the co-located comms module and B's 1:50 move.
+- **Re-estimate:** reduced MVP ≈ 16 dev-days expected (19.75 raw); the plan as written ≈ 24 (≈ 30 raw).
+
 ---
 
 ## 5. Open discrepancies for the reviewer
 
-1. **FR-03 1:05 wording.** With the 8-unit layout no unit is within 500 m of B (C is ~3.4 km away), so "Neighbors A, C unaffected" becomes vacuous. Either keep a healthy unit within 500 m of B in the layout or reword UR-04 / FR-03 / README to what the engine measures.
-2. **GNSS-only method vs link symptoms.** The plan makes the demo emitter Pole-21-class (GNSS only), yet B's FR-01 / FR-02 beats are link cadence and CRC, and `runner.py` maps J/S to cadence / CRC through g(·). A GNSS jammer does not raise CRC on a UHF link. Either the method keeps a UHF component, or the link symptom must come from position-report gating, and the mapping should say which.
-3. **Method-id ripple.** Splitting `ground_based_gps_uhf_barrage` renames the 1:15 top match that FR-04, FR-04a, UR-09, the README and System Design §2 / §5.2 quote verbatim. If cut 3 is taken, keep the id and label the envelope "Pole-21-class".
-4. **Model match between sim and estimator.** `estimator/propagation.rs` must match `comms-sim/propagation.py` to 0.01 dB. Containment is then partly self-fulfilling; the sim's sector antenna and σ 4 dB shadowing (absent from the estimator) are what keep the test honest. Keep them.
-5. **Presumed-location leftovers outside this plan:** Branding §10.3 directional vector; README "Known gaps" (procedural jammer stand-ins, glTF jammer models); System Design §4 LOS overlay and glTF cells (now marked superseded by HS-20).
-6. **Design vs plan on the TSS tie-in.** The AoE design §3.4 adds `CAUTION` and recommends `AT MY COMMAND` at P ≥ 0.9; the plan and FR-07a say advisory only. FR-07a governs.
+1. **FR-03 1:05 wording.** *Resolved (plan §0.3 a): reword to "Degradation localized at B — no degrading unit within 500 m. A, C healthy."* With the 8-unit layout no unit is within 500 m of B (C is ~3.4 km away), so "Neighbors A, C unaffected" becomes vacuous. Either keep a healthy unit within 500 m of B in the layout or reword UR-04 / FR-03 / README to what the engine measures.
+2. **GNSS-only method vs link symptoms.** *Resolved (plan §0.3 b): one hidden site with a co-located GNSS module (Pole-21E-class) and comms module (R-934B-class); GNSS evidence from `gnss_fix` only.* The plan makes the demo emitter Pole-21-class (GNSS only), yet B's FR-01 / FR-02 beats are link cadence and CRC, and `runner.py` maps J/S to cadence / CRC through g(·). A GNSS jammer does not raise CRC on a UHF link. Either the method keeps a UHF component, or the link symptom must come from position-report gating, and the mapping should say which.
+3. **Method-id ripple.** *Resolved (plan §0.3 c): keep the id; no split, no alias in the MVP.* Splitting `ground_based_gps_uhf_barrage` renames the 1:15 top match that FR-04, FR-04a, UR-09, the README and System Design §2 / §5.2 quote verbatim. If cut 3 is taken, keep the id and label the envelope "Pole-21-class".
+4. **Model match between sim and estimator.** *Resolved (plan §0.3 d): sector and shadowing stay hidden from the estimator; a 20-seed sweep and an off-node truth are added (measured 17/20, 19/19); the back-lobe case (9/20) is recorded as the D8 limitation.* `estimator/propagation.rs` must match `comms-sim/propagation.py` to 0.01 dB. Containment is then partly self-fulfilling; the sim's sector antenna and σ 4 dB shadowing (absent from the estimator) are what keep the test honest. Keep them.
+5. **Presumed-location leftovers outside this plan:** *Resolved (plan §0.3 e): Branding §10.3 and README marked superseded; the 1:05 text changes with the layout (row X1).* Branding §10.3 directional vector; README "Known gaps" (procedural jammer stand-ins, glTF jammer models); System Design §4 LOS overlay and glTF cells (now marked superseded by HS-20).
+6. **Design vs plan on the TSS tie-in.** *Confirmed; the advisory itself is deferred (R1).* The AoE design §3.4 adds `CAUTION` and recommends `AT MY COMMAND` at P ≥ 0.9; the plan and FR-07a say advisory only. FR-07a governs.
 7. **Reserved numbering.** HS-10..HS-19 and FR-09..FR-13 are proposed by the decision-workflow assessment but not adopted; do not reuse them.
 
 ---

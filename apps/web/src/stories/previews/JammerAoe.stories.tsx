@@ -112,6 +112,9 @@ const meta = {
       description: {
         component:
           '**PREVIEW — not implemented.** Visual mocks of the jammer area-of-effect (AoE) plan, `docs/plans/jammer-aoe.md`. ' +
+          '**MVP scope after the 2026-10-04 plan review (§0):** the civil-GNSS 90% / 50% areas, the label, the card block and ' +
+          'stale / retire. The NAI outline, the `J1?` symbol and bearings (1:35), the layer chips, "Fit to NAI" and the mission-row ' +
+          'advisory shown in some stories here are **deferred**, not MVP.\n\n' +
           'Real components: **COP/MapSpine** over the offline basemap, the production track symbol and declutter, **Fires/Mission Row**, ' +
           '**Panel/CandidateCards**. The AoE graphics are a story-only layer (`src/stories/support/AoeOverlay.tsx`) portalled under ' +
           'MapSpine\'s symbol overlay; the suspected emitter goes through MapSpine\'s existing `candidateSites` path, so it is the ' +
