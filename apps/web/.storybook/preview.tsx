@@ -51,6 +51,7 @@ const preview: Preview = {
           'Toggle',
           'COP',
           'Pages',
+          'Previews',
           'Archive',
           ['Track Symbology', 'Halo Options', 'At-a-Glance Variants'],
         ],
