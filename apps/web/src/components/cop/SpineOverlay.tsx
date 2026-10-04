@@ -29,6 +29,7 @@ import {
   tooltipSurface,
   STACK_MAX_SHOWN,
 } from '@/components/symbol';
+import { unitName } from '@/lib/display-names';
 import { CHAR_W, labelFontPx } from '@/components/symbol/geometry';
 import { FIT_SHORTCUT_LABEL } from '@/lib/camera-fit';
 import { stackOffsetPx } from '@/lib/cop-symbols';
@@ -284,7 +285,7 @@ export function SpineOverlay(p: SpineOverlayProps) {
                       style={memberButton}
                       aria-label={`${m.label}${m.kind === 'track' ? ' — select' : ''}`}
                     >
-                      <span style={{ flex: 1, textAlign: 'left' }}>{m.kind === 'track' ? m.id.toUpperCase() : m.track.designation}</span>
+                      <span style={{ flex: 1, textAlign: 'left' }}>{m.kind === 'track' ? unitName(m.id) : m.track.designation}</span>
                       <span style={{ color: 'var(--text-secondary)' }}>
                         {m.track.score !== undefined ? m.track.score.toFixed(2) : m.kind === 'jammer' ? 'FIX' : 'CAND'}
                       </span>

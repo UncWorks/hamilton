@@ -10,7 +10,6 @@ import type { FingerprintCandidate } from '@hamilton/contracts';
 import {
   AVG_BLEND,
   CREDIBILITY,
-  J_CODE_CITATION,
   NRT,
   RELIABILITY,
   TSS_MIN_GPS_SCORE,
@@ -33,6 +32,7 @@ import {
   type TrustComponentsLike,
   type TrustFactor,
 } from '@/lib/link-trust-rating';
+import { methodName } from '@/lib/display-names';
 import { TrackSymbol, type TrackSymbolProps } from './TrackSymbol';
 
 const mono: CSSProperties = { fontFamily: 'var(--font-mono)', fontSize: 'var(--text-micro, 11px)' };
@@ -51,10 +51,9 @@ const fmtPct = (frac: number) => {
   const pct = Math.round(frac * 1000) / 10;
   return Number.isInteger(pct) ? pct.toFixed(0) : pct.toFixed(1);
 };
-const fmtSigma = (s: number) => (s >= 10 ? s.toFixed(0) : s.toFixed(1));
 
 export interface EvidenceContext {
-  /** e.g. "neighbours A, C". */
+  /** Same-side units near this one, e.g. "A, C" (a leading "neighbours " is tolerated). */
   neighbours?: string | undefined;
   topCandidate?: FingerprintCandidate | undefined;
   /**
@@ -65,46 +64,61 @@ export interface EvidenceContext {
   telemetry?: { cadenceS: number; crc: number } | undefined;
 }
 
+/** "neighbours A, C" / "A, C" → "A and C"; empty → undefined. */
+function neighbourList(raw: string | undefined): string | undefined {
+  const list = raw?.replace(/^neighbours?\s*/i, '').trim();
+  if (!list) return undefined;
+  const parts = list.split(/\s*,\s*|\s+and\s+/).filter(Boolean);
+  return parts.length > 1 ? `${parts.slice(0, -1).join(', ')} and ${parts[parts.length - 1]}` : parts[0];
+}
+
 /**
- * Evidence line per factor, derived through the engine's detector mappings
- * (temporal.rs baseline 1.0 s ± 0.05 s, 1σ → 1.0, 6σ → 0.0; stability.rs
- * 0.5 % → 1.0, 20 % → 0.0) — e.g. temporal 0.52 ⇔ 1.17 s (3.4σ).
+ * Plain-language evidence line per factor, derived through the engine's
+ * detector mappings (temporal.rs baseline 1.0 s ± 0.05 s, 1σ → 1.0, 6σ → 0.0;
+ * stability.rs 0.5 % → 1.0, 20 % → 0.0; spatial.rs Nominal / Localized 0.6 /
+ * Blanket 0.3; fingerprint.rs 1 − k/6) — e.g. temporal 0.52 ⇔ 1.17 s.
  */
 export function evidenceFor(f: TrustFactor, c: number, ctx: EvidenceContext = {}): string {
   const healthy = c >= 0.999;
   const base = fmtS(TEMPORAL_BASELINE.meanS);
   switch (f) {
     case 'temporal': {
-      if (healthy && !ctx.telemetry) return `Message cadence ${base}s, within 1σ of baseline`;
+      if (healthy && !ctx.telemetry) return `Messages arriving every ${base} s (normal)`;
       const observed = ctx.telemetry?.cadenceS ?? (c > 0 ? cadenceForTemporalTrust(c) : undefined);
       if (observed === undefined) {
         const atZero = TEMPORAL_BASELINE.meanS + TEMPORAL_SIGMA.zero * TEMPORAL_BASELINE.stdS;
-        return `Message cadence ${base}s → ≥ ${fmtS(atZero)}s (≥ ${TEMPORAL_SIGMA.zero}σ above baseline, >3σ)`;
+        return `Message gaps of ${fmtS(atZero)} s or more (normally ${base} s)`;
       }
       const sigma = cadenceSigma(observed);
-      if (sigma <= TEMPORAL_SIGMA.full) return `Message cadence ${fmtS(observed)}s, within 1σ of baseline`;
-      return `Message cadence ${base}s → ${fmtS(observed)}s (${fmtSigma(sigma)}σ above baseline${sigma > TEMPORAL_SIGMA.anomaly ? ', >3σ' : ''})`;
+      if (sigma <= TEMPORAL_SIGMA.full) return `Messages arriving every ${fmtS(observed)} s (normal)`;
+      return `Messages arriving every ${fmtS(observed)} s (normally ${base} s${sigma > TEMPORAL_SIGMA.anomaly ? '' : ', within tolerance'})`;
     }
     case 'stability': {
       const crc = ctx.telemetry?.crc ?? (c > 0 ? crcForStabilityTrust(c) : undefined);
-      if (healthy && (crc === undefined || crc <= STABILITY_CRC.full)) return 'CRC errors 0.2% (baseline)';
-      if (crc === undefined) return `CRC errors 0.2% → ≥ ${fmtPct(STABILITY_CRC.zero)}%`;
-      return `CRC errors 0.2% → ${fmtPct(crc)}%${crc > STABILITY_CRC.degraded ? ' (>5% degraded threshold)' : ''}`;
+      if (healthy && (crc === undefined || crc <= STABILITY_CRC.full)) return `${fmtPct(crc ?? 0.002)}% of frames corrupted (normal)`;
+      if (crc === undefined) return `${fmtPct(STABILITY_CRC.zero)}% or more of frames corrupted (normally under 1%)`;
+      return `${fmtPct(crc)}% of frames corrupted (normally under 1%)`;
     }
     case 'spatial': {
       // spatial.rs: Nominal 1.0 (not degrading), Localized 0.6, Blanket 0.3.
-      const n = ctx.neighbours ?? 'neighbours';
-      if (healthy) return 'Nominal — link not degrading (no FR-01 / FR-02 flag)';
-      return c >= 0.6 ? `Localized — ${n} within 500 m unaffected` : `Blanket — ${n} also degrading`;
+      if (healthy) return 'This link is not degrading';
+      const n = neighbourList(ctx.neighbours);
+      if (c >= 0.6) {
+        return n
+          ? `Only this unit is affected — ${n} within 500 m ${/ and /.test(n) ? 'are' : 'is'} healthy`
+          : 'Only this unit is affected — nearby units within 500 m are healthy';
+      }
+      return 'Nearby units also degraded';
     }
     case 'fingerprint': {
       // components.fingerprint IS trust: 1 − match strength, 1.0 when nothing matches at ≥ 0.5.
-      if (healthy) return 'No jammer fingerprint match (no library entry ≥ 3/6)';
+      if (healthy) return 'No known jammer signature';
       const overlap = 1 - c;
       const dims = Math.round(overlap * 6);
       const top = ctx.topCandidate;
-      const m = top?.method_id && Math.abs(top.score - overlap) < 0.01 ? top.method_id : 'library entry';
-      return `Jammer fingerprint matched: ${m} (overlap ratio ${overlap.toFixed(2)} = ${dims}/6 dimensions, fingerprint score ${c.toFixed(2)})`;
+      const name = top?.method_id && Math.abs(top.score - overlap) < 0.01 ? methodName(top.method_id) : undefined;
+      const what = name ? `a known ${name.charAt(0).toLowerCase()}${name.slice(1)} jammer` : 'a known jammer';
+      return `Matches ${what} on ${dims === 6 ? 'all 6' : `${dims} of 6`} signal checks`;
     }
   }
 }
@@ -126,6 +140,7 @@ export interface ExplanationProps extends EvidenceContext {
 }
 
 const f3 = (n: number) => n.toFixed(3);
+const pct = (x: number) => `${Math.round(x * 100)}%`;
 
 function Bar({ value }: { value: number }) {
   const r = rateLinkTrust(value);
@@ -169,10 +184,9 @@ export function RatingExplanation(p: ExplanationProps) {
         {!ov && !rating.stale && (
           <span>
             {' '}
-            — letter from the score, digit from corroboration ({rating.corroboration === 'confirmed' ? 'confirmed on an alternate channel' : 'not corroborated'})
+            — letter from the link score, digit from corroboration ({rating.corroboration === 'confirmed' ? 'confirmed on an alternate channel' : 'not corroborated'})
           </span>
         )}
-        <span style={{ color: 'var(--text-tertiary)' }}> — {J_CODE_CITATION}</span>
       </div>
       {ov && (
         <div data-testid="tip-override" style={{ fontSize: 11, color: 'var(--text-primary)' }}>
@@ -184,8 +198,8 @@ export function RatingExplanation(p: ExplanationProps) {
       <table style={{ borderCollapse: 'collapse' }}>
         <thead>
           <tr style={{ color: 'var(--text-tertiary)' }}>
-            {['factor', 'cᵢ', 'wᵢ', 'wᵢ·cᵢ', ''].map((h) => (
-              <th key={h} style={{ ...cell, fontWeight: 400, textAlign: 'left' }}>
+            {['Factor', 'Value', 'Weight', 'Share', ''].map((h, i) => (
+              <th key={i} style={{ ...cell, fontWeight: 400, textAlign: 'left' }}>
                 {h}
               </th>
             ))}
@@ -195,7 +209,7 @@ export function RatingExplanation(p: ExplanationProps) {
           {agg.factors.flatMap((f) => [
             <tr key={f.factor} data-factor={f.factor} data-weakest={f.weakest || undefined}>
               <td style={{ ...cell, color: f.weakest ? 'var(--text-primary)' : 'var(--text-secondary)' }}>
-                {f.fr} {f.label}
+                {f.label}
               </td>
               <td style={cell}>{f.value.toFixed(2)}</td>
               <td style={cell}>×{f.weight.toFixed(1)}</td>
@@ -213,7 +227,7 @@ export function RatingExplanation(p: ExplanationProps) {
           ])}
           <tr style={{ borderTop: '1px solid var(--surface-panel)' }}>
             <td style={{ ...cell, color: 'var(--text-tertiary)' }} colSpan={3}>
-              weighted avg Σ wᵢ·cᵢ
+              Weighted average
             </td>
             <td style={cell}>{f3(agg.weightedAvg)}</td>
             <td />
@@ -222,18 +236,16 @@ export function RatingExplanation(p: ExplanationProps) {
       </table>
 
       <div data-testid="formula" style={{ ...mono, fontSize: 11, color: 'var(--text-primary)' }}>
-        {AVG_BLEND} × weighted avg ({f3(agg.weightedAvg)}) + {WORST_BLEND} × weakest ({f3(agg.worst)}) = {f3(AVG_BLEND * agg.weightedAvg)} +{' '}
-        {f3(WORST_BLEND * agg.worst)} = {f3(agg.score)}
+        Score {agg.score.toFixed(2)} = {pct(AVG_BLEND)} weighted average ({agg.weightedAvg.toFixed(2)}) + {pct(WORST_BLEND)} weakest factor ({agg.worst.toFixed(2)})
       </div>
-      <div style={{ fontSize: 11, color: 'var(--text-tertiary)' }}>{WORST_BLEND * 100}% of the score is the weakest factor alone (aggregator/src/lib.rs).</div>
       {mismatch && (
         <div role="alert" style={{ ...mono, fontSize: 11, color: 'var(--trust-failed-stroke)' }}>
-          Mismatch: payload score {p.payloadScore?.toFixed(3)} ≠ recomputed {f3(agg.score)}
+          Score mismatch: reported {p.payloadScore?.toFixed(3)}, recomputed {f3(agg.score)}
         </div>
       )}
 
       <div style={{ fontSize: 11 }}>
-        Last good update (W) <span style={{ ...mono, color: 'var(--text-primary)' }}>{formatDtg(p.lastGoodIso)}</span> · {Math.round(ageS)} s ago
+        Last good update <span style={{ ...mono, color: 'var(--text-primary)' }}>{formatDtg(p.lastGoodIso)}</span> · {Math.round(ageS)} s ago
         {rating.stale ? (
           <span style={{ color: 'var(--text-primary)' }}>
             {' '}
@@ -246,13 +258,13 @@ export function RatingExplanation(p: ExplanationProps) {
       </div>
       {p.components.fingerprint <= agg.worst && p.components.fingerprint < 1 && p.topCandidate?.method_id && (
         <div style={{ fontSize: 11 }}>
-          Top jammer candidate: <span style={{ ...mono, color: 'var(--text-primary)' }}>{p.topCandidate.method_id}</span> ({p.topCandidate.named_systems.join(', ')}) · match{' '}
-          {p.topCandidate.score.toFixed(2)}
+          Top jammer candidate: <span style={{ color: 'var(--text-primary)' }}>{methodName(p.topCandidate.method_id)}</span>
+          {p.topCandidate.named_systems.length ? ` (${p.topCandidate.named_systems.join(', ')})` : ''} · match {p.topCandidate.score.toFixed(2)}
         </div>
       )}
       <div style={{ ...mono, fontSize: 10, color: 'var(--text-tertiary)' }}>
-        export: J={amps.J} W={amps.W}
-        {amps.AR ? ` AR=${amps.AR}` : ''} · gauge stripped
+        Export (TAK/CoT): J={amps.J} W={amps.W}
+        {amps.AR ? ` AR=${amps.AR}` : ''}
       </div>
     </div>
   );
@@ -379,7 +391,7 @@ export function TrackSymbolWithTooltip({ explanation, forceOpen = false, testId,
       <span
         {...tip.triggerProps}
         role="button"
-        aria-label={`${sym.track.designation ?? 'track'}: link trust — hover or focus for the explanation`}
+        aria-label={`${sym.track.designation ?? 'Track'}: link trust — hover or focus for the rating breakdown`}
         data-testid={testId}
         className="symbol-trigger"
         style={{ display: 'inline-block', cursor: 'help' }}

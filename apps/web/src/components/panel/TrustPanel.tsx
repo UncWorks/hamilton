@@ -2,6 +2,7 @@
 
 import { useHamilton } from '@/store/hamilton';
 import { minScoreForLetter, tssRow } from '@/lib/tss';
+import { UNIT_ROLES, sensorTypeLabel, unitName } from '@/lib/display-names';
 import { TrustReadout } from './TrustReadout';
 import { CandidateCards } from './CandidateCards';
 
@@ -40,7 +41,7 @@ export function TrustPanel() {
 
   return (
     <aside
-      aria-label={`Trust panel for ${focused.source_id}`}
+      aria-label={`Trust panel for ${unitName(focused.source_id)}`}
       style={{
         display: 'grid',
         gap: 'var(--space-6)',
@@ -61,7 +62,7 @@ export function TrustPanel() {
             letterSpacing: '0.04em',
           }}
         >
-          {focused.source_id.toUpperCase()}
+          {unitName(focused.source_id)}
         </h2>
         <span
           style={{
@@ -71,7 +72,7 @@ export function TrustPanel() {
             letterSpacing: '0.08em',
           }}
         >
-          {focused.affiliation.toUpperCase()} · {focused.sensor_type.replace('_', ' ')}
+          {focused.affiliation.toUpperCase()} · {UNIT_ROLES[focused.source_id] ?? sensorTypeLabel(focused.sensor_type)}
         </span>
       </header>
 

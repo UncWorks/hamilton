@@ -12,7 +12,7 @@ import { TssInForceStrip } from './TssInForce';
 
 export const TSS_TICK_MS = 1000;
 
-export function MissionQueue({ showDpPlaceholder = true }: { showDpPlaceholder?: boolean }) {
+export function MissionQueue() {
   const missions = useHamilton((s) => s.missions);
   const table = useHamilton((s) => s.tssTable);
   const selected = useHamilton((s) => s.selectedMission);
@@ -77,7 +77,6 @@ export function MissionQueue({ showDpPlaceholder = true }: { showDpPlaceholder?:
                 if (selected !== ms.mission.mission_id) selectMission(ms.mission.mission_id);
               }}
               onBranch={(branch, opts) => chooseBranch(ms.mission.mission_id, branch, opts)}
-              showDpPlaceholder={showDpPlaceholder && ms.tss?.verdict === 'FAIL' && !!ms.tss.gated}
             />
           </li>
         ))}
