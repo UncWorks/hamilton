@@ -47,8 +47,9 @@ The 5-minute demo flow Adam triggers, beat by beat:
 2. **`B-0:45`** — Unit B's inter-arrival time stretches from ~1.0s to 1.17s (3.4σ). Temporal anomaly fires; trust drops to ≈0.70 (WATCH band, still at/above the 0.60 GPS-guided TSS minimum, C); B's icon begins to fade; trust trace beside it reads *"B-link cadence degraded 18s ago — investigating."* *(`UR-02`, `UR-03`, `FR-01`, `FR-06`, `FR-08`)*
 3. **`B-0:55`** — CRC error rate climbs 0.2% → 6% (past the 5% threshold). Trust ≈0.65, still WATCH. Trust trace updates: *"B-link: 6% corrupted frames, cadence 1.17s."* *(`UR-03`, `FR-02`, `FR-08`)*
 4. **`B-1:05`** — Spatial discrimination clears blanket-EMI hypothesis. Side panel: *"Degradation directional, vicinity B's flank corridor. Neighbors A, C unaffected."* A and C hold at 1.00; B's spatial component reads localized (0.60). *(`UR-04`, `FR-03`)*
-5. **`B-1:15`** — The jammer reaches full power: cadence 1.0s → 6.1s gap, CRC 0.2% → 14%, and the fingerprint matcher names the candidate jammer profiles, ranked: `ground_based_gps_uhf_barrage (1.00) → affected: Excalibur, JDAM-ER, Switchblade 300, GMLRS-U`. Two more candidates shown with their munitions-affected lists; per-candidate citations on hover. B's trust falls to 0.13, its first score below the 0.60 GPS-guided TSS minimum (C → E5). *(`UR-04`, `UR-09`, `FR-04`, `FR-04a`)*
-6. **`B-1:20` (the wedge) — call for fire at B fails TSS in-row.** At `B-1:12` OBS B (FO) sends a call for fire, AB1001, for M982 Excalibur (`fires/mission/AB1001`); it enters the mission queue as TSS PASS (B C3). At `B-1:15` B drops to E5 and the row — not the screen — changes: `FM AB1001 | OBS B (FO) | M982 (GPS) | TSS: FAIL — RELIABILITY E5 (min C) · AGE 1s OK`, `Rec. method of control: DO NOT LOAD (M982)`, branches `[1] Shift → M795 HE, adjust fire` / `[2] Confirm via alt channel` / `[3] AT MY COMMAND — re-rate in 60 s` / `[4] Accept risk… (FSO)`. No modal, no scrim, focus unchanged. Adam presses `1`: the mission re-plans to M795 HE, TSS PASS (unguided is not gated); the branch is logged with mission id, TSS result, J, report age, role and DTG. *(`HS-05`, `UR-06`, `UR-07`, `FR-07`)*
+5. **`B-1:15`** — The jammer reaches full power: cadence 1.0s → 6.1s gap, CRC 0.2% → 14%, and the fingerprint matcher names the candidate jammer profiles, ranked: `ground_based_gps_uhf_barrage (1.00) → affected: Excalibur, JDAM-ER, Switchblade 300, GMLRS-U`. Two more candidates shown with their munitions-affected lists; per-candidate citations on hover. B's trust falls to 0.13, its first score below the 0.60 GPS-guided TSS minimum (C → E5). *(`UR-04`, `UR-09`, `FR-04`, `FR-04a`)* **AoE (planned, `FR-04b` / `FR-06a`):** the high match (6/6, leading by ≥ 2/6) triggers the first estimate. The COP shows the civil-GNSS area of effect — 90% fill, 50% dashed outline — labelled `Est. GPS denial · Pole-21-class · 90% · 3 s ago · 4 degraded / 4 healthy`, and the card lists *"Inside: OBS B (AB1001 observer) — 90%"*. **No jammer point, no bearing line, no ring:** the emitter's position is known only to the simulator. *(`HS-20`, `HS-21`, `HS-22`, `HS-24`)*
+6. **`B-1:20` (the wedge) — call for fire at B fails TSS in-row.** At `B-1:12` OBS B (FO) sends a call for fire, AB1001, for M982 Excalibur (`fires/mission/AB1001`); it enters the mission queue as TSS PASS (B C3). At `B-1:15` B drops to E5 and the row — not the screen — changes: `FM AB1001 | OBS B (FO) | M982 (GPS) | TSS: FAIL — RELIABILITY E5 (min C) · AGE 1s OK`, `Rec. method of control: DO NOT LOAD (M982)`, branches `[1] Shift → M795 HE, adjust fire` / `[2] Confirm via alt channel` / `[3] AT MY COMMAND — re-rate in 60 s` / `[4] Accept risk… (FSO)`. No modal, no scrim, focus unchanged. Adam presses `1`: the mission re-plans to M795 HE, TSS PASS (unguided is not gated); the branch is logged with mission id, TSS result, J, report age, role and DTG. *(`HS-05`, `UR-06`, `UR-07`, `FR-07`)* **SHOULD (`FR-07a`):** the row adds `ADVISORY OBS B in est. GPS denial (90%)`; the verdict and branches do not change. *(`HS-23`)*
+7. **`B-1:50` → `B-2:15` — the estimate follows its evidence (planned).** B repositions and reports healthy; the estimate recomputes within 6 s and the area edge moves. At `B-2:15` the jammer is off: 10 s later the area is outline-only, *"Last est. HHMMZ"*; at +120 s it is retired. Each change is an after-action line. *(`HS-21`, `HS-24`, `HS-25`, `FR-04b`, `FR-06a`)*
 
 The **30 seconds that win the demo are 1:15 → 1:50.** Everything else is setup or recovery.
 
@@ -70,6 +71,7 @@ flowchart LR
     subgraph BUS["Transport spine — MQTT"]
         T1["integrity/trust/{source_id}<br/>continuous score @ ≥1Hz"]
         T2["integrity/fingerprint/candidates<br/>top-3 + munitions affected"]
+        T3["integrity/emitter/estimate<br/>AoE contours (retained) — planned"]
     end
 
     subgraph RENDER["Renderers — parallel fan-out"]
@@ -88,6 +90,9 @@ flowchart LR
     RUST <--> STORE
     RUST -- "FR-05" ==> T1
     RUST -- "FR-04a" --> T2
+    RUST -. "FR-04b (planned)" .-> T3
+    T3 -. "FR-06a AoE layer" .-> CESIUM
+    T3 -. "FR-06a AoE layer" .-> ML
     T1 -- "FR-06 (entity alpha)" --> CESIUM
     T1 -. "FR-06 (fallback path)" .-> ML
     T1 -. "FR-06 (same payload)" .-> AIP
@@ -124,12 +129,19 @@ flowchart LR
 | `UR-01` continuous trust per track | `FR-05` | Rust engine score aggregator → MQTT `integrity/trust/{source_id}` | Tech lead | verified | R16 gradient edge |
 | `UR-02` visible icon fade on jam | `FR-06` | Cesium `Entity.billboard.color.alpha` bound to score via `CallbackProperty`; pulsing halo at <0.6, full fade <0.3 (MapLibre fallback path retained) | Frontend (Joseph/Evan) | scoped — Sunday Cesium spike | R18 (judge dismisses if novelty isn't visible early); **R-NEW Cesium unfamiliarity** |
 | `UR-03` plain-English degradation reason | `FR-01`, `FR-02`, `FR-08` | Rust detectors → MQTT → LLM narrator (function-calling) | Tech lead + LLM owner | verified | R14 narration drift |
-| `UR-04` localized vs. blanket; named jammer | `FR-03`, `FR-04` | Spatial correlation discriminator; threshold-based fingerprint matcher; **Cesium terrain-masked LOS overlay from candidate jammer site → Unit B's flank corridor** | Tech lead | scoped — detector verified, LOS overlay Sunday | R14 (must read as deterministic, not classifier) |
-| `UR-04`, `UR-09` ranked candidates + munitions affected | `FR-04a` | Overlap-ratio matcher; MQTT `integrity/fingerprint/candidates`; **Cesium `Cesium3DTileset` glTF models geolocated at candidate sites (R-330Zh Zhitel, Pole-21)** | Tech lead (UI: Joseph/Evan) | scoped — depends on FR-04 top-N + Sunday Cesium spike + glTF asset prep | R14 verbatim defense; R15 inventory-list discipline; **R-NEW glTF asset bundling** |
+| `UR-04` localized vs. blanket; named jammer | `FR-03`, `FR-04` | Spatial correlation discriminator; threshold-based fingerprint matcher; **Cesium terrain-masked LOS overlay from candidate jammer site → Unit B's flank corridor** *(superseded by `HS-20`: no candidate jammer site exists to draw from; LOS from an emitter point only after the `HS-26` gate)* | Tech lead | scoped — detector verified, LOS overlay Sunday | R14 (must read as deterministic, not classifier) |
+| `UR-04`, `UR-09` ranked candidates + munitions affected | `FR-04a` | Overlap-ratio matcher; MQTT `integrity/fingerprint/candidates`; **Cesium `Cesium3DTileset` glTF models geolocated at candidate sites (R-330Zh Zhitel, Pole-21)** *(superseded by `HS-20`: no geolocated jammer models; the AoE layer `FR-06a` replaces them)* | Tech lead (UI: Joseph/Evan) | scoped — depends on FR-04 top-N + Sunday Cesium spike + glTF asset prep | R14 verbatim defense; R15 inventory-list discipline; **R-NEW glTF asset bundling** |
 | `HS-05` (was `UR-05`) TSS FAIL in the mission row | `FR-07` | `lib/tss.ts` evaluator + versioned TSS table + `components/fires` mission queue/row in the side column (no modal) | Frontend | implemented (feat/tss-mission-row) | R16 gating edge; text-first status (R18) |
 | `UR-06` 3-bullet trust trace per AI rec | `FR-07`, `FR-08` | LLM function-calling over structured detection events | LLM owner | verified | R14 (no free-form generation) |
 | `UR-07` (`HS-07`) pre-planned branches | `FR-07` | Row branches: shift → M795 / confirm via alternate means / AT MY COMMAND / accept risk (FSO) — keys 1–4 | Frontend | implemented | R16 (options must be concrete, not yes/no) |
 | `UR-08` offline single-laptop guarantee | `NFR-01..03` | docker compose; **local Cesium 3D Tiles + terrain server (~2–4GB bundle)**; Llama 3.2 3B local fallback; **MapLibre + PMTiles retained as Cesium-fail fallback (~200MB)** | Tech lead | scoped — bundle size + offline cold-start verification Sunday | R6 API rate limits; **R2 demo failure (raised by spine swap)**; **R-NEW demo-laptop SSD/RAM headroom** |
+| `HS-20` jammer location never presumed (MUST) | `FR-04`, `FR-04b`, `FR-06a` | comms-sim hidden `EmitterTruth` + link budget; engine no-leak test; delete `JAMMER_LOCATION`, the B→jammer vector and the 120 m ring from both spines | Sim + frontend | planned (feat/aoe-preview: plan + previews) | R14; scenario re-calibration of the trust beats |
+| `HS-21` estimated AoE on a high match (MUST) | `FR-04b`, `FR-06a` | `estimator` crate (grid, two-ray, binary probit, contours) → `integrity/emitter/estimate` → AoE layers on both spines | Tech lead + frontend | planned | R14 wording (§7); Cesium ground-polygon outline gotcha |
+| `HS-22` who is inside the AoE (MUST, civil GNSS) | `FR-04b`, `FR-06a` | `lib/aoe.ts` point-in-MultiPolygon → candidate-card AoE block | Frontend | planned | false "denied" claims for unmodelled classes |
+| `HS-23` TSS advisory (SHOULD) | `FR-07a` | `evaluateTss` `advisories[]` → `MissionRow` chip | Frontend | planned | must never change the verdict |
+| `HS-24` AAR record (MUST) | `FR-04b` | DuckDB `emitter_estimates` + `events` kind `emitter_estimate` → event terminal line | Tech lead | planned | — |
+| `HS-25` stale / retire (MUST) | `FR-04b`, `FR-06a` | ticker hold 10 s → `stale`, retire 120 s; web stale timer | Tech lead + frontend | planned | — |
+| `HS-26` earned emitter symbol (COULD), `HS-27` NAI (SHOULD), `HS-28` CoT (COULD) | `FR-04b`, `FR-06a`, path-forward | symbol gate; NAI graphic; CoT bridge | — | deferred | EEFI (CoT) |
 | (all UR) AIP secondary surface | `FR-06` (same payload) | REST/webhook shim → Palantir AIP ontology object | Joseph or Evan (NOT Kristian) | conditional — 1300 Saturday gate | R13 AIP bandwidth; R19 vendor-neutral erosion |
 | (all UR) **MapLibre fallback spine** | `FR-06`, `FR-07` (same payload) | MapLibre + PMTiles renderer; activated only if §6c Cesium gate fails Sunday | Frontend | verified — held in reserve | R2 mitigation; preserves `NFR-05` |
 
@@ -211,12 +223,27 @@ flowchart LR
 
 Calls for fire, **retained**, `FireMissionSchema` (`packages/contracts/src/fire-mission.ts`; TS only — the engine does not consume it): `mission_id` (e.g. `AB1001`), `observer {source_id, label}`, `target {grid, lat, lon, description, class: standard|hpt}`, `munition {designation, name, class: gps_guided|laser_guided|unguided}`, `firing_unit`, `dependencies [{source_id, role: observer_link|target_location|firing_unit_nav}]`, `status`, `method_of_control`, `received_at`. An empty retained payload closes the mission. Demo producer: comms-sim (`missions.py`) — AB1002 (OBS C, M795) at 0:30, AB1001 (OBS B, M982) at 1:12; each run clears the previous run's retained missions first. TSS is evaluated in the web client (`apps/web/src/lib/tss.ts`); see `docs/plans/tss-mission-row.md`.
 
+### 5.4 Topic — `integrity/emitter/estimate` (per `FR-04b`; planned, `docs/plans/jammer-aoe.md`)
+
+Needed by `HS-21` (MUST): the engine owns the estimate and the C2 only draws it. **Retained, QoS 1.** An empty retained payload retires the estimate. `EmitterEstimatePayloadSchema` (zod, strict) / `EmitterEstimatePayload` (`contracts-rs`, `deny_unknown_fields`).
+
+**MVP fields:** `schema: "emitter-estimate/1"`, `estimate_id` (stable per episode, e.g. `J1-…Z`), `state` (`active` | `stale` | `unbounded` | `retired`), `method_id`, `method_match`, `method_ambiguous`, `aoe[] {rx_class, contours[{p: 0.5|0.9, polygon: MultiPolygon, area_km2}], radius_km_range, footprint_radius_km}`, `emitter {region90: MultiPolygon, area90_km2, erp_dbm_range}`, `evidence[] {source_id, state: degraded|healthy, rx_class, age_s, lat, lon}`, `model {kind: "set", propagation: "two_ray", grid_m, hypotheses, sigma_db}`, `computed_at`, `valid_until`. About 4–8 KB per publish.
+
+**Reserved, absent in the MVP:** `emitter.mode {lat, lon, ce90_m}` — only when the `HS-26` gate is met (≤ 25 km² or ≥ 2 bearings crossing ≥ 30°); `bearings_used` and `df/bearing/{sensor_id}` (v3).
+
+**Properties:**
+- Recompute on evidence change (positions quantised to the 250 m grid), at most every 5 s; 10 s heartbeat; `stale` 10 s after the trigger drops; retired at 120 s.
+- Deterministic: identical inputs → byte-identical payload (R14, §7).
+- **No ground truth.** The simulator's emitter position, EIRP and mast never appear on this or any topic (`HS-20`; no-leak test over a full run).
+- Inputs ride on telemetry as two optional fields, `rx_class` and `gnss_fix` (`telemetry/2`); graded C/N0 / AGC fields are v2.
+- Every state change is an `events` row of kind `emitter_estimate` plus the stored payload with an evidence hash (`HS-24`).
+
 ### 5.3 Consumer contracts
 
 | Consumer | Subscribes to | Status | Notes |
 |---|---|---|---|
-| **CesiumJS renderer (`FR-06`, `FR-07`) — primary** | both topics | scoped — Sunday gate (§6c) | entity `color.alpha` binding via `CallbackProperty`; fire-mission row beside the viewport (no modal); `Cesium3DTileset` glTF jammer models from `integrity/fingerprint/candidates` |
-| MapLibre renderer (`FR-06`, `FR-07`) — fallback | both topics | verified — held in reserve | activated only if §6c Cesium gate fails; preserves `NFR-05` |
+| **CesiumJS renderer (`FR-06`, `FR-06a`, `FR-07`) — primary** | trust + candidates; `integrity/emitter/estimate` (planned) | scoped — Sunday gate (§6c) | entity `color.alpha` binding via `CallbackProperty`; fire-mission row beside the viewport (no modal); `Cesium3DTileset` glTF jammer models from `integrity/fingerprint/candidates` |
+| MapLibre renderer (`FR-06`, `FR-06a`, `FR-07`) — fallback | trust + candidates; `integrity/emitter/estimate` (planned) | verified — held in reserve | activated only if §6c Cesium gate fails; preserves `NFR-05` |
 | Palantir AIP shim | `integrity/trust/{source_id}` only | conditional (1300 gate) | ~50 LOC REST/webhook bridge → AIP ontology object property |
 | LLM narrator (`FR-08`) | `integrity/trust/{source_id}` (uses `components`) | verified | function-calling input shape; **no free-form generation about facts not in payload** |
 
@@ -278,7 +305,7 @@ One data source, one style, two renderings — so the 2D fallback and the 3D pri
 
 ### R14 — deterministic boundary
 
-The threshold-based components are `FR-01` (3σ inter-arrival), `FR-02` (>5% CRC), `FR-03` (neighbor-radius spatial discriminator), `FR-04` (fingerprint threshold-boolean overlap), and `FR-04a` (ranked top-3 by deterministic overlap ratio). The LLM-touched component is `FR-08` only — and it is constrained to function-calling over structured detection events, not free generation. **No model, no training, no probability distribution anywhere in the demo path.**
+The threshold-based components are `FR-01` (3σ inter-arrival), `FR-02` (>5% CRC), `FR-03` (neighbor-radius spatial discriminator), `FR-04` (fingerprint threshold-boolean overlap), and `FR-04a` (ranked top-3 by deterministic overlap ratio). The LLM-touched component is `FR-08` only — and it is constrained to function-calling over structured detection events, not free generation. **No model, no training, no probability distribution anywhere in the demo path.** *Amendment (planned `FR-04b`):* the AoE estimator reports closed-form 50% / 90% levels over a fixed grid — deterministic, no learned weights, no sampling, byte-identical for identical input. It is R14-safe, but the "no probability distribution" sentence is then literally false; use the `FR-04b` answer for the estimator.
 
 > **Verbatim defensive answer for judge Q&A** (memorize): *"The score is a normalized count of matched threshold booleans over a fingerprint library publicly characterized by Bronk RUSI 2024 and JAPCC 2023. There is no model, no training, no probability distribution — it's a deterministic overlap ratio. The 'likelihood' framing is operator-readable shorthand for that ratio."*
 
