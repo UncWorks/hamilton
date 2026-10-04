@@ -47,11 +47,9 @@ export interface MissionRowProps {
   selected: boolean;
   onSelect: () => void;
   onBranch: (branch: TssBranchId, opts?: { by?: Decider; reason?: string }) => void;
-  /** Show the DP / FFIR placeholder tag (Alternative C is out of scope). */
-  showDpPlaceholder?: boolean;
 }
 
-export function MissionRow({ ms, now, selected, onSelect, onBranch, showDpPlaceholder = false }: MissionRowProps) {
+export function MissionRow({ ms, now, selected, onSelect, onBranch }: MissionRowProps) {
   const [riskOpen, setRiskOpen] = useState(false);
   const { mission, tss, branches } = ms;
   if (!tss) return null;
@@ -153,14 +151,6 @@ export function MissionRow({ ms, now, selected, onSelect, onBranch, showDpPlaceh
           <strong style={{ color: 'var(--gating-primary)', fontWeight: 600 }}>{tss.recommended}</strong>{' '}
           ({firing ? `mission firing; ${designation(tss.lead.source_id)} ${tss.lead.j}` : mission.munition.designation})
           {tss.recommended === 'AT MY COMMAND' && ' · guns may lay'}
-          {showDpPlaceholder && (
-            <span
-              title="Decision point / FFIR tie-in is planned (assessment §3 Alt C) and not implemented"
-              style={{ marginLeft: 'var(--space-3)', color: 'var(--text-tertiary)', fontWeight: 400 }}
-            >
-              [DP 1 · FFIR-2 (planned)]
-            </span>
-          )}
         </div>
       ) : tss.gated ? (
         <div style={{ ...mono, color: 'var(--text-tertiary)' }}>Rec. method of control: none — TSS met</div>
@@ -402,7 +392,7 @@ function RiskForm({
       }}
     >
       <p style={{ margin: 0, fontSize: 'var(--text-micro)', color: 'var(--text-secondary)', ...mono }}>
-        Risk decision (FM 1-02 p. 1-164). TSS are commander-approved: FSO or CDR only. Evaluated against the HPT exception row; logged.
+        Risk decision. TSS are commander-approved: FSO or CDR only. Evaluated against the HPT exception row; logged.
       </p>
       <div style={{ display: 'grid', gridTemplateColumns: 'auto auto 1fr', gap: 'var(--space-2)', alignItems: 'end' }}>
         <label style={label}>

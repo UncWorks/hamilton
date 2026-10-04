@@ -14,12 +14,12 @@ import type { BasemapMode } from '@/lib/basemap';
 
 const CesiumSpine = dynamic(
   () => import('./CesiumSpine').then((m) => m.CesiumSpine),
-  { ssr: false, loading: () => <SpineLoader label="cesium" /> },
+  { ssr: false, loading: () => <SpineLoader label="3D map" /> },
 );
 
 const MapSpine = dynamic(
   () => import('./MapSpine').then((m) => m.MapSpine),
-  { ssr: false, loading: () => <SpineLoader label="maplibre" /> },
+  { ssr: false, loading: () => <SpineLoader label="map" /> },
 );
 
 interface SpineProps {
@@ -66,7 +66,7 @@ function SpineLoader({ label }: { label: string }) {
         textTransform: 'uppercase',
       }}
     >
-      loading {label} spine…
+      Loading {label}…
     </div>
   );
 }

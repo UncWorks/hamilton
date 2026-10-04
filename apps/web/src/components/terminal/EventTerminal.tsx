@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { DetectionEvent } from '@hamilton/contracts';
 import { useHamilton, type DecisionLogEntry } from '@/store/hamilton';
 import { engineUrl } from '@/lib/engine-api';
+import { eventKind, eventMessage, eventWho } from '@/lib/display-names';
 
 
 const POLL_MS = 1_000;
@@ -30,14 +31,13 @@ interface TerminalRow {
   journal: boolean;
 }
 
-/**
- * Display labels for engine kinds whose wire names predate the TSS row
- * (the wire enum is the engine's; renaming it is an engine change —
- * docs/plans/tss-mission-row.md).
- */
-const KIND_LABEL: Record<string, string> = {
-  modal_gated: 'tss_fail',
-  modal_selection: 'branch',
+/** Engine kinds are relabelled in lib/display-names (the wire enum is the engine's). */
+const JOURNAL_KIND_LABEL: Record<DecisionLogEntry['kind'], string> = {
+  received: 'call for fire',
+  tss: 'TSS',
+  branch: 'branch',
+  re_rate: 're-rate',
+  confirmation: 'confirmation',
 };
 
 function journalRow(e: DecisionLogEntry): TerminalRow {
@@ -49,7 +49,7 @@ function journalRow(e: DecisionLogEntry): TerminalRow {
   return {
     timestamp: e.dtg,
     who: `FM ${e.mission_id}`,
-    kind: e.kind === 'branch' ? 'branch' : e.kind === 're_rate' ? 're-rate' : e.kind === 'received' ? 'call for fire' : e.kind,
+    kind: JOURNAL_KIND_LABEL[e.kind],
     message: `${e.message}${facts}`,
     journal: true,
   };
@@ -92,9 +92,9 @@ export function EventTerminal({ height = 160 }: EventTerminalProps) {
   const rows: TerminalRow[] = [
     ...events.map((e) => ({
       timestamp: e.timestamp,
-      who: e.source_id,
-      kind: KIND_LABEL[e.kind] ?? e.kind,
-      message: e.message,
+      who: eventWho(e.source_id),
+      kind: eventKind(e.kind),
+      message: eventMessage(e),
       journal: false,
     })),
     ...journal.map(journalRow),
@@ -126,9 +126,9 @@ export function EventTerminal({ height = 160 }: EventTerminalProps) {
           gridTemplateColumns: '1fr auto',
         }}
       >
-        <span>after-action log</span>
+        <span>After-action log</span>
         <span style={{ color: paused ? 'var(--gating-primary)' : 'var(--text-tertiary)' }}>
-          {paused ? '⏸ paused (hover)' : 'tail-following'}
+          {paused ? '⏸ paused (hover)' : 'live'}
         </span>
       </header>
       <div
@@ -163,12 +163,12 @@ export function EventTerminal({ height = 160 }: EventTerminalProps) {
 
 function kindColor(kind: string): string {
   switch (kind) {
-    case 'tss_fail':
-    case 'tss':
+    case 'TSS fail':
+    case 'TSS':
     case 'branch':
     case 're-rate':
       return 'var(--gating-primary)';
-    case 'fingerprint':
+    case 'jammer match':
       return 'var(--trust-degraded)';
     case 'recovery':
       return 'var(--trust-nominal)';

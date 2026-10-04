@@ -2,6 +2,7 @@
 
 import type { FingerprintCandidate } from '@hamilton/contracts';
 import { trustBand } from '@/lib/trust-gradient';
+import { methodName } from '@/lib/display-names';
 
 interface CandidateCardsProps {
   candidates: FingerprintCandidate[];
@@ -11,7 +12,7 @@ export function CandidateCards({ candidates }: CandidateCardsProps) {
   if (!candidates.length) return null;
   return (
     <section
-      aria-label="Top candidate jamming methods"
+      aria-label="Likely jamming methods"
       style={{ display: 'grid', gap: 'var(--space-3)' }}
     >
       <h3
@@ -23,7 +24,7 @@ export function CandidateCards({ candidates }: CandidateCardsProps) {
           color: 'var(--text-tertiary)',
         }}
       >
-        Top candidate methods · FR-04a
+        Likely jamming methods
       </h3>
       <ol
         style={{
@@ -89,12 +90,12 @@ function CandidateCard({ candidate }: { candidate: FingerprintCandidate }) {
       >
         <div
           style={{
-            fontFamily: 'var(--font-mono)',
             fontSize: 'var(--text-body)',
             color: 'var(--text-primary)',
           }}
+          data-method-id={candidate.method_id}
         >
-          {candidate.method_id}
+          {methodName(candidate.method_id)}
         </div>
         <div
           className="trust-readout"

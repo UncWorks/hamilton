@@ -35,8 +35,8 @@ export function LlmToggle() {
       }}
     >
       <span
-        aria-label={`status: ${status}`}
-        title={`status: ${status}`}
+        aria-label={`LLM status: ${status}`}
+        title={`LLM status: ${status}`}
         style={{
           width: 8,
           height: 8,

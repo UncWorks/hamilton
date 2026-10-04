@@ -39,11 +39,16 @@ export interface TrustComponentsLike {
   fingerprint: number;
 }
 
-export const TRUST_FACTORS: readonly { key: TrustFactor; fr: string; label: string }[] = [
-  { key: 'temporal', fr: 'FR-01', label: 'Temporal' },
-  { key: 'stability', fr: 'FR-02', label: 'Stability' },
-  { key: 'spatial', fr: 'FR-03', label: 'Spatial' },
-  { key: 'fingerprint', fr: 'FR-04', label: 'Fingerprint' },
+/**
+ * The four detectors in aggregation order (FR-01 temporal, FR-02 stability,
+ * FR-03 spatial, FR-04 fingerprint). `label` is the operator-facing name shown
+ * in the rating breakdown.
+ */
+export const TRUST_FACTORS: readonly { key: TrustFactor; label: string }[] = [
+  { key: 'temporal', label: 'Message timing' },
+  { key: 'stability', label: 'Link errors' },
+  { key: 'spatial', label: 'Neighbours' },
+  { key: 'fingerprint', label: 'Jammer match' },
 ];
 
 /** AggregatorWeights::default() — aggregator/src/lib.rs. Sum to 1.0. */
@@ -60,7 +65,6 @@ export const WORST_BLEND = 0.4;
 
 export interface FactorContribution {
   factor: TrustFactor;
-  fr: string;
   label: string;
   /** Component value cᵢ in [0,1]. */
   value: number;
@@ -89,7 +93,6 @@ export function aggregateTrust(
   for (const f of TRUST_FACTORS) if (c[f.key] < c[worstFactor]) worstFactor = f.key;
   const factors = TRUST_FACTORS.map((f) => ({
     factor: f.key,
-    fr: f.fr,
     label: f.label,
     value: c[f.key],
     weight: w[f.key],

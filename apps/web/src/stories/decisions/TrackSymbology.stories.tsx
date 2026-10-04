@@ -308,8 +308,12 @@ export const RatingTooltip: Story = {
     // Engine beat 1:15 (Unit B): components 0 / 0.308 / 0.6 / 0 → 0.127.
     await expect(tip).toHaveTextContent('UNRELIABLE');
     await expect(tip).toHaveTextContent('J E5');
-    await expect(within(tip).getByTestId('formula')).toHaveTextContent(/= 0\.127$/);
-    await expect(tip).toHaveTextContent('1.0s → 6.1s');
+    // 0.6 × 0.212 + 0.4 × 0 = 0.127 → shown to two places.
+    await expect(within(tip).getByTestId('formula')).toHaveTextContent(/^Score 0\.13 = 60% weighted average \(0\.21\) \+ 40% weakest factor \(0\.00\)$/);
+    await expect(tip).toHaveTextContent('Messages arriving every 6.1 s (normally 1.0 s)');
+    await expect(tip).toHaveTextContent('Only this unit is affected — A and C within 500 m are healthy');
+    await expect(tip).toHaveTextContent('Matches a known ground-based GPS/UHF barrage jammer on all 6 signal checks');
+    await expect(tip).not.toHaveTextContent(/FR-0|ground_based/);
     await expect(canvasElement.ownerDocument.querySelectorAll('[role="alert"]')).toHaveLength(0);
     await userEvent.unhover(trigger);
     await waitFor(() => expect(tip).not.toBeVisible());

@@ -13,6 +13,7 @@ import { affiliationRank } from '@/lib/declutter';
 import { copNowMs, designationOf, functionOverrideOf, isStaleAt } from '@/lib/cop-symbols';
 import { describeTrackSymbol, type ExplanationProps, type SymbolTrack } from '@/components/symbol';
 import { useHamilton, type TrackState } from '@/store/hamilton';
+import { UNIT_ROLES, methodName, methodShortName } from '@/lib/display-names';
 
 export interface CandidateSite {
   lat: number;
@@ -50,14 +51,8 @@ export interface SpineSymbol {
 
 export const JAMMER_SYMBOL_ID = '__jammer';
 
-const UNIT_TITLES: Readonly<Record<string, string>> = {
-  unit_a: 'A · FA observer team (COLT/FIST)',
-  unit_b: 'B · FA battery',
-  unit_c: 'C · FA target-acq radar platoon',
-};
-
 function titleOf(t: TrackState, track: SymbolTrack): string {
-  return UNIT_TITLES[t.source_id] ?? `${track.designation} · ${SYMBOL_FUNCTIONS[symbolFunctionOf(track)].name}`;
+  return `${track.designation} · ${UNIT_ROLES[t.source_id] ?? SYMBOL_FUNCTIONS[symbolFunctionOf(track)].name}`;
 }
 
 /** A live track as the production symbol needs it. */
@@ -107,7 +102,7 @@ export function buildSpineSymbols(
         payloadScore: t.score,
         lastGoodIso: t.last_update,
         nowIso,
-        neighbours: neighbours.length ? `neighbours ${neighbours.join(', ')}` : undefined,
+        neighbours: neighbours.length ? neighbours.join(', ') : undefined,
         topCandidate: top,
         corroboration: evaluation?.corroboration,
         jOverride: evaluation?.jOverride,
@@ -119,13 +114,17 @@ export function buildSpineSymbols(
     // The fix: hostile EW jamming (Table 5-3 p 5-18). The FR-04a method is the
     // H amplifier (right of the frame) — part of the symbol, so it moves with
     // it into a declutter stack instead of crossing the stack's leader line.
-    const track: SymbolTrack = { affiliation: 'enemy', fn: 'ew-jamming', designation: 'J1', info: j.method_id || undefined };
-    out.push({ id: JAMMER_SYMBOL_ID, kind: 'jammer', lat: j.lat, lon: j.lon, track, rank: affiliationRank('enemy'), label: labelOf(track) });
+    // On the map the H field carries the short method name; the accessible name gets the full one.
+    const track: SymbolTrack = { affiliation: 'enemy', fn: 'ew-jamming', designation: 'J1', info: j.method_id ? methodShortName(j.method_id) : undefined };
+    const label = j.method_id ? labelOf({ ...track, info: methodName(j.method_id) }) : labelOf(track);
+    out.push({ id: JAMMER_SYMBOL_ID, kind: 'jammer', lat: j.lat, lon: j.lon, track, rank: affiliationRank('enemy'), label });
   }
   (opts.candidateSites ?? []).forEach((c, i) => {
-    const info = [c.method_id, c.score !== undefined ? c.score.toFixed(2) : undefined].filter(Boolean).join(' ') || undefined;
+    const score = c.score !== undefined ? c.score.toFixed(2) : undefined;
+    const info = [c.method_id ? methodShortName(c.method_id) : undefined, score].filter(Boolean).join(' ') || undefined;
     const track: SymbolTrack = { affiliation: 'enemy', fn: 'ew-jamming', status: 'anticipated', designation: c.label, info };
-    out.push({ id: `__candidate_${i}`, kind: 'candidate', lat: c.lat, lon: c.lon, track, rank: affiliationRank('enemy') + 0.5, label: labelOf(track) });
+    const full = [c.method_id ? methodName(c.method_id) : undefined, score ? `match ${score}` : undefined].filter(Boolean).join(' ') || undefined;
+    out.push({ id: `__candidate_${i}`, kind: 'candidate', lat: c.lat, lon: c.lon, track, rank: affiliationRank('enemy') + 0.5, label: labelOf({ ...track, info: full }) });
   });
   return out;
 }
