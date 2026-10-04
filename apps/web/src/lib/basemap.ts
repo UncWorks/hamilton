@@ -24,7 +24,7 @@ export const BASEMAP_MODES: readonly BasemapMode[] = ['offline', 'online', 'none
 /** Required attribution for the offline basemap (OSM ODbL + Protomaps). */
 export const OFFLINE_ATTRIBUTION = '© OpenStreetMap contributors, Protomaps';
 /** Required attribution for the online (dev-only) OSM raster tiles. */
-export const ONLINE_ATTRIBUTION = '© OpenStreetMap contributors · online dev basemap';
+export const ONLINE_ATTRIBUTION = '© OpenStreetMap contributors';
 
 export const PMTILES_PATH = '/tiles/avdiivka.pmtiles';
 export const GLYPHS_PATH = '/tiles/glyphs/{fontstack}/{range}.pbf';
