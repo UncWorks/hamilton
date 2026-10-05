@@ -49,6 +49,7 @@ import { symbolFunctionOf } from '@/lib/track-sidc';
 import { SpineOverlay, placeSymbols } from './SpineOverlay';
 import { jCodeOf, useSpineSymbols, type CandidateSite, type Evaluations } from './spine-symbols';
 import { cachedRaster, rasterizeSymbol, symbolPixelRatio } from './symbol-raster';
+import type { AoeEstimateLike } from '@/lib/aoe';
 
 // Fallback view before anything is framed (Avdiivka AO). As soon as there are
 // fit points the camera frames them instead (lib/camera-fit.ts). This used to
@@ -59,18 +60,17 @@ const AVDIIVKA = { lat: 48.14, lon: 37.745 };
 const REFIT_DURATION_S = 0.6;
 /** Pointer travel (px) before a drag counts as navigation. */
 const DRAG_THRESHOLD_PX = 4;
-/** Jammer area of uncertainty (m) — an area graphic, unchanged by the symbol work. */
-const JAMMER_RING_M = 120;
 
 type FitPoint = LatLon & { id: string };
 type ScreenPos = Record<string, { x: number; y: number }>;
 
 interface CesiumSpineProps {
-  jammerLocation?: { lat: number; lon: number; method_id: string };
-  directionalFrom?: { lat: number; lon: number };
-  directionalTo?: { lat: number; lon: number };
-  /** Candidate NAI centre — framed by the camera fit when present. */
-  candidateNai?: { lat: number; lon: number };
+  /**
+   * FR-04b emitter estimate, drawn as the FR-06a area of effect (ground
+   * polygons). No jammer point, ring or bearing line is ever drawn (HS-20).
+   * The camera fit stays tracks-only (plan cut 5).
+   */
+  emitterEstimate?: AoeEstimateLike | null | undefined;
   /** Geolocated FR-04a candidate sites — drawn as anticipated (dashed) hostile EW symbols. */
   candidateSites?: readonly CandidateSite[];
   /** S2 evaluation inputs (corroboration / J override) per source. */
@@ -135,7 +135,6 @@ export function CesiumSpine(props: CesiumSpineProps) {
   const selectSource = useHamilton((s) => s.selectSource);
   const selectedId = useHamilton((s) => s.selectedSource);
   const { symbols, nowIso } = useSpineSymbols({
-    jammerLocation: props.jammerLocation,
     candidateSites: props.candidateSites,
     evaluations: props.evaluations,
   });
@@ -144,14 +143,11 @@ export function CesiumSpine(props: CesiumSpineProps) {
   const [activeId, setActiveId] = useState<string | null>(null);
 
   // --- Camera fit ------------------------------------------------------------
-  const { jammerLocation, candidateNai, initialRangeM } = props;
-  const fitPoints = useMemo<FitPoint[]>(() => {
-    const pts: FitPoint[] = symbols.filter((s) => s.kind === 'track').map((s) => ({ id: s.id, lat: s.lat, lon: s.lon }));
-    if (jammerLocation) pts.push({ id: '__jammer', lat: jammerLocation.lat, lon: jammerLocation.lon });
-    if (candidateNai) pts.push({ id: '__nai', lat: candidateNai.lat, lon: candidateNai.lon });
-    return pts;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [symbols, jammerLocation?.lat, jammerLocation?.lon, candidateNai?.lat, candidateNai?.lon]);
+  const { initialRangeM } = props;
+  const fitPoints = useMemo<FitPoint[]>(
+    () => symbols.filter((s) => s.kind === 'track').map((s) => ({ id: s.id, lat: s.lat, lon: s.lon })),
+    [symbols],
+  );
   const fitPointsRef = useRef(fitPoints);
   fitPointsRef.current = fitPoints;
   /** Ids framed by the last fit; null until the first one. */
@@ -266,7 +262,7 @@ export function CesiumSpine(props: CesiumSpineProps) {
     };
   }, [selectSource]);
 
-  /** Frame every fit point (tracks + jammer + NAI) at the −55° pitch. */
+  /** Frame every fit point (tracks) at the −55° pitch. */
   const fit = useCallback((durationS: number, rangeOverrideM?: number) => {
     const C = cesiumRef.current;
     const viewer = viewerRef.current;
@@ -476,62 +472,8 @@ export function CesiumSpine(props: CesiumSpineProps) {
     declutterRef.current?.call();
   }, [ready, symbols, selectedId, activeId, sizePx, rasterTick]);
 
-  // Jammer area ring + bearing line (area / line graphics, not symbols).
-  useEffect(() => {
-    const C = cesiumRef.current;
-    const viewer = viewerRef.current;
-    if (!ready || !C || !viewer) return;
-
-    for (const ent of overlayEntitiesRef.current) {
-      viewer.entities.remove(ent);
-    }
-    overlayEntitiesRef.current = new Set();
-
-    if (props.jammerLocation) {
-      const jl = props.jammerLocation;
-      const ent = viewer.entities.add({
-        id: 'jammer-overlay',
-        position: C.Cartesian3.fromDegrees(jl.lon, jl.lat, 0),
-        ellipse: {
-          semiMajorAxis: JAMMER_RING_M,
-          semiMinorAxis: JAMMER_RING_M,
-          // Explicit height: outlines are unsupported on terrain-clamped ellipses.
-          height: 0,
-          material: new C.Color(0.86, 0.7, 0.35, 0.18),
-          outline: true,
-          outlineColor: new C.Color(0.86, 0.7, 0.35, 0.6),
-        },
-      });
-      overlayEntitiesRef.current.add(ent);
-    }
-
-    if (props.directionalFrom && props.directionalTo) {
-      const ent = viewer.entities.add({
-        id: 'directional-overlay',
-        polyline: {
-          positions: C.Cartesian3.fromDegreesArray([
-            props.directionalFrom.lon,
-            props.directionalFrom.lat,
-            props.directionalTo.lon,
-            props.directionalTo.lat,
-          ]),
-          width: 2,
-          material: new C.Color(0.86, 0.7, 0.35, 0.55),
-          clampToGround: true,
-        },
-      });
-      overlayEntitiesRef.current.add(ent);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    ready,
-    props.jammerLocation?.lat,
-    props.jammerLocation?.lon,
-    props.directionalFrom?.lat,
-    props.directionalFrom?.lon,
-    props.directionalTo?.lat,
-    props.directionalTo?.lon,
-  ]);
+  // Area graphics (the FR-06a emitter-estimate AoE, overlayEntitiesRef) land
+  // here after the contract freeze (CP1).
 
   // Basemap imagery layer (per mode; swapped in place when the mode changes).
   const [imageryOn, setImageryOn] = useState(false);

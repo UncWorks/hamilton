@@ -4,11 +4,12 @@
 //
 // Basemap: a maplibre-gl Map with the offline Protomaps vector extract
 // (/tiles/avdiivka.pmtiles via the `pmtiles` protocol, Hamilton dark style,
-// self-hosted glyphs — lib/basemap.ts, System Design §6c "Basemap"). The
-// area / line graphics (jammer ring, bearing line) are deck.gl layers drawn
-// on the map through @deck.gl/mapbox MapboxOverlay (overlaid: deck's canvas
-// rides on the map and re-renders in the map's own render pass, so it never
-// drifts from the basemap).
+// self-hosted glyphs — lib/basemap.ts, System Design §6c "Basemap"). Area
+// graphics (the FR-06a emitter-estimate area of effect) are deck.gl layers
+// drawn on the map through @deck.gl/mapbox MapboxOverlay (overlaid: deck's
+// canvas rides on the map and re-renders in the map's own render pass, so it
+// never drifts from the basemap). No jammer point, ring or bearing line is
+// ever drawn (HS-20).
 //
 // Camera: MapLibre owns the camera (pan / zoom / keyboard), and every map
 // `move` is mirrored synchronously (flushSync) into the React viewState, so
@@ -35,7 +36,6 @@ import { flushSync } from 'react-dom';
 import maplibregl from 'maplibre-gl';
 import { Protocol as PmtilesProtocol } from 'pmtiles';
 import { MapboxOverlay } from '@deck.gl/mapbox';
-import { LineLayer, PolygonLayer } from '@deck.gl/layers';
 import { WebMercatorViewport, type MapViewState } from '@deck.gl/core';
 import { basemapMode, maplibreStyle, type BasemapMode } from '@/lib/basemap';
 import { usePrefersReducedMotion } from '@/hooks/usePrefersReducedMotion';
@@ -45,6 +45,7 @@ import { declutter, DECLUTTER_THROTTLE_MS, throttle, type DeclutterItem, type De
 import { LIVE_SYMBOL_PX, declutterBoxFor } from '@/lib/cop-symbols';
 import { SpineOverlay, placeSymbols } from './SpineOverlay';
 import { useSpineSymbols, type CandidateSite, type Evaluations } from './spine-symbols';
+import type { AoeEstimateLike } from '@/lib/aoe';
 import { BasemapAttribution } from './BasemapAttribution';
 
 // One pmtiles:// protocol handler per page (maplibre's protocol registry is global).
@@ -71,29 +72,12 @@ const INITIAL_VIEW = {
 };
 
 const REFIT_DURATION_MS = 600;
-/** Jammer area of uncertainty (m) — an area graphic, unchanged by the symbol work. */
-const JAMMER_RING_M = 120;
 
 type FitPoint = LatLon & { id: string };
 
-/** Ground circle as a lon/lat ring (small-area equirectangular approximation). */
-function circlePolygon(lat: number, lon: number, radiusM: number, n = 64): [number, number][] {
-  const dLat = radiusM / 111_320;
-  const dLon = radiusM / (111_320 * Math.cos((lat * Math.PI) / 180));
-  return Array.from({ length: n + 1 }, (_, i) => {
-    const a = (2 * Math.PI * i) / n;
-    return [lon + dLon * Math.cos(a), lat + dLat * Math.sin(a)];
-  });
-}
-
 interface MapSpineProps {
-  /** Optional directional vector overlay — Beat 1:05 spatial discrimination. */
-  directionalFrom?: { lat: number; lon: number };
-  directionalTo?: { lat: number; lon: number };
-  /** Suspected jammer — the EW jamming symbol (fix) inside a 120 m ring, framed by the camera fit. */
-  jammerLocation?: { lat: number; lon: number; method_id?: string };
-  /** Candidate NAI centre — framed by the camera fit when present. */
-  candidateNai?: { lat: number; lon: number };
+  /** FR-04b emitter estimate, drawn as the FR-06a area of effect. The camera fit stays tracks-only (plan cut 5). */
+  emitterEstimate?: AoeEstimateLike | null | undefined;
   /** Geolocated FR-04a candidate sites — drawn as anticipated (dashed) hostile EW symbols. */
   candidateSites?: readonly CandidateSite[];
   /** S2 evaluation inputs (corroboration / J override) per source. */
@@ -109,11 +93,11 @@ interface MapSpineProps {
   basemap?: BasemapMode;
 }
 
-export function MapSpine({ directionalFrom, directionalTo, jammerLocation, candidateNai, candidateSites, evaluations, symbolSizePx, initialZoom, basemap }: MapSpineProps) {
+export function MapSpine({ candidateSites, evaluations, symbolSizePx, initialZoom, basemap }: MapSpineProps) {
   const mode = basemap ?? basemapMode();
   const selectSource = useHamilton((s) => s.selectSource);
   const selectedId = useHamilton((s) => s.selectedSource);
-  const { symbols, nowIso } = useSpineSymbols({ jammerLocation, candidateSites, evaluations });
+  const { symbols, nowIso } = useSpineSymbols({ candidateSites, evaluations });
   const sizePx = symbolSizePx ?? LIVE_SYMBOL_PX;
   const reducedMotion = usePrefersReducedMotion();
   const reducedMotionRef = useRef(reducedMotion);
@@ -222,12 +206,8 @@ export function MapSpine({ directionalFrom, directionalTo, jammerLocation, candi
 
   // --- Camera fit ------------------------------------------------------------
   const fitPoints = useMemo<FitPoint[]>(() => {
-    const pts: FitPoint[] = symbols.filter((s) => s.kind === 'track').map((s) => ({ id: s.id, lat: s.lat, lon: s.lon }));
-    if (jammerLocation) pts.push({ id: '__jammer', lat: jammerLocation.lat, lon: jammerLocation.lon });
-    if (candidateNai) pts.push({ id: '__nai', lat: candidateNai.lat, lon: candidateNai.lon });
-    return pts;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [symbols, jammerLocation?.lat, jammerLocation?.lon, candidateNai?.lat, candidateNai?.lon]);
+    return symbols.filter((s) => s.kind === 'track').map((s) => ({ id: s.id, lat: s.lat, lon: s.lon }));
+  }, [symbols]);
   const fitPointsRef = useRef(fitPoints);
   fitPointsRef.current = fitPoints;
   const fittedIdsRef = useRef<Set<string> | null>(null);
@@ -337,45 +317,8 @@ export function MapSpine({ directionalFrom, directionalTo, jammerLocation, candi
 
   const { singles, stacks } = useMemo(() => placeSymbols(symbols, grouping, positions), [symbols, grouping, positions]);
 
-  // --- Area / line graphics (deck.gl) --------------------------------------
-  const jammerLayer = useMemo(() => {
-    if (!jammerLocation) return null;
-    return new PolygonLayer({
-      id: 'jammer-area',
-      data: [{ polygon: circlePolygon(jammerLocation.lat, jammerLocation.lon, JAMMER_RING_M) }],
-      getPolygon: (d: { polygon: [number, number][] }) => d.polygon,
-      filled: true,
-      stroked: true,
-      getFillColor: [220, 178, 90, 46],
-      getLineColor: [220, 178, 90, 153],
-      getLineWidth: 1.5,
-      lineWidthUnits: 'pixels',
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [jammerLocation?.lat, jammerLocation?.lon]);
-
-  const directionalLayer = useMemo(() => {
-    if (!directionalFrom || !directionalTo) return null;
-    return new LineLayer({
-      id: 'directional-vector',
-      data: [
-        {
-          source: [directionalFrom.lon, directionalFrom.lat],
-          target: [directionalTo.lon, directionalTo.lat],
-        },
-      ],
-      getSourcePosition: (d) => d.source,
-      getTargetPosition: (d) => d.target,
-      getColor: [220, 178, 90, 110],
-      getWidth: 2,
-      widthUnits: 'pixels',
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [directionalFrom?.lat, directionalFrom?.lon, directionalTo?.lat, directionalTo?.lon]);
-
-  useEffect(() => {
-    overlayRef.current?.setProps({ layers: [jammerLayer, directionalLayer].filter(Boolean) as never });
-  }, [jammerLayer, directionalLayer]);
+  // --- Area graphics (deck.gl) ----------------------------------------------
+  // The emitter-estimate AoE layers (overlayRef) land here after the contract freeze (CP1).
 
   return (
     <div

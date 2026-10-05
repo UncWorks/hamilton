@@ -287,7 +287,7 @@ export function SpineOverlay(p: SpineOverlayProps) {
                     >
                       <span style={{ flex: 1, textAlign: 'left' }}>{m.kind === 'track' ? unitName(m.id) : m.track.designation}</span>
                       <span style={{ color: 'var(--text-secondary)' }}>
-                        {m.track.score !== undefined ? m.track.score.toFixed(2) : m.kind === 'jammer' ? 'FIX' : 'CAND'}
+                        {m.track.score !== undefined ? m.track.score.toFixed(2) : 'CAND'}
                       </span>
                     </button>
                   </div>

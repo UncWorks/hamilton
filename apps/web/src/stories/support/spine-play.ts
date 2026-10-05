@@ -23,12 +23,21 @@ export const spinePlay = {
       await waitFor(() => expect(c.queryByTestId('cop-rating-tip')).toBeNull());
     },
 
-  /** Three stacks (≥ 3 within 1.5·s), the jammer inside the hostile one, the NE pair left as singles. */
+  /** HS-20: tracks drawn, and no jammer symbol (present or anticipated) anywhere on the COP. */
+  noPresumedJammer: (async ({ canvasElement }) => {
+    const c = within(canvasElement);
+    await waitFor(() => c.getByTestId('spine-overlay'), T);
+    await expect(canvasElement.querySelector('[data-symbol-id^="__jammer"], [data-testid^="cop-symbol-__jammer"]')).toBeNull();
+    await expect(canvasElement.querySelector('[data-symbol-id^="__candidate"], [data-testid^="cop-symbol-__candidate"]')).toBeNull();
+  }) as Play,
+
+  /** Three stacks (≥ 3 within 1.5·s), the hostile knot one of them, the NE pair left as singles; no jammer symbol. */
   dense: (async ({ canvasElement }) => {
     const c = within(canvasElement);
     await waitFor(() => expect(c.getAllByTestId('declutter-stack')).toHaveLength(3), T);
-    const jammer = canvasElement.querySelector('[data-testid="declutter-member"][data-symbol-id="__jammer"]');
-    await expect(jammer).toBeTruthy();
+    const hostile = canvasElement.querySelector('[data-testid="declutter-member"][data-symbol-id="hostile_ew_1"]');
+    await expect(hostile).toBeTruthy();
+    await expect(canvasElement.querySelector('[data-symbol-id^="__jammer"]')).toBeNull();
     await expect(c.getByTestId('cop-symbol-civ_relay_8')).toBeTruthy();
     await expect(c.getByTestId('cop-symbol-unk_emitter_9')).toBeTruthy();
   }) as Play,

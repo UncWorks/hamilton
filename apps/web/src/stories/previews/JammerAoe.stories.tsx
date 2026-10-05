@@ -4,7 +4,7 @@ import { expect, userEvent, waitFor, within } from '@storybook/test';
 import { MapSpine } from '@/components/cop/MapSpine';
 import { MissionQueue } from '@/components/fires/MissionQueue';
 import { CandidateCards } from '@/components/panel/CandidateCards';
-import { JAMMER_LOCATION, PHASE_TRACKS, UNIT_EVALUATION } from '@/stories/fixtures/avdiivka';
+import { UNIT_EVALUATION } from '@/stories/fixtures/avdiivka';
 import { B_SCORES, ab1001, liveTracks, missionState, missionsRecord } from '@/stories/fixtures/missions';
 import {
   AOE_CANDIDATES,
@@ -140,41 +140,6 @@ const svgReady = async (canvasElement: HTMLElement) => {
   const c = within(canvasElement);
   await waitFor(() => c.getByTestId('aoe-svg'), T);
   return c;
-};
-
-// ---------------------------------------------------------------------------
-// 1. Before (today)
-// ---------------------------------------------------------------------------
-
-/** Today's COP at 1:15–1:50: the hard-coded jammer J1 (solid = present) inside a 120 m ring, plus the bearing line from B. */
-export const BeforeToday: Story = {
-  name: 'Before (today)',
-  render: () => (
-    <div style={{ height: '100vh', width: '100%', position: 'relative' }}>
-      <MapSpine
-        evaluations={UNIT_EVALUATION}
-        jammerLocation={{ ...JAMMER_LOCATION, method_id: 'ground_based_gps_uhf_barrage' }}
-        directionalFrom={{ lat: PHASE_TRACKS.degraded.unit_b!.lat, lon: PHASE_TRACKS.degraded.unit_b!.lon }}
-        directionalTo={JAMMER_LOCATION}
-      />
-    </div>
-  ),
-  parameters: {
-    hamilton: { tracks: PHASE_TRACKS.degraded },
-    docs: {
-      description: {
-        story:
-          'What ships today (for comparison). Three units 245 m apart, a **hard-coded** jammer (`JAMMER_LOCATION`, 1.3 km east of B) ' +
-          'drawn as a **solid (present)** hostile EW symbol J1 inside a fixed **120 m** ring, and a **fabricated bearing line** from B — no ' +
-          'DF sensor exists. The geometry cannot happen physically (A is closer to the jammer than B). The plan deletes all three: ' +
-          '`app/page.tsx` (`JAMMER_LOCATION`, `showDirectional`, `showJammer`), `MapSpine.tsx` / `CesiumSpine.tsx` (`JAMMER_RING_M`, ' +
-          'the directional layer), `stories/fixtures/avdiivka.ts`.',
-      },
-    },
-  },
-  play: async ({ canvasElement }) => {
-    await waitFor(() => within(canvasElement).getByTestId('cop-symbol-__jammer'), T);
-  },
 };
 
 // ---------------------------------------------------------------------------

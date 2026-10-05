@@ -47,8 +47,6 @@ export const CLOCK_TO_T0_S = 39;
 /** ISO time of a scenario-clock second, e.g. clockIso(75) = 1:15 = 18:42:36Z. */
 export const clockIso = (clockS: number): string => at(clockS - CLOCK_TO_T0_S);
 
-export const JAMMER_LOCATION = { lat: 48.142, lon: 37.762 } as const;
-
 export const TSS_MIN_GPS_SCORE = 0.6;
 
 const beatOf = (clockS: number): EngineBeat => {
@@ -115,11 +113,16 @@ export function telemetryFor(score: number): UnitTelemetry | undefined {
   return bBeatFor(score)?.telemetry.unit_b;
 }
 
-/** Verbatim trace bullets from Branding §10.1–§10.3 (0:45, 0:55, 1:05). */
+/**
+ * Trace bullets (0:45, 0:55, 1:05). 0:45 / 0:55 verbatim from Branding
+ * §10.1–§10.2; 1:05 is the X1 text (docs/plans/jammer-aoe.md §0.3 a): what
+ * the engine measures — FR-03 sees no degrading unit within 500 m of B, and
+ * A, C are healthy on their own FR-05 scores. No direction is claimed (HS-20).
+ */
 export const TRACE_BULLETS = [
   'B-link cadence degraded 18s ago — investigating.',
   'B-link: 6% corrupted frames, cadence 1.17s.',
-  "Degradation directional, vicinity B's flank corridor. Neighbors A, C unaffected.",
+  'Degradation localized at B — no degrading unit within 500 m. A, C healthy.',
 ] as const;
 
 const SENSOR: Record<AvdiivkaUnit, TrackState['sensor_type']> = {
@@ -279,21 +282,6 @@ export const CANDIDATES_PAYLOAD: FingerprintCandidatesPayload = FingerprintCandi
 export const CANDIDATES: FingerprintCandidate[] = CANDIDATES_PAYLOAD.candidates;
 
 /**
- * MOCK geolocations for the three FR-04a candidates (the engine publishes
- * scores only), best match first. Drawn as anticipated (status 1, dashed)
- * hostile EW jamming symbols — Decisions/Track Symbology COP and the spines'
- * candidateSites prop.
- */
-export const CANDIDATE_SITES = [
-  { lat: JAMMER_LOCATION.lat - 0.0012, lon: JAMMER_LOCATION.lon - 0.0035, label: 'C1' },
-  { lat: JAMMER_LOCATION.lat + 0.0022, lon: JAMMER_LOCATION.lon + 0.0035, label: 'C2' },
-  { lat: JAMMER_LOCATION.lat - 0.0024, lon: JAMMER_LOCATION.lon + 0.0045, label: 'C3' },
-].map((site, i) => {
-  const c = [...CANDIDATES].sort((p, q) => q.score - p.score)[i]!;
-  return { ...site, method_id: `${i === 0 ? '#1 ' : ''}${c.method_id}`, score: c.score };
-});
-
-/**
  * Library entry with no munitions in inventory (library.json swept_uhf_low_power).
  * It scores 0/6 against the Avdiivka jammer, so the 3/6 here is a hypothetical
  * RF observation used only to exercise the "(none in current inventory)" path.
@@ -396,7 +384,7 @@ const f2 = (n: number) => n.toFixed(2);
 const RAW_EVENTS: DetectionEvent[] = [
   { source_id: 'unit_b', kind: 'temporal_anomaly', message: 'cadence 1.0s → 1.17s (3.4σ)', timestamp: clockIso(45) },
   { source_id: 'unit_b', kind: 'stability', message: 'CRC 0.2% → 6%', timestamp: clockIso(55) },
-  { source_id: 'unit_b', kind: 'spatial', message: 'localized · flank corridor · A, C unaffected', timestamp: clockIso(65) },
+  { source_id: 'unit_b', kind: 'spatial', message: 'localized at B · no degrading unit within 500 m · A, C healthy', timestamp: clockIso(65) },
   { source_id: 'unit_b', kind: 'temporal_anomaly', message: 'cadence 1.17s → 6.1s', timestamp: clockIso(75) },
   { source_id: 'unit_b', kind: 'stability', message: 'CRC 6% → 14%', timestamp: clockIso(75) },
   { source_id: 'unit_b', kind: 'fingerprint', message: 'ground_based_gps_uhf_barrage 1.00 · pulsed_uhf_wide 0.50 · cellular_uhf_barrage 0.17', timestamp: clockIso(75) },

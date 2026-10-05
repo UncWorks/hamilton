@@ -3,8 +3,6 @@ import { expect, userEvent, waitFor, within } from '@storybook/test';
 import { MapSpine } from './MapSpine';
 import {
   AFFILIATION_TRACKS,
-  CANDIDATE_SITES,
-  JAMMER_LOCATION,
   PHASE_TRACKS,
   UNIT_EVALUATION,
   track,
@@ -12,9 +10,6 @@ import {
 } from '@/stories/fixtures/avdiivka';
 import { denseTracks } from '@/stories/fixtures/dense-tracks';
 import { spinePlay } from '@/stories/support/spine-play';
-
-const unitB = PHASE_TRACKS.degraded.unit_b!;
-const JAMMER = { ...JAMMER_LOCATION, method_id: 'ground_based_gps_uhf_barrage' };
 
 const meta = {
   title: 'COP/MapSpine',
@@ -46,9 +41,10 @@ const meta = {
           'synchronously into the controlled view state, so the overlay is projected in the frame the map paints. Chosen over an `IconLayer` because ' +
           'it is pixel-identical to the decided symbol (web-font T / J, dashed anticipated frame), needs no async ' +
           'icon-atlas packing, and is in the DOM for hover / keyboard / screen readers. No circular halo, no pulse. ' +
-          'The jammer is the hostile EW jamming symbol J1 inside its 120 m area ring; `candidateSites` draw as ' +
-          'anticipated (dashed) EW symbols. Hover or Tab to a symbol for the rating breakdown; Escape closes.\n\n' +
-          '**Camera fit** (`lib/camera-fit.ts`): Web-Mercator bounds fit of tracks + jammer / candidate NAI, ' +
+          'The jammer\'s position is never presumed (HS-20): no jammer symbol, ring or bearing line; the ' +
+          'emitter estimate is drawn as an area of effect (FR-06a, `emitterEstimate`). Hover or Tab to a symbol ' +
+          'for the rating breakdown; Escape closes.\n\n' +
+          '**Camera fit** (`lib/camera-fit.ts`): Web-Mercator bounds fit of the tracks, ' +
           '64 px padding, ≥ 1.5 km framed, max zoom 17. Re-fits only on a new point or one leaving the frame, ' +
           'never after you pan or zoom; **Fit to tracks** (button or `F`) re-frames.\n\n' +
           '**Declutter** (`lib/declutter.ts` grouping, production `DeclutterStack`): three or more symbols within ' +
@@ -74,34 +70,16 @@ export const Nominal: Story = {
 
 export const Watching: Story = { parameters: { hamilton: { tracks: PHASE_TRACKS.watching } } };
 
-/** 1:15 — B 0.13 (E5, gauge near empty), first below the GPS-guided TSS minimum: bearing line toward the jammer. */
-export const DirectionalVector: Story = {
-  args: { directionalFrom: { lat: unitB.lat, lon: unitB.lon }, directionalTo: JAMMER_LOCATION },
+/** 1:15 — B 0.13 (E5, gauge near empty), first below the GPS-guided TSS minimum. No jammer symbol, ring or bearing line (HS-20). */
+export const Degraded: Story = {
   parameters: { hamilton: { tracks: PHASE_TRACKS.degraded } },
+  play: spinePlay.noPresumedJammer,
 };
 
-/** 1:50 — B 0.22, still gated; jammer fix J1 (hostile EW) with the top FR-04a method as H. */
+/** 1:50 — B 0.22, still gated. No jammer symbol, ring or bearing line (HS-20). */
 export const Failed: Story = {
-  args: { directionalFrom: { lat: unitB.lat, lon: unitB.lon }, directionalTo: JAMMER_LOCATION, jammerLocation: JAMMER },
   parameters: { hamilton: { tracks: PHASE_TRACKS.failed } },
-};
-
-/** 1:15 — FR-04a candidate sites (MOCK geolocations) as anticipated, dashed hostile EW symbols C1–C3. */
-export const CandidateSites: Story = {
-  args: {
-    directionalFrom: { lat: unitB.lat, lon: unitB.lon },
-    directionalTo: JAMMER_LOCATION,
-    candidateSites: CANDIDATE_SITES,
-    candidateNai: JAMMER_LOCATION,
-  },
-  parameters: { hamilton: { tracks: PHASE_TRACKS.degraded } },
-  play: async ({ canvasElement }) => {
-    const c = within(canvasElement);
-    await waitFor(() => c.getByTestId('cop-symbol-__candidate_0'), { timeout: 15_000 });
-    // Status 1 (anticipated): 2525E status digit 1 — the dashed frame.
-    const sidc = canvasElement.querySelector('[data-cop-symbol="__candidate_0"] [data-sidc]')?.getAttribute('data-sidc');
-    await expect(sidc).toBe('13061010001505040000');
-  },
+  play: spinePlay.noPresumedJammer,
 };
 
 export const MixedAffiliations: Story = {
@@ -110,9 +88,8 @@ export const MixedAffiliations: Story = {
 
 export const NoTracks: Story = {};
 
-/** Fifteen tracks + jammer: three knots stack (hostile first, J1 in the hostile one); the NE pair stays two singles. */
+/** Fifteen tracks: three knots stack (hostile first); the NE pair stays two singles. */
 export const Dense: Story = {
-  args: { jammerLocation: JAMMER, directionalFrom: { lat: unitB.lat, lon: unitB.lon }, directionalTo: JAMMER_LOCATION },
   parameters: { hamilton: { tracks: tracksRecord(...denseTracks(track)) } },
   play: spinePlay.dense,
 };

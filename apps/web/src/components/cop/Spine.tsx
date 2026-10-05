@@ -11,6 +11,7 @@
 import dynamic from 'next/dynamic';
 import type { CandidateSite, Evaluations } from './spine-symbols';
 import type { BasemapMode } from '@/lib/basemap';
+import type { AoeEstimateLike } from '@/lib/aoe';
 
 const CesiumSpine = dynamic(
   () => import('./CesiumSpine').then((m) => m.CesiumSpine),
@@ -23,11 +24,12 @@ const MapSpine = dynamic(
 );
 
 interface SpineProps {
-  jammerLocation?: { lat: number; lon: number; method_id: string };
-  directionalFrom?: { lat: number; lon: number };
-  directionalTo?: { lat: number; lon: number };
-  /** Candidate NAI centre — both spines frame it in their camera fit. */
-  candidateNai?: { lat: number; lon: number };
+  /**
+   * The FR-04b emitter estimate (integrity/emitter/estimate), drawn by both
+   * spines as an area of effect (FR-06a). Null / absent = nothing drawn. The
+   * jammer's position is never an input (HS-20): no point, ring or bearing.
+   */
+  emitterEstimate?: AoeEstimateLike | null | undefined;
   /** Geolocated FR-04a candidate sites, drawn as anticipated (dashed) hostile EW symbols. */
   candidateSites?: readonly CandidateSite[];
   /** S2 evaluation inputs (corroboration / J override) per source. */

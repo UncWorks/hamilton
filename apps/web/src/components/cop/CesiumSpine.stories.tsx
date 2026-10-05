@@ -3,8 +3,6 @@ import { expect, userEvent, waitFor, within } from '@storybook/test';
 import { CesiumSpine } from './CesiumSpine';
 import {
   AFFILIATION_TRACKS,
-  CANDIDATE_SITES,
-  JAMMER_LOCATION,
   PHASE_TRACKS,
   UNIT_EVALUATION,
   track,
@@ -13,9 +11,6 @@ import {
 import { denseTracks } from '@/stories/fixtures/dense-tracks';
 import { cesiumLoader } from '@/stories/support/cesium';
 import { spinePlay } from '@/stories/support/spine-play';
-
-const unitB = PHASE_TRACKS.degraded.unit_b!;
-const JAMMER = { ...JAMMER_LOCATION, method_id: 'ground_based_gps_uhf_barrage' };
 
 const meta = {
   title: 'COP/CesiumSpine',
@@ -79,35 +74,16 @@ export const Nominal: Story = {
 /** 0:45 — B WATCH 0.70 (cadence 1.17 s); A and C 1.00. */
 export const Watching: Story = { parameters: { hamilton: { tracks: PHASE_TRACKS.watching } } };
 
-/**
- * 1:15 — B 0.13 (E5, gauge near empty), first below the GPS-guided TSS minimum: bearing line toward the suspected jammer.
- * The web draws the line when B < 0.60, i.e. from 1:15; Branding §10.3 places it at 1:05 (open UX
- * item, Branding Audit F02).
- */
-export const DirectionalVector: Story = {
-  args: { directionalFrom: { lat: unitB.lat, lon: unitB.lon }, directionalTo: JAMMER_LOCATION },
+/** 1:15 — B 0.13 (E5, gauge near empty), first below the GPS-guided TSS minimum. No jammer symbol, ring or bearing line (HS-20). */
+export const Degraded: Story = {
   parameters: { hamilton: { tracks: PHASE_TRACKS.degraded } },
+  play: spinePlay.noPresumedJammer,
 };
 
-/** 1:50 — B 0.22, still gated; the jammer fix J1 (hostile EW) with the top FR-04a method as its H field. */
-export const JammerOverlay: Story = {
-  args: {
-    directionalFrom: { lat: unitB.lat, lon: unitB.lon },
-    directionalTo: JAMMER_LOCATION,
-    jammerLocation: JAMMER,
-  },
+/** 1:50 — B 0.22, still gated. No jammer symbol, ring or bearing line (HS-20). */
+export const Failed: Story = {
   parameters: { hamilton: { tracks: PHASE_TRACKS.failed } },
-};
-
-/** 1:15 — FR-04a candidate sites (MOCK geolocations) as anticipated, dashed hostile EW symbols C1–C3. */
-export const CandidateSites: Story = {
-  args: {
-    directionalFrom: { lat: unitB.lat, lon: unitB.lon },
-    directionalTo: JAMMER_LOCATION,
-    candidateSites: CANDIDATE_SITES,
-    candidateNai: JAMMER_LOCATION,
-  },
-  parameters: { hamilton: { tracks: PHASE_TRACKS.degraded } },
+  play: spinePlay.noPresumedJammer,
 };
 
 /** Friendly / hostile / neutral / unknown frames across all four bands (hostile_ew_1 draws as EW jamming). */
@@ -119,12 +95,10 @@ export const MixedAffiliations: Story = {
 export const NoTracks: Story = {};
 
 /**
- * Fifteen tracks + the jammer fix. After the fit, three knots still hold ≥ 3 symbols
- * within 1.5·s → three bracketed stacks, hostile first. The jammer J1 joins the hostile knot's stack, so its
- * method label (H) can no longer cross that stack's locator line. The north-east pair stays two singles.
+ * Fifteen tracks. After the fit, three knots still hold ≥ 3 symbols within 1.5·s → three bracketed
+ * stacks, hostile first. The north-east pair stays two singles.
  */
 export const Dense: Story = {
-  args: { jammerLocation: JAMMER },
   parameters: { hamilton: { tracks: tracksRecord(...denseTracks(track)) } },
   play: spinePlay.dense,
 };
@@ -145,10 +119,10 @@ export const ZoomedOut: Story = {
   },
 };
 
-/** Comparison: the jammer-overlay beat with `basemap="none"` — the pre-basemap dark globe. */
+/** Comparison: the 1:50 beat with `basemap="none"` — the pre-basemap dark globe. */
 export const BasemapOff: Story = {
   name: 'Basemap off',
-  args: { ...JammerOverlay.args, basemap: 'none' },
+  args: { basemap: 'none' },
   parameters: { hamilton: { tracks: PHASE_TRACKS.failed } },
   play: async ({ canvasElement }) => {
     const c = within(canvasElement);
