@@ -102,6 +102,42 @@ function ringArea(ring: readonly LonLat[]): number {
   return Math.abs(a / 2);
 }
 
+/** Outer ring of the largest polygon (by area), or null. */
+export function largestOuterRing(mp: MultiPolygonLike): readonly LonLat[] | null {
+  let best: readonly LonLat[] | null = null;
+  let bestArea = -1;
+  for (const poly of mp.coordinates) {
+    const outer = poly[0];
+    if (!outer || outer.length < 3) continue;
+    const a = ringArea(outer);
+    if (a > bestArea) {
+      bestArea = a;
+      best = outer;
+    }
+  }
+  return best;
+}
+
+/**
+ * Label point on screen: the highest on-screen vertex of the contour that
+ * leaves `headroomPx` above it for the label plate (so the label sits just
+ * outside the area's north edge, inside the view). Null when no vertex is on
+ * screen — the caller falls back to labelAnchor.
+ */
+export function screenLabelAnchor(
+  pts: readonly { x: number; y: number }[],
+  viewport: { width: number; height: number },
+  headroomPx = 60,
+): { x: number; y: number } | null {
+  let best: { x: number; y: number } | null = null;
+  for (const p of pts) {
+    if (!Number.isFinite(p.x) || !Number.isFinite(p.y)) continue;
+    if (p.x < 0 || p.x > viewport.width || p.y < headroomPx || p.y > viewport.height - 40) continue;
+    if (!best || p.y < best.y) best = p;
+  }
+  return best;
+}
+
 /**
  * Where the map label sits for a contour: the northernmost vertex of the
  * largest polygon's outer ring (the label plate is drawn just above it, so it
@@ -123,4 +159,65 @@ export function labelAnchor(mp: MultiPolygonLike): LatLonPoint | null {
   let top = best[0]!;
   for (const c of best) if (c[1]! > top[1]!) top = c;
   return { lon: top[0]!, lat: top[1]! };
+}
+
+// ---------------------------------------------------------------------------
+// Dashes (MapSpine 50% outline)
+// ---------------------------------------------------------------------------
+// deck.gl 9.0's `deck.gl` meta package does not re-export PathStyleExtension
+// (it lives only in @deck.gl/extensions, which is not a dependency of
+// apps/web — NFR-07). The 50% outline is therefore dashed geometrically: each
+// ring is cut into on / off pieces whose ground length is the pixel dash
+// pattern at the current zoom, recomputed when the zoom changes.
+
+/** Web-Mercator ground metres per CSS pixel (512 px tiles, deck.gl / MapLibre zoom). */
+export function metersPerPixel(lat: number, zoom: number): number {
+  return (40_075_016.686 * Math.cos((lat * Math.PI) / 180)) / (512 * 2 ** zoom);
+}
+
+/**
+ * Cut a ring (closed or not; it is treated as closed) into dashes: `onM`
+ * metres drawn, `offM` metres skipped, along the ring. Local equirectangular
+ * metres — exact enough for ≤ 100 km rings at dash scale.
+ */
+export function dashRing(ring: readonly LonLat[], onM: number, offM: number): [number, number][][] {
+  const n = ring.length;
+  if (n < 2 || !(onM > 0) || !(offM >= 0)) return [];
+  const pts = ring.map((c) => [c[0]!, c[1]!] as [number, number]);
+  const first = pts[0]!;
+  const last = pts[n - 1]!;
+  if (first[0] !== last[0] || first[1] !== last[1]) pts.push([first[0], first[1]]);
+  const kx = 111_320 * Math.cos((first[1] * Math.PI) / 180);
+  const ky = 110_574;
+  const out: [number, number][][] = [];
+  let drawing = true;
+  let left = onM;
+  let cur: [number, number][] = [pts[0]!];
+  for (let i = 1; i < pts.length; i++) {
+    let a = pts[i - 1]!;
+    const b = pts[i]!;
+    let seg = Math.hypot((b[0] - a[0]) * kx, (b[1] - a[1]) * ky);
+    while (seg > left) {
+      const t = left / seg;
+      const m: [number, number] = [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t];
+      if (drawing) {
+        cur.push(m);
+        out.push(cur);
+      } else {
+        cur = [m];
+      }
+      seg -= left;
+      a = m;
+      drawing = !drawing;
+      left = drawing ? onM : offM;
+      if (left === 0) {
+        drawing = !drawing;
+        left = drawing ? onM : offM;
+      }
+    }
+    left -= seg;
+    if (drawing) cur.push(b);
+  }
+  if (drawing && cur.length > 1) out.push(cur);
+  return out;
 }

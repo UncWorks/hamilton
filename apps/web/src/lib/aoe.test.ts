@@ -95,3 +95,25 @@ test('labelAnchor: northernmost vertex of the largest polygon; null when empty',
   assert.deepEqual(a, { lon: 10, lat: 10 });
   assert.equal(M.labelAnchor(mp()), null);
 });
+
+test('dashRing: a 4 km square ring cut 100 m on / 100 m off → ~20 dashes, each ~100 m', () => {
+  const d = 4_000 / 4 / 111_320; // ~1 km side in degrees (lat ≈ 0)
+  const ring = sq(0, 0, d, d);
+  const dashes = M.dashRing(ring, 100, 100);
+  assert.ok(dashes.length >= 19 && dashes.length <= 21, `${dashes.length} dashes`);
+  const len = (p: number[][]) => p.slice(1).reduce((s, c, i) => s + Math.hypot((c[0]! - p[i]![0]!) * 111_320, (c[1]! - p[i]![1]!) * 110_574), 0);
+  for (const x of dashes.slice(0, -1)) assert.ok(Math.abs(len(x) - 100) < 1, `dash ${len(x)} m`);
+});
+
+test('dashRing: degenerate input → no dashes; metersPerPixel halves per zoom', () => {
+  assert.deepEqual(M.dashRing([[0, 0]], 10, 10), []);
+  assert.ok(Math.abs(M.metersPerPixel(48.14, 11) / M.metersPerPixel(48.14, 12) - 2) < 1e-9);
+});
+
+test('screenLabelAnchor: highest on-screen vertex with headroom; null when none', () => {
+  const vp = { width: 800, height: 600 };
+  const pts = [{ x: 100, y: 20 }, { x: 300, y: 90 }, { x: 900, y: 70 }, { x: 400, y: 300 }];
+  assert.deepEqual(M.screenLabelAnchor(pts, vp), { x: 300, y: 90 });
+  assert.equal(M.screenLabelAnchor([{ x: -5, y: 100 }], vp), null);
+  assert.ok(M.largestOuterRing(mp([sq(0, 0, 1, 1)], [sq(0, 0, 5, 5)]))!.some((c) => c[0] === 5));
+});

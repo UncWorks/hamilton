@@ -94,6 +94,21 @@ export function methodShortName(methodId: string): string {
   return JAMMER_METHODS[methodId]?.short ?? humanize(methodId);
 }
 
+/**
+ * The equipment class the AoE label names (HS-21 "<method>-class"): the GNSS
+ * module whose envelope draws the layer. ground_based_gps_uhf_barrage keeps
+ * its id but its GNSS module is Pole-21E-class (docs/plans/jammer-aoe.md
+ * §0.3 b–c).
+ */
+const METHOD_CLASS: Readonly<Record<string, string>> = {
+  ground_based_gps_uhf_barrage: 'Pole-21-class',
+  directional_gps_l1_spot: 'Pole-21-class',
+};
+
+export function methodClassName(methodId: string): string {
+  return METHOD_CLASS[methodId] ?? `${methodShortName(methodId)}-class`;
+}
+
 // ---------------------------------------------------------------------------
 // After-action log (engine DetectionEvent → terminal line)
 // ---------------------------------------------------------------------------
@@ -107,6 +122,7 @@ export const ENGINE_KIND_LABEL: Readonly<Record<string, string>> = {
   modal_gated: 'TSS fail',
   modal_selection: 'branch',
   recovery: 'recovery',
+  emitter_estimate: 'est. GPS denial',
 };
 
 /** Engine branch options (POST /api/modal/selection) in FDC words. */

@@ -2,13 +2,16 @@
 
 import mqtt, { type MqttClient } from 'mqtt';
 import {
+  EmitterEstimatePayloadSchema,
   FireMissionSchema,
   FingerprintCandidatesPayloadSchema,
   TOPIC_FIRE_MISSION_PREFIX,
+  TOPIC_EMITTER_ESTIMATE,
   TOPIC_FINGERPRINT_CANDIDATES,
   TOPIC_NARRATION_PREFIX,
   TOPIC_TRUST_PREFIX,
   TrustScorePayloadSchema,
+  type EmitterEstimatePayload,
   type FingerprintCandidatesPayload,
   type FireMission,
   type TrustScorePayload,
@@ -31,6 +34,10 @@ export interface MqttBindings {
   onMission?: (m: FireMission) => void;
   /** Empty retained payload on `fires/mission/{id}`: the mission is closed. */
   onMissionRemoved?: (mission_id: string) => void;
+  /** FR-04b estimate on `integrity/emitter/estimate` (retained, zod-parsed). */
+  onEmitterEstimate?: (p: EmitterEstimatePayload) => void;
+  /** Empty retained payload on `integrity/emitter/estimate`: the estimate is retired. */
+  onEmitterEstimateCleared?: () => void;
   onConnectionChange?: (connected: boolean) => void;
 }
 
@@ -53,6 +60,7 @@ export function startMqtt(url: string, bindings: MqttBindings): MqttClientHandle
   client.on('connect', () => {
     bindings.onConnectionChange?.(true);
     client.subscribe([TRUST_TOPIC_GLOB, TOPIC_FINGERPRINT_CANDIDATES, NARRATION_TOPIC_GLOB, MISSION_TOPIC_GLOB]);
+    client.subscribe(TOPIC_EMITTER_ESTIMATE, { qos: 1 });
   });
 
   client.on('reconnect', () => bindings.onConnectionChange?.(false));
@@ -70,6 +78,19 @@ export function startMqtt(url: string, bindings: MqttBindings): MqttClientHandle
         if (parsed.success) bindings.onMission?.(parsed.data);
       } catch {
         /* malformed call for fire — ignore */
+      }
+      return;
+    }
+    if (topic === TOPIC_EMITTER_ESTIMATE) {
+      if (payload.length === 0) {
+        bindings.onEmitterEstimateCleared?.();
+        return;
+      }
+      try {
+        const parsed = EmitterEstimatePayloadSchema.safeParse(JSON.parse(payload.toString()));
+        if (parsed.success) bindings.onEmitterEstimate?.(parsed.data);
+      } catch {
+        /* malformed estimate — ignore (strict schema: K4) */
       }
       return;
     }
