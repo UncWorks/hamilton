@@ -208,6 +208,10 @@ test('matchAdminShortcut: Alt+Shift on code, ctrl/meta and typing ignored', () =
   for (const tagName of ['INPUT', 'textarea', 'SELECT']) assert.equal(k('KeyA', { target: { tagName } }), null, tagName);
   assert.equal(k('Digit1', { target: { tagName: 'DIV', isContentEditable: true } }), null);
   assert.deepEqual(k('KeyA', { target: { tagName: 'BUTTON' } }), { kind: 'toggleMenu' });
+  // The panel's own checkboxes and radios take no text: the shortcuts still work there.
+  assert.deepEqual(k('KeyA', { target: { tagName: 'INPUT', type: 'checkbox' } }), { kind: 'toggleMenu' });
+  assert.deepEqual(k('Digit2', { target: { tagName: 'INPUT', type: 'radio' } }), { kind: 'preset', id: 'firesOnly' });
+  assert.equal(k('KeyA', { target: { tagName: 'INPUT', type: 'text' } }), null);
   assert.equal(M.isTypingTarget(null), false);
   assert.equal(M.ADMIN_SHORTCUT_LABEL, 'Alt+Shift+A');
   assert.deepEqual([...M.ADMIN_SHORTCUT_PRESETS], ['full', 'cleanMap', 'firesOnly', 'trustOnly', 'aoeFocus']);

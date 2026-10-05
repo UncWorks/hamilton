@@ -254,11 +254,15 @@ export function adminEnabled(o: { adminEnv: string | undefined; nodeEnv: string 
   return new URLSearchParams(o.search).get('admin') === '1';
 }
 
+/** Inputs that take no text: the panel's own checkboxes must not swallow Alt+Shift+A. */
+const NON_TEXT_INPUTS = new Set(['checkbox', 'radio', 'button', 'submit', 'reset', 'range', 'color']);
+
 /** True while typing in a form control (the isFitShortcut guard). */
 export function isTypingTarget(target: unknown): boolean {
-  const t = target as { tagName?: string; isContentEditable?: boolean } | null | undefined;
+  const t = target as { tagName?: string; type?: string; isContentEditable?: boolean } | null | undefined;
   const tag = t?.tagName?.toUpperCase();
-  return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || t?.isContentEditable === true;
+  if (tag === 'INPUT') return !NON_TEXT_INPUTS.has((t?.type ?? 'text').toLowerCase());
+  return tag === 'TEXTAREA' || tag === 'SELECT' || t?.isContentEditable === true;
 }
 
 export const ADMIN_SHORTCUT_LABEL = 'Alt+Shift+A';
