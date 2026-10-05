@@ -28,6 +28,13 @@ export const FIT_PITCH_DEG = -55;
 export const FIT_MIN_RANGE_M = 1500;
 /** Furthest a fit will go (m). */
 export const FIT_MAX_RANGE_M = 400_000;
+/**
+ * Cesium: furthest the operator can zoom out (camera height, m). Keeps the
+ * −55° view over the offline raster (scripts/fetch-tiles.sh bbox, ~63 × 72 km
+ * around the AO, which holds every AoE contour) instead of past its edge,
+ * where the globe goes blank or the edge texels smear.
+ */
+export const CESIUM_MAX_ZOOM_DISTANCE_M = 38_000;
 /** Extra margin around the bounding circle (fraction of its radius). */
 export const FIT_PADDING_FRAC = 0.25;
 /** deck.gl: pixel padding around the fitted bounds. */

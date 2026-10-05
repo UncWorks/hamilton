@@ -14,14 +14,14 @@
 // from the basemap tool cache (scripts/fetch-tiles.sh), never from apps/web.
 //
 // Usage: node scripts/basemap/render-raster.mjs <tool-cache-node-dir>
-//   env RASTER_BBOX="w,s,e,n"   (default: AO padded, 37.62,48.06,37.88,48.22)
+//   env RASTER_BBOX="w,s,e,n"   (default: the AoE extent, 37.50,47.85,38.35,48.50)
 //       RASTER_MINZOOM / RASTER_MAXZOOM (default 10 / 15)
 //       RASTER_INNER_BBOX="w,s,e,n" — at RASTER_MAXZOOM only render this box
 //                                     (default: RASTER_BBOX; tiles outside it
 //                                     404 and Cesium falls back to z-1)
 
 import { createRequire } from 'node:module';
-import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { open } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -47,7 +47,7 @@ const META = 4;
 const BUFFER = 256;
 
 const parseBox = (s) => s.split(',').map(Number);
-const BBOX = parseBox(process.env.RASTER_BBOX ?? '37.62,48.06,37.88,48.22');
+const BBOX = parseBox(process.env.RASTER_BBOX ?? '37.50,47.85,38.35,48.50');
 const INNER = process.env.RASTER_INNER_BBOX ? parseBox(process.env.RASTER_INNER_BBOX) : BBOX;
 const MINZOOM = Number(process.env.RASTER_MINZOOM ?? 10);
 const MAXZOOM = Number(process.env.RASTER_MAXZOOM ?? 15);
@@ -124,30 +124,56 @@ const LABEL_MINZOOM = Number(process.env.RASTER_LABEL_MINZOOM ?? 14);
 const unlabelled = { ...style, layers: style.layers.filter((l) => l.type !== 'symbol') };
 
 // One Native map per style: re-loading a style into a map that has rendered
-// stalls MapLibre Native's next render.
+// stalls MapLibre Native's next render. Each map is released and recreated
+// every RECYCLE renders: a long run over the full AoE extent (z14 labels over
+// Donetsk) otherwise grows until MapLibre Native segfaults.
+const RECYCLE = Number(process.env.RASTER_RECYCLE ?? 150);
 const maps = new Map();
 const render = (opts, s) =>
   new Promise((resolve, reject) => {
-    let map = maps.get(s);
-    if (!map) {
-      map = new mbgl.Map({ request, ratio: 1 });
-      map.load(s);
-      maps.set(s, map);
+    let entry = maps.get(s);
+    if (entry && entry.n >= RECYCLE) {
+      entry.map.release();
+      entry = undefined;
     }
-    map.render(opts, (err, buf) => (err ? reject(err) : resolve(buf)));
+    if (!entry) {
+      const map = new mbgl.Map({ request, ratio: 1 });
+      map.load(s);
+      entry = { map, n: 0 };
+      maps.set(s, entry);
+    }
+    entry.n++;
+    entry.map.render(opts, (err, buf) => (err ? reject(err) : resolve(buf)));
   });
 
-rmSync(OUT_DIR, { recursive: true, force: true });
+// RASTER_RESUME=1 keeps tiles from a crashed run and skips metatiles already
+// on disk; tiles.json is still written only once the pyramid is complete.
+const RESUME = process.env.RASTER_RESUME === '1';
+if (!RESUME) rmSync(OUT_DIR, { recursive: true, force: true });
+const tilePath = (z, x, y) => path.join(OUT_DIR, String(z), String(x), `${y}.png`);
 let count = 0;
 let bytes = 0;
 for (let z = MINZOOM; z <= MAXZOOM; z++) {
-  const zStyle = z >= LABEL_MINZOOM ? style : unlabelled;
+  // Labels (z >= LABEL_MINZOOM) only on metatiles touching the inner box, where
+  // the units are. The outer ring is label-free context like z10–13: MapLibre
+  // Native segfaults placing Donetsk's z14 labels (metatile 9906/5697).
+  const ir = tileRange(INNER, z);
   const r = tileRange(z === MAXZOOM ? INNER : BBOX, z);
   for (let mx = r.x0; mx <= r.x1; mx += META) {
     for (let my = r.y0; my <= r.y1; my += META) {
+      if (RESUME) {
+        let done = true;
+        for (let i = 0; i < META && done; i++)
+          for (let j = 0; j < META && done; j++)
+            if (mx + i <= r.x1 && my + j <= r.y1 && !existsSync(tilePath(z, mx + i, my + j))) done = false;
+        if (done) continue;
+      }
+      if (process.env.RASTER_TRACE === '1') console.log(`[render-raster] z${z} metatile ${mx}/${my}`);
       const size = META * TILE + 2 * BUFFER;
       const cx = mx + META / 2;
       const cy = my + META / 2;
+      const inner = mx <= ir.x1 && mx + META - 1 >= ir.x0 && my <= ir.y1 && my + META - 1 >= ir.y0;
+      const zStyle = z >= LABEL_MINZOOM && inner ? style : unlabelled;
       const raw = await render({ zoom: z, center: [x2lon(cx, z), y2lat(cy, z)], width: size, height: size }, zStyle);
       const img = sharp(raw, { raw: { width: size, height: size, channels: 4 } });
       for (let i = 0; i < META; i++) {
@@ -172,7 +198,7 @@ for (let z = MINZOOM; z <= MAXZOOM; z++) {
   }
   console.log(`[render-raster] z${z} done (${count} tiles, ${(bytes / 1e6).toFixed(1)} MB so far)`);
 }
-for (const m of maps.values()) m.release();
+for (const m of maps.values()) m.map.release();
 await fh.close();
 
 // Read by CesiumSpine: imagery extent and levels.

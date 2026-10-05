@@ -38,6 +38,7 @@ import { useHamilton } from '@/store/hamilton';
 import {
   boundingCircle,
   cesiumFitRange,
+  CESIUM_MAX_ZOOM_DISTANCE_M,
   FIT_PITCH_DEG,
   isFitShortcut,
   needsRefit,
@@ -209,6 +210,7 @@ export function CesiumSpine(props: CesiumSpineProps) {
         viewer.scene.skyBox?.destroy?.();
         viewer.scene.sun?.destroy?.();
         viewer.scene.moon?.destroy?.();
+        viewer.scene.screenSpaceCameraController.maximumZoomDistance = CESIUM_MAX_ZOOM_DISTANCE_M;
         // Fallback framing only — the fit effect replaces it as soon as there
         // is anything to frame. Same −55° pitch, centred on the AO.
         viewer.camera.flyToBoundingSphere(

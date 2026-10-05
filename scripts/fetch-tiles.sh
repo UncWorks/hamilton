@@ -6,7 +6,7 @@
 # reproducible source.
 #
 #   1. avdiivka.pmtiles  — vector extract of the Protomaps daily planet build
-#                          (OSM, ODbL) for the AO bbox, z0–15 (~4–5 MB).
+#                          (OSM, ODbL) for the AO bbox, z0–15.
 #   2. glyphs/           — Noto Sans glyph PBFs (OFL-1.1) for the style's three
 #                          fontstacks, Latin + Cyrillic ranges only (~2 MB).
 #   3. raster/           — Cesium imagery: 512 px PNG tiles rendered locally
@@ -28,9 +28,14 @@ CACHE="${BASEMAP_TOOL_CACHE:-${TMPDIR:-/tmp}/hamilton-basemap-tools}"
 CACHE="${CACHE%/}"
 NODE_TOOLS="$CACHE/node"
 
-# AO: Avdiivka, units ±250 m around 48.14 N / 37.745 E, jammer ~1.3 km east.
-# Padded well beyond the camera fit so panning out stays on the map.
-BBOX="37.60,48.05,37.90,48.23"
+# AO: Avdiivka, the 8-unit km-scale layout (docs/plans/jammer-aoe.md §6). The
+# bbox covers every AoE contour and the emitter 90% region the estimator can
+# publish for this scenario (37.68–38.26 E, 47.90–48.44 N at 1:15) plus a
+# margin, so fitting the camera to an estimate never runs off the map.
+BBOX="37.50,47.85,38.35,48.50"
+# z15 raster detail only where the units are (B's start, its 1:50 move, A–H);
+# outside it Cesium falls back to z14.
+INNER_BBOX="37.60,48.05,37.90,48.23"
 MAXZOOM=15
 
 PMTILES_VERSION="1.31.2"
@@ -127,7 +132,8 @@ echo "[fetch-tiles] glyphs: ${#GLYPH_FONTS[@]} fontstacks x ${#GLYPH_RANGES[@]} 
 # --- 3. Raster pyramid for Cesium -----------------------------------------------
 if [[ $RASTER -eq 1 ]]; then
   install_node_tools
-  node "$ROOT/scripts/basemap/render-raster.mjs" "$NODE_TOOLS"
+  RASTER_BBOX="$BBOX" RASTER_INNER_BBOX="$INNER_BBOX" \
+    node "$ROOT/scripts/basemap/render-raster.mjs" "$NODE_TOOLS"
 fi
 
 du -sh "$TILES/avdiivka.pmtiles" "$TILES/glyphs" "$TILES/raster" 2>/dev/null || true
