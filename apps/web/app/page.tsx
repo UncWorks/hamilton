@@ -6,8 +6,10 @@ import { Spine } from '@/components/cop/Spine';
 import { TrustPanel } from '@/components/panel/TrustPanel';
 import { MissionQueue } from '@/components/fires/MissionQueue';
 import { EventTerminal } from '@/components/terminal/EventTerminal';
+import { DemoSlot } from '@/components/admin/DemoSlot';
 import { useHamiltonMqtt } from '@/hooks/useHamiltonMqtt';
 import { useHamilton, type TrackState } from '@/store/hamilton';
+import { useDemoLayout } from '@/store/demo-view';
 import type { SensorType } from '@hamilton/contracts';
 
 // Seed tracks: the 8-unit Avdiivka layout (docs/plans/jammer-aoe.md §6, plan
@@ -41,6 +43,10 @@ export default function Home() {
   const upsertTrack = useHamilton((s) => s.upsertTrack);
   const tracks = useHamilton((s) => s.tracks);
   const emitterEstimate = useHamilton((s) => s.emitterEstimate);
+  // Admin · Demo simulation view filter (docs/plans/admin-demo-menu.md D8):
+  // a hidden log drops its row; a fully hidden side column gives the map the
+  // whole width. Both spines track their container size.
+  const layout = useDemoLayout();
 
   useEffect(() => {
     if (Object.keys(tracks).length === 0) {
@@ -52,7 +58,7 @@ export default function Home() {
     <main
       style={{
         display: 'grid',
-        gridTemplateRows: '56px minmax(0, 1fr) 160px',
+        gridTemplateRows: layout.gridTemplateRows,
         height: '100vh',
         width: '100vw',
         background: 'var(--surface-base)',
@@ -63,7 +69,7 @@ export default function Home() {
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: '2fr 1fr',
+          gridTemplateColumns: layout.gridTemplateColumns,
           minHeight: 0,
         }}
       >
@@ -73,10 +79,13 @@ export default function Home() {
           <Spine emitterEstimate={emitterEstimate} />
         </div>
         <div
+          // Hidden (not unmounted) when every side block is hidden, so the
+          // queue's TSS tick keeps running and the map spans both columns.
+          hidden={!layout.sideColumn}
           // One scroll container for the queue and the trust panel: a FAIL row's
           // branches never clip under the panel, and the AoE card follows below.
           style={{
-            display: 'flex',
+            display: layout.sideColumn ? 'flex' : 'none',
             flexDirection: 'column',
             minHeight: 0,
             overflowY: 'auto',
@@ -84,11 +93,17 @@ export default function Home() {
             borderLeft: '1px solid var(--surface-elevated)',
           }}
         >
-          <MissionQueue />
-          <TrustPanel />
+          <DemoSlot id="side.missionQueue">
+            <MissionQueue />
+          </DemoSlot>
+          <DemoSlot id="side.trustPanel">
+            <TrustPanel />
+          </DemoSlot>
         </div>
       </div>
-      <EventTerminal height={160} />
+      <DemoSlot id="log.terminal">
+        <EventTerminal height={160} />
+      </DemoSlot>
     </main>
   );
 }

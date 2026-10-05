@@ -9,6 +9,7 @@ import { useEffect, useState } from 'react';
 import { sortMissions, useHamilton } from '@/store/hamilton';
 import { MissionRow } from './MissionRow';
 import { TssInForceStrip } from './TssInForce';
+import { DemoSlot } from '@/components/admin/DemoSlot';
 
 export const TSS_TICK_MS = 1000;
 
@@ -63,7 +64,9 @@ export function MissionQueue() {
       >
         Fire missions · {list.length} open{failing ? ` · ${failing} TSS FAIL` : ''}
       </h2>
-      <TssInForceStrip table={table} />
+      <DemoSlot id="side.tssInForce">
+        <TssInForceStrip table={table} />
+      </DemoSlot>
       <ol style={{ listStyle: 'none', margin: 0, padding: 0, display: 'grid', gap: 'var(--space-2)' }}>
         {list.map((ms) => (
           <li key={ms.mission.mission_id}>

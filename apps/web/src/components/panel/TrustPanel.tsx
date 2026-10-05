@@ -5,6 +5,7 @@ import { minScoreForLetter, tssRow } from '@/lib/tss';
 import { UNIT_ROLES, sensorTypeLabel, unitName } from '@/lib/display-names';
 import { TrustReadout } from './TrustReadout';
 import { CandidateCards } from './CandidateCards';
+import { DemoSlot } from '@/components/admin/DemoSlot';
 import { useAoeCard } from '@/hooks/useEmitterEstimate';
 
 export function TrustPanel() {
@@ -77,11 +78,17 @@ export function TrustPanel() {
         </span>
       </header>
 
-      <TrustReadout score={focused.score} tssMin={tssMin} />
+      <DemoSlot id="side.trustReadout">
+        <TrustReadout score={focused.score} tssMin={tssMin} />
+      </DemoSlot>
 
-      <TraceBullets bullets={focused.trace_bullets} />
+      <DemoSlot id="side.trustTrace">
+        <TraceBullets bullets={focused.trace_bullets} />
+      </DemoSlot>
 
-      <CandidateCards candidates={candidatesForFocused} areaOfEffect={aoeCardModel} />
+      <DemoSlot id="side.candidates">
+        <CandidateCards candidates={candidatesForFocused} areaOfEffect={aoeCardModel} />
+      </DemoSlot>
     </aside>
   );
 }
