@@ -57,8 +57,8 @@ export const TrackSymbology: Story = {
 };
 
 /**
- * Trust cue below the GPS-guided TSS minimum: the side gauge drains and J appears at rest. The pulsing halo this story used to show is
- * retired (Decisions/Track Symbology, decision 2) and lives only in Archive/Halo Options.
+ * Trust cue below the GPS-guided TSS minimum: the side gauge drains and J appears at rest. There is no halo or pulse
+ * (Decisions/Track Symbology, decision 2).
  */
 export const TrustCue: Story = {
   render: () => (

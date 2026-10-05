@@ -1,21 +1,18 @@
 import type { Meta, StoryObj } from '@storybook/react';
-import { useId, useRef, type CSSProperties, type ReactNode } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 import { expect, fireEvent, userEvent, waitFor, within } from '@storybook/test';
 import type { Affiliation, SensorType } from '@hamilton/contracts';
-import { TSS_MIN_GPS_SCORE, STALE_AFTER_S, firstCrossingClock, formatDtg, type JOverride } from '@/lib/link-trust-rating';
+import { STALE_AFTER_S, firstCrossingClock, type JOverride } from '@/lib/link-trust-rating';
 import { formatSidc, toCotType, toSidc2525C, toSidc2525E, type SymbolCodeInput } from '@/lib/track-sidc';
 import {
   DeclutterStack,
-  RatingExplanation,
   TRIGGER_CSS,
   TrackSymbol,
   TrackSymbolG,
   TrackSymbolWithTooltip,
-  explainRating,
   placeSymbol,
   trackSymbolDataUrl,
   trackSymbolSvg,
-  useAnchoredTips,
   type ExplanationProps,
   type SymbolTrack,
 } from '@/components/symbol';
@@ -23,13 +20,11 @@ import { MapSpine } from '@/components/cop/MapSpine';
 import { MissionQueue } from '@/components/fires/MissionQueue';
 import { AB1001_AT_CLOCK_S, AB1002_AT_CLOCK_S, ab1001, ab1002, missionState, missionsRecord } from '@/stories/fixtures/missions';
 import { StoreSeed, TrustHeartbeat } from '@/stories/support/mocks';
-import { PRESUMED_CANDIDATE_SITES, PRESUMED_JAMMER_POINT } from '@/stories/archive/presumed-jammer';
 import {
   BAND_SAMPLES,
   CANDIDATES,
   beatTrack,
   tracksRecord,
-  PHASE_TRACKS,
   S2_OVERRIDE_B,
   S2_OVERRIDE_CLOCK,
   UNIT_EVALUATION,
@@ -38,7 +33,6 @@ import {
   componentsFor,
   telemetryFor,
 } from '@/stories/fixtures/avdiivka';
-import { ResultsTable } from '@/stories/support/glance-bench';
 
 // Decisions/Track Symbology — the FINAL symbol (src/components/symbol). The
 // docs page (TrackSymbology.mdx) records decisions 1–6 and links the evidence.
@@ -46,11 +40,9 @@ import { ResultsTable } from '@/stories/support/glance-bench';
 interface Args {
   /** Matrix: link-trust score for every cell. */
   score: number;
-  /** COP: scenario clock, s (0:45 → 1:30). */
+  /** COP — live spine: scenario clock, s (0:45 → 1:30). */
   clock: number;
-  /** COP: symbol size, px. */
-  size: 16 | 24 | 32;
-  /** COP: apply the example S2 override to B from 1:25. */
+  /** COP — live spine: apply the example S2 override to B from 1:25. */
   s2Override: boolean;
   /** Hamilton link-trust overlay (side gauge). J stays: it is a doctrinal field. */
   overlay: boolean;
@@ -103,11 +95,10 @@ const meta = {
     // No store: every story is self-contained, so inline rendering is safe.
     docs: { story: { inline: true } },
   },
-  args: { score: BAND_SAMPLES.degraded, clock: 80, size: 32, s2Override: false, overlay: true },
+  args: { score: BAND_SAMPLES.degraded, clock: 80, s2Override: false, overlay: true },
   argTypes: {
     score: { control: { type: 'range', min: 0, max: 1, step: 0.01 } },
     clock: { control: { type: 'range', min: 45, max: 95, step: 1 }, table: { disable: true } },
-    size: { control: 'inline-radio', options: [16, 24, 32], table: { disable: true } },
     s2Override: { control: 'boolean', table: { disable: true } },
     overlay: { control: 'boolean' },
   },
@@ -336,7 +327,7 @@ const CLUSTER: (SymbolTrack & { x: number; y: number })[] = [
   { affiliation: 'friendly', sensorType: 'recon_static', designation: 'A', score: 1, x: 120, y: 92 },
   { affiliation: 'friendly', sensorType: 'offense', designation: 'B', score: BAND_SAMPLES.degraded, x: 132, y: 100 },
   { affiliation: 'friendly', sensorType: 'detection', designation: 'C', score: 1, x: 126, y: 112 },
-  { affiliation: 'enemy', fn: 'ew-jamming', designation: 'J1', x: 140, y: 96 },
+  { affiliation: 'enemy', fn: 'ew-jamming', designation: 'HE1', x: 140, y: 96 },
   { affiliation: 'unknown', sensorType: 'defense', designation: 'U1', score: BAND_SAMPLES.watching, x: 115, y: 106 },
 ];
 
@@ -398,185 +389,8 @@ export const Declutter: Story = {
   },
 };
 
-// ---------------------------------------------------------------------------
-// COP — Avdiivka with the final symbol
-// ---------------------------------------------------------------------------
-
-const SCENE_W = 960;
-const SCENE_H = 560;
-const LON0 = 37.728;
-const LON1 = 37.778;
-const LAT0 = 48.1335;
-const LAT1 = 48.1485;
-const project = (lat: number, lon: number): [number, number] => [((lon - LON0) / (LON1 - LON0)) * SCENE_W, ((LAT1 - lat) / (LAT1 - LAT0)) * SCENE_H];
-
-/**
- * HISTORICAL mock geolocations for the three FR-04a candidates and the old fixed jammer point (the engine publishes
- * scores only). This decision record predates HS-20; the live COP no longer draws a presumed jammer (FR-06a).
- */
-const CANDIDATE_SITES = PRESUMED_CANDIDATE_SITES;
-const PRESUMED_JAMMER = PRESUMED_JAMMER_POINT;
-const UNIT_META: Record<string, { designation: string; title: string; neighbours: string }> = {
-  unit_a: { designation: 'A', title: 'A · FA observer team (COLT/FIST)', neighbours: 'neighbours B, C' },
-  unit_b: { designation: 'B', title: 'B · FA battery (its FO, OBS B, calls AB1001)', neighbours: 'neighbours A, C' },
-  unit_c: { designation: 'C', title: 'C · FA target-acq radar platoon', neighbours: 'neighbours A, B' },
-};
 const B_CROSSING_CLOCK = firstCrossingClock() ?? 75;
-const FIX_CLOCK = 80;
 const fmtClock = (c: number) => `${Math.floor(c / 60)}:${String(Math.round(c % 60)).padStart(2, '0')}`;
-
-/** Clock of B's last frame before `clock` (frames arrive at the beat's cadence; never STALE in the demo). */
-function lastFrameClock(clock: number): number {
-  const beat = beatAt(clock);
-  const cadence = beat.telemetry.unit_b.cadenceS;
-  return beat.clockS + Math.floor((clock - beat.clockS) / cadence) * cadence;
-}
-
-function CopScene({ clock, size, s2Override, overlay }: Pick<Args, 'clock' | 'size' | 's2Override' | 'overlay'>) {
-  const containerRef = useRef<HTMLDivElement | null>(null);
-  const tips = useAnchoredTips(containerRef);
-  const baseId = `cop-final-${useId().replace(/:/g, '')}`;
-  const nowIso = clockIso(clock);
-  const beat = beatAt(clock);
-  const units = Object.values(PHASE_TRACKS.degraded).map((t) => {
-    const id = t.source_id as 'unit_a' | 'unit_b' | 'unit_c';
-    const out = beat.units[id];
-    const evaluation = { ...UNIT_EVALUATION[id], ...(id === 'unit_b' && s2Override && clock >= S2_OVERRIDE_CLOCK ? { jOverride: S2_OVERRIDE_B } : {}) };
-    const ex: ExplanationProps = {
-      title: UNIT_META[id]!.title,
-      components: { ...out.components },
-      payloadScore: out.score,
-      lastGoodIso: clockIso(id === 'unit_b' ? lastFrameClock(clock) : clock - 1),
-      nowIso,
-      neighbours: UNIT_META[id]!.neighbours,
-      topCandidate: clock >= B_CROSSING_CLOCK ? CANDIDATES[0] : undefined,
-      telemetry: beat.telemetry[id],
-      corroboration: evaluation.corroboration,
-      jOverride: evaluation.jOverride,
-    };
-    const { rating } = explainRating(ex);
-    const track: SymbolTrack = {
-      affiliation: t.affiliation,
-      sensorType: t.sensor_type,
-      designation: UNIT_META[id]!.designation,
-      score: rating.score,
-      components: ex.components,
-      stale: rating.stale,
-      corroboration: evaluation.corroboration,
-      jOverride: evaluation.jOverride,
-    };
-    return { t, id, ex, rating, track };
-  });
-  const b = units.find((u) => u.id === 'unit_b')!;
-  const bPt = project(b.t.lat, b.t.lon);
-  const jPt = project(PRESUMED_JAMMER.lat, PRESUMED_JAMMER.lon);
-  const sites = CANDIDATE_SITES.map((st) => project(st.lat, st.lon));
-  const all = [jPt, ...sites];
-  const cx = all.reduce((a, p) => a + p[0], 0) / all.length;
-  const cy = all.reduce((a, p) => a + p[1], 0) / all.length;
-  const rx = Math.max(...all.map((p) => Math.abs(p[0] - cx))) + 52;
-  const ry = Math.max(...all.map((p) => Math.abs(p[1] - cy))) + 40;
-  const dx = (PRESUMED_JAMMER.lon - b.t.lon) * Math.cos((b.t.lat * Math.PI) / 180);
-  const dy = PRESUMED_JAMMER.lat - b.t.lat;
-  const bearing = ((Math.atan2(dx, dy) * 180) / Math.PI + 360) % 360;
-  const ordered = [...CANDIDATES].sort((p, q) => q.score - p.score);
-  const showBearing = b.rating.score < TSS_MIN_GPS_SCORE;
-  const showCandidates = clock >= B_CROSSING_CLOCK;
-  const showFix = clock >= FIX_CLOCK;
-  const label: CSSProperties = { ...mono };
-  const outlined = { stroke: 'var(--surface-base)', strokeWidth: 3, paintOrder: 'stroke' as const };
-  return (
-    <div style={{ padding: 'var(--space-4)', background: 'var(--surface-panel)', display: 'grid', gap: 'var(--space-3)' }}>
-      <style>{TRIGGER_CSS}</style>
-      <div style={{ ...mono, fontSize: 12, color: 'var(--text-secondary)' }}>
-        Scenario clock <span style={{ color: 'var(--text-primary)' }}>{fmtClock(clock)}</span> · {formatDtg(nowIso)} · B{' '}
-        <span style={{ color: b.rating.labelToken }}>{b.rating.label}</span> {b.rating.score.toFixed(2)} (J {b.rating.jCode}
-        {b.rating.override ? `, ${b.rating.override.by} override; auto ${b.rating.autoJ}` : ''}) — drag the <em>clock</em> control. Hover or Tab to a unit for
-        its rating breakdown. <span data-testid="cop-beat">Engine beat: {beat.label}.</span>
-      </div>
-      <div ref={containerRef} style={{ position: 'relative', width: SCENE_W, maxWidth: '100%' }}>
-        <svg width={SCENE_W} height={SCENE_H} viewBox={`0 0 ${SCENE_W} ${SCENE_H}`} style={{ ...mapSurface, display: 'block', maxWidth: '100%', height: 'auto' }}>
-          {showCandidates && (
-            <g aria-label="NAI 1 — jammer" data-testid="cop-nai">
-              <ellipse cx={cx} cy={cy} rx={rx} ry={ry} fill="none" stroke="var(--sym-ink)" strokeOpacity={0.7} strokeWidth={1.25} strokeDasharray="8 5" />
-              <text x={cx} y={cy - ry - 20} textAnchor="middle" fill="var(--sym-ink)" style={label} {...outlined}>
-                NAI 1 — JAMMER
-              </text>
-              <text x={cx} y={cy - ry - 6} textAnchor="middle" fill="var(--text-secondary)" style={{ ...label, fontSize: 10 }} {...outlined}>
-                T FDC-1 · W {formatDtg(clockIso(B_CROSSING_CLOCK))}
-              </text>
-            </g>
-          )}
-          {showBearing && (
-            <g aria-label="Bearing line — jammer">
-              <line x1={bPt[0]} y1={bPt[1]} x2={jPt[0]} y2={jPt[1]} stroke="var(--sym-ink)" strokeOpacity={0.8} strokeWidth={1.25} />
-              <text x={jPt[0] - 34} y={jPt[1] - 34} textAnchor="end" fill="var(--sym-ink)" style={label} {...outlined}>
-                BRG {bearing.toFixed(0).padStart(3, '0')}° — J
-              </text>
-              <text x={jPt[0] - 34} y={jPt[1] - 20} textAnchor="end" fill="var(--text-secondary)" style={{ ...label, fontSize: 10 }} {...outlined}>
-                T FDC-1 · W {formatDtg(clockIso(B_CROSSING_CLOCK))}
-              </text>
-            </g>
-          )}
-          {showCandidates &&
-            ordered.map((c, i) => (
-              <g key={c.method_id} transform={placeSymbol(sites[i]![0], sites[i]![1], size)} data-testid={`cop-candidate-${i}`}>
-                <TrackSymbolG
-                  track={{ affiliation: 'enemy', fn: 'ew-jamming', status: 'anticipated', designation: CANDIDATE_SITES[i]!.label, info: `${i === 0 ? '#1 ' : ''}${c.method_id} ${c.score.toFixed(2)}` }}
-                  sizePx={size}
-                />
-              </g>
-            ))}
-          {showFix && (
-            <g transform={placeSymbol(jPt[0], jPt[1], size)} data-testid="cop-fix">
-              <TrackSymbolG track={{ affiliation: 'enemy', fn: 'ew-jamming', designation: 'J1' }} sizePx={size} />
-            </g>
-          )}
-          {units.map((u) => {
-            const tipId = `${baseId}-${u.id}`;
-            const [x, y] = project(u.t.lat, u.t.lon);
-            return (
-              <g key={u.id} data-testid={`cop-${u.id}`} aria-label={`${u.track.designation}: friend, link trust ${u.rating.label} ${u.rating.score.toFixed(2)}, J ${u.rating.jCode}`} {...tips.trigger(u.id, tipId)}>
-                <g transform={placeSymbol(x, y, size)}>
-                  <TrackSymbolG track={u.track} sizePx={size} selected={u.id === 'unit_b'} overlay={overlay} active={tips.open?.key === u.id} />
-                </g>
-              </g>
-            );
-          })}
-        </svg>
-        {units.map((u) => (
-          <div key={u.id} {...tips.tip(u.id, `${baseId}-${u.id}`)}>
-            <RatingExplanation {...u.ex} />
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-export const Cop: Story = {
-  name: 'COP — Avdiivka (final symbol)',
-  argTypes: { clock: shown, size: shown, s2Override: shown },
-  parameters: {
-    docs: {
-      description: {
-        story:
-          'A (FA observer team, COLT/FIST — corroborated by C, so J B1 on hover), B (FA battery, selected) and C (TA-radar platoon) on the PR #1 engine ' +
-          'beats. From 1:15 B is UNRELIABLE 0.13 (E5): candidates appear as status-1 (dashed) hostile EW jamming symbols inside the dashed NAI, with ' +
-          'the bearing line; at 1:20 the fix J1 is placed (hostile EW, Table 5-3 p 5-18). Toggle **s2Override** to apply the fixture S2 override ' +
-          '(D3) from 1:25. Candidate positions are mock.',
-      },
-    },
-  },
-  render: ({ clock, size, s2Override, overlay }) => <CopScene clock={clock} size={size} s2Override={s2Override} overlay={overlay} />,
-  play: async ({ canvasElement }) => {
-    const c = within(canvasElement);
-    await expect(c.getByTestId('cop-unit_b').querySelector('[data-field="J"]')?.textContent).toBe('E5');
-    await expect(c.getByTestId('cop-fix').querySelector('[data-fn]')?.getAttribute('data-fn')).toBe('ew-jamming');
-    await expect(c.getByTestId('cop-candidate-0').querySelector('[data-sidc]')?.getAttribute('data-sidc')).toBe('13061010001505040000');
-    await expect(c.getByTestId('cop-nai')).toBeTruthy();
-  },
-};
 
 // ---------------------------------------------------------------------------
 // COP — the same beats on the REAL spine (MapSpine, store-driven)
@@ -636,9 +450,9 @@ export const CopLiveSpine: Story = {
       story: { inline: false, iframeHeight: 680 },
       description: {
         story:
-          'The COP story above, on the real renderer: the store is seeded with the PR #1 engine beat at **clock** and `MapSpine` draws ' +
-          'the production symbols, declutter stacks and rating tooltips. Since HS-20 the live spine draws no jammer fix, candidate ' +
-          'sites or bearing line (the static COP story above keeps them as the historical decision record). B is selected (double frame). The fire-mission queue beside it holds the calls ' +
+          'The decided symbol on the real renderer: the store is seeded with the PR #1 engine beat at **clock** and `MapSpine` draws ' +
+          'the production symbols, declutter stacks and rating tooltips. The jammer\'s position is never presumed: no jammer symbol, ' +
+          'candidate site or bearing line is drawn. B is selected (double frame). The fire-mission queue beside it holds the calls ' +
           'for fire due by **clock**: AB1002 (OBS C, M795, from 0:30, never gated) and AB1001 (OBS B, M982, from 1:12) — TSS PASS at 1:12 ' +
           '(B C3), TSS FAIL — RELIABILITY E5 (min C), rec. DO NOT LOAD from 1:15. No modal anywhere (Fires/Mission Row). The spine draws over the offline Protomaps basemap (`NEXT_PUBLIC_BASEMAP`, default offline once `make fetch-tiles` has provisioned `/public/tiles`; see **COP/MapSpine › Basemap off**).',
       },
@@ -665,8 +479,6 @@ const EXPORT_ROWS: { entity: string; track: SymbolTrack }[] = [
   { entity: 'unit_a', track: { affiliation: 'friendly', sensorType: 'recon_static', designation: 'A', score: 1, corroboration: 'confirmed' } },
   { entity: 'unit_b', track: { affiliation: 'friendly', sensorType: 'offense', designation: 'B', score: BAND_SAMPLES.failed } },
   { entity: 'unit_c', track: { affiliation: 'friendly', sensorType: 'detection', designation: 'C', score: 1 } },
-  { entity: 'jammer (fix)', track: { affiliation: 'enemy', fn: 'ew-jamming', designation: 'J1' } },
-  { entity: 'jammer candidate', track: { affiliation: 'enemy', fn: 'ew-jamming', status: 'anticipated', designation: 'C1', info: 'match 1.00' } },
   { entity: 'hostile_ew_1 (fixture)', track: { affiliation: 'enemy', sensorType: 'defense', fn: 'ew-jamming', designation: 'H1', score: BAND_SAMPLES.degraded } },
 ];
 
@@ -718,31 +530,3 @@ export const Export: Story = {
     await waitFor(() => expect(img.complete && img.naturalWidth > 0).toBe(true));
   },
 };
-
-// ---------------------------------------------------------------------------
-// Bench scores — re-run on the final symbol
-// ---------------------------------------------------------------------------
-
-export const BenchScores: Story = {
-  name: 'Bench scores — final symbol (T1–T7)',
-  render: () => (
-    <div style={page}>
-      <p style={para}>
-        The At-a-Glance protocol (glance-symbology-research.md §5) re-run in this browser on the production primitives (<strong>FINAL</strong>), with the
-        calibration rows (REF must pass, V0 must fail) and V1, the base it was built from. Normal vision, grayscale (T5) and Machado 2009 deuteranopia /
-        protanopia (T6). Heatmaps, search tasks and the radar sweep: Decisions/Evidence/At-a-Glance.
-      </p>
-      <ResultsTable variants={['REF', 'V0', 'V1', 'FINAL']} />
-      <ResultsTable variants={['REF', 'V0', 'V1', 'FINAL']} vision="grayscale" />
-      <ResultsTable variants={['REF', 'V0', 'V1', 'FINAL']} vision="deuteranopia" />
-      <ResultsTable variants={['REF', 'V0', 'V1', 'FINAL']} vision="protanopia" />
-    </div>
-  ),
-  play: async ({ canvasElement }) => {
-    const c = within(canvasElement);
-    await waitFor(() => expect(c.getByTestId('results-normal').getAttribute('data-ready')).toBe('true'), { timeout: 120000 });
-    const row = c.getByTestId('results-normal').querySelector('tr[data-variant="FINAL"]')!;
-    await expect(row.textContent).not.toMatch(/FAIL/);
-  },
-};
-
