@@ -1,4 +1,6 @@
-use crate::fingerprint::{overlap_score, FingerprintEntry, RfFingerprint};
+use crate::fingerprint::{
+    matched_dimensions, Dimension6, FingerprintEntry, RfFingerprint, TOTAL_DIMENSIONS,
+};
 use serde::{Deserialize, Serialize};
 
 /// One entry in the ranked candidate list (FR-04a).
@@ -10,8 +12,19 @@ pub struct RankedCandidate {
     /// like this jammer. Published as-is on the FR-04a candidates topic; it is
     /// not a trust value (see `fingerprint::fingerprint_trust`).
     pub score: f64,
+    /// Integer matched-dimension count (`score` = `matched` / 6). The FR-04a
+    /// lead and the AoE trigger compare these, never float scores.
+    pub matched: u32,
     pub munitions_affected: Vec<String>,
     pub source_citation: String,
+}
+
+/// Lead of the top candidate over the second, in whole dimensions
+/// (`top.matched - second.matched`; the second is 0 when padded).
+pub fn lead_dimensions(ranked: &[RankedCandidate]) -> u32 {
+    let top = ranked.first().map_or(0, |c| c.matched);
+    let second = ranked.get(1).map_or(0, |c| c.matched);
+    top.saturating_sub(second)
 }
 
 /// Produce the top-3 ranked candidates for an observed RF fingerprint.
@@ -23,22 +36,35 @@ pub fn rank_candidates(
     observed: &RfFingerprint,
     library: &[FingerprintEntry],
 ) -> Vec<RankedCandidate> {
+    rank_candidates_with(observed, Dimension6::LegacyRange, library)
+}
+
+/// [`rank_candidates`] with an explicit dimension-6 rule; the engine passes
+/// [`Dimension6::ObservedClasses`] (FRS FR-04 rev).
+pub fn rank_candidates_with(
+    observed: &RfFingerprint,
+    dim6: Dimension6<'_>,
+    library: &[FingerprintEntry],
+) -> Vec<RankedCandidate> {
     let mut scored: Vec<RankedCandidate> = library
         .iter()
-        .map(|entry| RankedCandidate {
-            method_id: entry.method_id.clone(),
-            named_systems: entry.named_systems.clone(),
-            score: overlap_score(observed, entry),
-            munitions_affected: entry.munitions_affected.clone(),
-            source_citation: entry.source_citation.clone(),
+        .map(|entry| {
+            let matched = matched_dimensions(observed, dim6, entry);
+            RankedCandidate {
+                method_id: entry.method_id.clone(),
+                named_systems: entry.named_systems.clone(),
+                score: f64::from(matched) / f64::from(TOTAL_DIMENSIONS),
+                matched,
+                munitions_affected: entry.munitions_affected.clone(),
+                source_citation: entry.source_citation.clone(),
+            }
         })
         .collect();
 
-    // Sort descending by score; break ties alphabetically for determinism
+    // Sort descending by matched count; break ties alphabetically for determinism
     scored.sort_by(|a, b| {
-        b.score
-            .partial_cmp(&a.score)
-            .unwrap_or(std::cmp::Ordering::Equal)
+        b.matched
+            .cmp(&a.matched)
             .then_with(|| a.method_id.cmp(&b.method_id))
     });
 
@@ -50,6 +76,7 @@ pub fn rank_candidates(
             method_id: String::new(),
             named_systems: vec![],
             score: 0.0,
+            matched: 0,
             munitions_affected: vec![],
             source_citation: String::new(),
         });
@@ -62,6 +89,8 @@ pub fn rank_candidates(
 mod tests {
     use super::*;
     use crate::fingerprint::TimeDomainPattern;
+    use hamilton_contracts::RxClass;
+    use std::collections::BTreeSet;
 
     fn library() -> Vec<FingerprintEntry> {
         let raw = include_str!("../../../../../assets/fingerprints/library.json");
@@ -150,8 +179,10 @@ mod tests {
             gps_l2_overlap: true,
             time_domain_pattern: TimeDomainPattern::Barrage,
             effective_range_km: 30.0,
+            affects_rx_classes: vec![],
             munitions_affected: vec!["Excalibur".into()],
             source_citation: "test".into(),
+            emitter: Default::default(),
         }];
         let candidates = rank_candidates(&unit_b_observed(), &single);
         assert_eq!(candidates.len(), 3);
@@ -162,8 +193,39 @@ mod tests {
         assert!((candidates[2].score - 0.0).abs() < f64::EPSILON);
     }
 
-    // Demo top-3 for the Avdiivka jammer RF are k/6 values (documented in
-    // FRS FR-04a / System Design §5.2): 6/6, 3/6, 1/6.
+    // FR-04a re-pin under the FR-04 rev dimension 6 (affected receiver
+    // classes): B observes {civil GNSS, UHF link} degraded at 1:15 and {UHF
+    // link} at 1:50 (its GNSS fix recovers after the move). Both give
+    // 6/6, 4/6, 1/6: pulsed_uhf_wide gains dimension 6 (it affects every
+    // class), cellular_uhf_barrage (FPV only) does not. The lead is 2 whole
+    // dimensions, compared as integers.
+    #[test]
+    fn demo_top_three_repinned_under_dimension6_classes() {
+        let lib = library();
+        let b115: BTreeSet<RxClass> = [RxClass::GnssCivil, RxClass::UhfComms].into();
+        let b150: BTreeSet<RxClass> = [RxClass::UhfComms].into();
+        for obs in [&b115, &b150] {
+            let c =
+                rank_candidates_with(&unit_b_observed(), Dimension6::ObservedClasses(obs), &lib);
+            let got: Vec<(&str, u32)> = c
+                .iter()
+                .map(|c| (c.method_id.as_str(), c.matched))
+                .collect();
+            assert_eq!(
+                got,
+                [
+                    ("ground_based_gps_uhf_barrage", 6),
+                    ("pulsed_uhf_wide", 4),
+                    ("cellular_uhf_barrage", 1),
+                ]
+            );
+            assert_eq!(lead_dimensions(&c), 2);
+            assert!((c[1].score - 4.0 / 6.0).abs() < 1e-12);
+        }
+    }
+
+    // Legacy dimension 6 (range; telemetry v1 path kept for the aggregator
+    // beat test until E23): 6/6, 3/6, 1/6 as before.
     #[test]
     fn demo_top_three_are_k_over_six() {
         let lib = library();

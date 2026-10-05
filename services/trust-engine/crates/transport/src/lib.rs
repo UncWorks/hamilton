@@ -6,5 +6,5 @@
 pub mod log;
 pub mod mqtt;
 
-pub use log::{AfterActionLog, LogConfig};
-pub use mqtt::{parse_broker_url, MqttPublisher, MqttPublisherConfig};
+pub use log::{AfterActionLog, EmitterEstimateRow, LogConfig};
+pub use mqtt::{encode_emitter_estimate, parse_broker_url, MqttPublisher, MqttPublisherConfig};

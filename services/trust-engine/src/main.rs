@@ -9,6 +9,7 @@
 //!    >=1Hz invariant).
 //! 3. HTTP server — Axum on TRUST_ENGINE_HTTP_PORT.
 
+mod aoe;
 mod state;
 mod telemetry;
 mod ticker;
@@ -19,7 +20,7 @@ use std::sync::Arc;
 use tokio::sync::RwLock;
 use tracing::info;
 
-use trust_library::load_bundled;
+use trust_library::{load_bundled, load_bundled_receivers};
 use trust_server::{serve, AppState};
 use trust_transport::{AfterActionLog, LogConfig, MqttPublisher, MqttPublisherConfig};
 
@@ -53,6 +54,12 @@ async fn main() -> Result<()> {
     let library = load_bundled()?;
     info!(entries = library.len(), "fingerprint library loaded");
 
+    let receivers = load_bundled_receivers()?;
+    info!(
+        classes = receivers.classes.len(),
+        "receiver thresholds loaded"
+    );
+
     let log = Arc::new(AfterActionLog::open(LogConfig { db_path })?);
     let publisher = Arc::new(MqttPublisher::connect(MqttPublisherConfig {
         broker_url: broker_url.clone(),
@@ -74,6 +81,11 @@ async fn main() -> Result<()> {
         Arc::clone(&log),
         library,
         spatial_radius_m,
+        ticker::AoeRuntime {
+            tracker: aoe::AoeTracker::new(aoe::AoeConfig::default()),
+            receivers,
+            estimator: Box::new(aoe::estimator::GridEstimator),
+        },
     ));
 
     let http_state = AppState {

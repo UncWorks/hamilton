@@ -9,7 +9,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use anyhow::{Context, Result};
-use chrono::Utc;
+use chrono::{DateTime, Utc};
 use hamilton_contracts::{self as wire, DetectionEvent, DetectionKind};
 use rumqttc::{AsyncClient, Event, EventLoop, MqttOptions, Packet, QoS};
 use tokio::sync::RwLock;
@@ -21,7 +21,7 @@ use trust_detectors::{
 };
 use trust_transport::{parse_broker_url, AfterActionLog};
 
-use crate::state::{rf_from_wire, EngineState, SourceState};
+use crate::state::{rf_from_wire, EngineState, GnssTrack, SourceState};
 
 const MAX_RECENT_ARRIVALS: usize = 60;
 
@@ -71,9 +71,31 @@ async fn apply(
     let payload: wire::TelemetryPayload =
         serde_json::from_slice(bytes).context("deserialize TelemetryPayload")?;
     debug!(source_id = %payload.source_id, "telemetry update");
+    let event = {
+        let mut guard = state.write().await;
+        apply_payload(&mut guard, &payload, Utc::now().timestamp_millis())
+    };
+    if let Some(event) = event {
+        if let Err(e) = log.append(&event) {
+            warn!(error = %e, "failed to append telemetry transition event");
+        }
+    }
+    Ok(())
+}
 
-    let mut guard = state.write().await;
-    let entry = guard
+/// Fold one telemetry message into the engine state at engine time `now_ms`
+/// (pure: no clock, no I/O, so replay tests can drive it). Returns the
+/// stability transition event to log, if the stability detector just flipped.
+///
+/// telemetry/2 (E14): `rx_class` is recorded, and for GNSS classes the
+/// `gnss_fix` drives the GNSS evidence track (K2). The FR-01 / FR-02 link
+/// verdict is never mixed into it.
+pub fn apply_payload(
+    state: &mut EngineState,
+    payload: &wire::TelemetryPayload,
+    now_ms: i64,
+) -> Option<DetectionEvent> {
+    let entry = state
         .sources
         .entry(payload.source_id.clone())
         .or_insert_with(|| SourceState::new(&payload.source_id, payload.lat, payload.lon));
@@ -82,6 +104,24 @@ async fn apply(
         lat: payload.lat,
         lon: payload.lon,
     };
+    entry.last_report_ms = now_ms;
+
+    if let Some(rx_class) = payload.rx_class {
+        entry.rx_class = Some(rx_class);
+    }
+    match (entry.rx_class, payload.gnss_fix) {
+        (Some(rx_class), Some(fix)) if rx_class.is_gnss() => {
+            entry.gnss = Some(GnssTrack::observe(
+                entry.gnss,
+                rx_class,
+                fix,
+                payload.lat,
+                payload.lon,
+                now_ms,
+            ));
+        }
+        _ => {}
+    }
 
     entry.recent_arrivals.push_back(InterArrival {
         seconds: payload.inter_arrival_seconds,
@@ -105,7 +145,7 @@ async fn apply(
 
     // Measured, not self-reported: log when the stability detector flips.
     if !was_degraded && detect_stability(&entry.stability).degraded {
-        let event = DetectionEvent {
+        return Some(DetectionEvent {
             source_id: payload.source_id.clone(),
             kind: DetectionKind::Stability,
             message: format!(
@@ -118,12 +158,8 @@ async fn apply(
                 "crc_error_rate": payload.crc_error_rate,
                 "duplicate_rate": payload.duplicate_rate
             })),
-            timestamp: Utc::now(),
-        };
-        if let Err(e) = log.append(&event) {
-            warn!(error = %e, "failed to append telemetry transition event");
-        }
+            timestamp: DateTime::from_timestamp_millis(now_ms).unwrap_or_else(Utc::now),
+        });
     }
-
-    Ok(())
+    None
 }

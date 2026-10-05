@@ -2446,9 +2446,18 @@ dependencies = [
  "tracing-subscriber",
  "trust-aggregator",
  "trust-detectors",
+ "trust-estimator",
  "trust-library",
  "trust-server",
  "trust-transport",
+]
+
+[[package]]
+name = "trust-estimator"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
 ]
 
 [[package]]
@@ -2456,6 +2465,7 @@ name = "trust-library"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "hamilton-contracts",
  "serde",
  "serde_json",
  "trust-detectors",
