@@ -270,12 +270,13 @@ export const CANDIDATES_PAYLOAD: FingerprintCandidatesPayload = FingerprintCandi
       named_systems: ['R-330Zh Zhitel', 'Pole-21'],
       score: 6 / 6, // 1.00
       munitions_affected: ['Excalibur', 'JDAM-ER', 'Switchblade 300', 'GMLRS-U'],
-      source_citation: 'Bronk RUSI 2024',
+      source_citation:
+        'Bronk, Reynolds & Watling, RUSI "The Russian Air War and Ukrainian Requirements for Air Defence" (Nov 2022); NTC REB Pole-21E manufacturer page (archived 2018-01-15)',
     },
     {
       method_id: 'pulsed_uhf_wide',
       named_systems: ['Lorandit'],
-      score: 3 / 6, // 0.50
+      score: 4 / 6, // 0.67 (FR-04 rev dimension 6: affects every observed class)
       munitions_affected: ['FPV C2 link', 'Switchblade 300'],
       source_citation: 'JAPCC 2023',
     },
@@ -397,7 +398,7 @@ const RAW_EVENTS: DetectionEvent[] = [
   { source_id: 'unit_b', kind: 'spatial', message: 'localized at B · no degrading unit within 500 m · A, C healthy', timestamp: clockIso(65) },
   { source_id: 'unit_b', kind: 'temporal_anomaly', message: 'cadence 1.17s → 6.1s', timestamp: clockIso(75) },
   { source_id: 'unit_b', kind: 'stability', message: 'CRC 6% → 14%', timestamp: clockIso(75) },
-  { source_id: 'unit_b', kind: 'fingerprint', message: 'ground_based_gps_uhf_barrage 1.00 · pulsed_uhf_wide 0.50 · cellular_uhf_barrage 0.17', timestamp: clockIso(75) },
+  { source_id: 'unit_b', kind: 'fingerprint', message: 'ground_based_gps_uhf_barrage 1.00 · pulsed_uhf_wide 0.67 · cellular_uhf_barrage 0.17', timestamp: clockIso(75) },
   // Engine copy of the FDC's branch [1] on AB1001 (POST /api/modal/selection; mission id rides in source_id).
   { source_id: 'AB1001/unit_b', kind: 'modal_selection', message: `operator selected (shift_non_gps) at score ${f2(bAt(80).score)}`, timestamp: clockIso(82) },
   { source_id: 'unit_b', kind: 'recovery', message: `trust ${f2(bAt(110).score)} → ${f2(bAt(135).score)} · cadence 1.0s`, timestamp: clockIso(135) },

@@ -1,6 +1,6 @@
 {
   "version": "0.2.0",
-  "source_note": "Public-source EW characterizations per FRS §2.4a. Library is data, not code (NFR-06). Citations: Bronk RUSI 2024, JAPCC 2023, WaPo 2024.",
+  "source_note": "Public-source EW characterizations per FRS §2.4a. Library is data, not code (NFR-06). Citations per entry; see source_citation.",
   "v0_2_note": "v0.2 (docs/plans/jammer-aoe.md A1): every v0.1 id kept. Adds `affects_rx_classes` to every entry (fingerprint dimension 6, FRS FR-04 rev) and an optional `emitter.modules[]` envelope (empty = not yet characterised). `effective_range_km` is kept for the v0.1 parser and is deprecated (not observable). affects_rx_classes rule [DES]: gnss_civil + gnss_mil when gps_l1_overlap or gps_l2_overlap; uhf_comms when the band overlaps 225-400 MHz; fpv_link when it overlaps an FPV control / video band (868-928, 2400-2483.5, 5725-5875 MHz); gnss_mil_crpa never (CRPA not modelled). The Pole-21 / R-330Zh split and the verification §5 corrections are a separate data PR.",
   "provenance_tags": {
     "VMC": "verified manufacturer claim (ua-jamming-verification §4)",
@@ -22,7 +22,7 @@
       "effective_range_km": 30,
       "affects_rx_classes": ["gnss_civil", "gnss_mil", "uhf_comms", "fpv_link"],
       "munitions_affected": ["Excalibur", "JDAM-ER", "Switchblade 300", "GMLRS-U"],
-      "source_citation": "Bronk RUSI 2024",
+      "source_citation": "Bronk, Reynolds & Watling, RUSI \"The Russian Air War and Ukrainian Requirements for Air Defence\" (Nov 2022); NTC REB Pole-21E manufacturer page (archived 2018-01-15)",
       "emitter": {
         "modules": [
           {
@@ -101,7 +101,7 @@
       "effective_range_km": 20,
       "affects_rx_classes": ["gnss_civil", "gnss_mil"],
       "munitions_affected": ["Excalibur", "JDAM-ER"],
-      "source_citation": "Bronk RUSI 2024",
+      "source_citation": "NTC REB Pole-21E page (archived 2018-01-15); Izvestia 2016-08-25; RUSI Stormbreak 2023 p.18",
       "emitter": {
         "modules": []
       }

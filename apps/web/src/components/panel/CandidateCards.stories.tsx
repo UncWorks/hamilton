@@ -38,7 +38,7 @@ type Story = StoryObj<typeof meta>;
 
 /**
  * Avdiivka 1:15 reveal, as the engine ranks the jammer RF against library.json:
- * ground_based_gps_uhf_barrage 1.00 (6/6) · pulsed_uhf_wide 0.50 (3/6) · cellular_uhf_barrage 0.17 (1/6)
+ * ground_based_gps_uhf_barrage 1.00 (6/6) · pulsed_uhf_wide 0.67 (4/6) · cellular_uhf_barrage 0.17 (1/6)
  * (nominal / degraded / failed borders — match strength coloured on the trust gradient, Branding §10.4).
  */
 export const TopThree: Story = {};
