@@ -1,9 +1,23 @@
-import type { Meta, StoryObj } from '@storybook/react';
+import type { Decorator, Meta, StoryObj } from '@storybook/react';
+import { useState } from 'react';
 import { BrandBar } from './BrandBar';
+import { useDemoView } from '@/store/demo-view';
+import { matchingPreset, type DemoComponentId } from '@/lib/demo-view';
+
+/** Seeds the demo-view store once per mount (Full unless `parameters.demoView`). */
+const seedDemoView: Decorator = (Story, { parameters }) => {
+  useState(() => {
+    const hidden = ((parameters.demoView as { hidden?: DemoComponentId[] } | undefined)?.hidden ?? []);
+    useDemoView.setState({ v: 1, hidden, preset: matchingPreset(hidden) });
+    return true;
+  });
+  return <Story />;
+};
 
 const meta = {
   title: 'Brand/BrandBar',
   component: BrandBar,
+  decorators: [seedDemoView],
   parameters: {
     layout: 'fullscreen',
     docs: {
@@ -46,5 +60,17 @@ export const Narrow: Story = {
   parameters: {
     viewport: { defaultViewport: 'mobile2' },
     hamilton: { tssFailedThisSession: true },
+  },
+};
+
+/**
+ * Admin session (gate forced on): the quiet `Admin` trigger at the far right and
+ * the `DEMO VIEW · n hidden` marker, here with the LLM toggle and log hidden.
+ */
+export const WithAdmin: Story = {
+  args: { adminOverride: true },
+  parameters: {
+    docs: { story: { iframeHeight: 720 } },
+    demoView: { hidden: ['bar.llmToggle', 'log.terminal'] satisfies DemoComponentId[] },
   },
 };
