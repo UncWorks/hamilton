@@ -49,6 +49,11 @@ import { symbolFunctionOf } from '@/lib/track-sidc';
 import { SpineOverlay, placeSymbols } from './SpineOverlay';
 import { jCodeOf, useSpineSymbols, type CandidateSite, type Evaluations } from './spine-symbols';
 import { cachedRaster, rasterizeSymbol, symbolPixelRatio } from './symbol-raster';
+import { contourOf, labelAnchor, largestOuterRing, layerOf, screenLabelAnchor } from '@/lib/aoe';
+import { mapLabel, type EstimateEntry } from '@/lib/emitter-estimate';
+import { AOE_EDGE50_PX, AOE_EDGE90_PX, AOE_FILL_ALPHA, AOE_RGB, AOE_STALE_EDGE_PX } from '@/lib/aoe-style';
+import { useAoeFade, useEstimateView } from '@/hooks/useEmitterEstimate';
+import { AoeScreen } from './AoeKey';
 
 // Fallback view before anything is framed (Avdiivka AO). As soon as there are
 // fit points the camera frames them instead (lib/camera-fit.ts). This used to
@@ -59,18 +64,19 @@ const AVDIIVKA = { lat: 48.14, lon: 37.745 };
 const REFIT_DURATION_S = 0.6;
 /** Pointer travel (px) before a drag counts as navigation. */
 const DRAG_THRESHOLD_PX = 4;
-/** Jammer area of uncertainty (m) — an area graphic, unchanged by the symbol work. */
-const JAMMER_RING_M = 120;
+/** Screen-position key of the AoE label anchor in the declutter pass (not a symbol id). */
+const AOE_LABEL_KEY = '__aoe_label';
 
 type FitPoint = LatLon & { id: string };
 type ScreenPos = Record<string, { x: number; y: number }>;
 
 interface CesiumSpineProps {
-  jammerLocation?: { lat: number; lon: number; method_id: string };
-  directionalFrom?: { lat: number; lon: number };
-  directionalTo?: { lat: number; lon: number };
-  /** Candidate NAI centre — framed by the camera fit when present. */
-  candidateNai?: { lat: number; lon: number };
+  /**
+   * FR-04b emitter estimate, drawn as the FR-06a area of effect (ground
+   * polygons). No jammer point, ring or bearing line is ever drawn (HS-20).
+   * The camera fit stays tracks-only (plan cut 5).
+   */
+  emitterEstimate?: EstimateEntry | null | undefined;
   /** Geolocated FR-04a candidate sites — drawn as anticipated (dashed) hostile EW symbols. */
   candidateSites?: readonly CandidateSite[];
   /** S2 evaluation inputs (corroboration / J override) per source. */
@@ -135,7 +141,6 @@ export function CesiumSpine(props: CesiumSpineProps) {
   const selectSource = useHamilton((s) => s.selectSource);
   const selectedId = useHamilton((s) => s.selectedSource);
   const { symbols, nowIso } = useSpineSymbols({
-    jammerLocation: props.jammerLocation,
     candidateSites: props.candidateSites,
     evaluations: props.evaluations,
   });
@@ -144,14 +149,11 @@ export function CesiumSpine(props: CesiumSpineProps) {
   const [activeId, setActiveId] = useState<string | null>(null);
 
   // --- Camera fit ------------------------------------------------------------
-  const { jammerLocation, candidateNai, initialRangeM } = props;
-  const fitPoints = useMemo<FitPoint[]>(() => {
-    const pts: FitPoint[] = symbols.filter((s) => s.kind === 'track').map((s) => ({ id: s.id, lat: s.lat, lon: s.lon }));
-    if (jammerLocation) pts.push({ id: '__jammer', lat: jammerLocation.lat, lon: jammerLocation.lon });
-    if (candidateNai) pts.push({ id: '__nai', lat: candidateNai.lat, lon: candidateNai.lon });
-    return pts;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [symbols, jammerLocation?.lat, jammerLocation?.lon, candidateNai?.lat, candidateNai?.lon]);
+  const { initialRangeM } = props;
+  const fitPoints = useMemo<FitPoint[]>(
+    () => symbols.filter((s) => s.kind === 'track').map((s) => ({ id: s.id, lat: s.lat, lon: s.lon })),
+    [symbols],
+  );
   const fitPointsRef = useRef(fitPoints);
   fitPointsRef.current = fitPoints;
   /** Ids framed by the last fit; null until the first one. */
@@ -266,7 +268,7 @@ export function CesiumSpine(props: CesiumSpineProps) {
     };
   }, [selectSource]);
 
-  /** Frame every fit point (tracks + jammer + NAI) at the −55° pitch. */
+  /** Frame every fit point (tracks) at the −55° pitch. */
   const fit = useCallback((durationS: number, rangeOverrideM?: number) => {
     const C = cesiumRef.current;
     const viewer = viewerRef.current;
@@ -391,6 +393,17 @@ export function CesiumSpine(props: CesiumSpineProps) {
       positions[s.id] = { x: wc.x, y: wc.y };
       items.push({ id: s.id, x: wc.x, y: wc.y, width: box.width, height: box.height, rank: s.rank });
     }
+    // AoE label anchor (not a symbol: never declutters).
+    const la = aoeAnchorRef.current;
+    if (la) {
+      const proj = (lon: number, lat: number) => {
+        const wc = C.SceneTransforms.worldToWindowCoordinates(viewer.scene, C.Cartesian3.fromDegrees(lon, lat, 0));
+        return wc ? { x: wc.x, y: wc.y } : { x: NaN, y: NaN };
+      };
+      const vp = { width: cv.clientWidth, height: cv.clientHeight };
+      const at = screenLabelAnchor(la.ring.map((c) => proj(c[0]!, c[1]!)), vp) ?? (la.fallback ? proj(la.fallback.lon, la.fallback.lat) : null);
+      if (at && Number.isFinite(at.x)) positions[AOE_LABEL_KEY] = at;
+    }
     const viewport = { width: cv.clientWidth, height: cv.clientHeight };
     const result = declutter(items, { viewport, minSeparationPx: box.minSeparationPx, minCount: box.minCount });
     const grouped = new Set(result.groups.flatMap((g) => g.ids));
@@ -476,62 +489,89 @@ export function CesiumSpine(props: CesiumSpineProps) {
     declutterRef.current?.call();
   }, [ready, symbols, selectedId, activeId, sizePx, rasterTick]);
 
-  // Jammer area ring + bearing line (area / line graphics, not symbols).
+  // --- Area graphics: the FR-06a area of effect (civil GNSS, D6) -------------
+  // Fills: Entity.polygon classified onto the terrain (classificationType
+  // TERRAIN). Edges: clampToGround polylines — outlines are unsupported on
+  // terrain-clamped polygons — solid 2 px for 90%, PolylineDash for 50%.
+  // Stale: outlines only (HS-25). Unbounded: nothing. One ≤ 300 ms fade-in
+  // through CallbackProperty colours; none under reduced motion.
+  const est = useEstimateView(props.emitterEstimate);
+  const aoeOpacity = useAoeFade(est.state && est.state !== 'unbounded' ? est.entry!.payload.estimate_id : null, reducedMotion);
+  const fadeRef = useRef(1);
+  fadeRef.current = aoeOpacity;
+  const civil = est.entry && est.state && est.state !== 'unbounded' ? layerOf(est.entry.payload, 'gnss_civil') : undefined;
+  const c90 = contourOf(civil, 0.9);
+  const c50 = contourOf(civil, 0.5);
+  const stale = est.state === 'stale';
+  const [aoeDrawn, setAoeDrawn] = useState<string[]>([]);
+  const aoeAnchorWorld = useMemo(() => {
+    const poly = c90?.polygon ?? c50?.polygon;
+    return poly ? { ring: largestOuterRing(poly) ?? [], fallback: labelAnchor(poly) } : null;
+  }, [c90, c50]);
+  const aoeAnchorRef = useRef(aoeAnchorWorld);
+  aoeAnchorRef.current = aoeAnchorWorld;
+
   useEffect(() => {
     const C = cesiumRef.current;
     const viewer = viewerRef.current;
     if (!ready || !C || !viewer) return;
-
-    for (const ent of overlayEntitiesRef.current) {
-      viewer.entities.remove(ent);
-    }
+    for (const ent of overlayEntitiesRef.current) viewer.entities.remove(ent);
     overlayEntitiesRef.current = new Set();
-
-    if (props.jammerLocation) {
-      const jl = props.jammerLocation;
-      const ent = viewer.entities.add({
-        id: 'jammer-overlay',
-        position: C.Cartesian3.fromDegrees(jl.lon, jl.lat, 0),
-        ellipse: {
-          semiMajorAxis: JAMMER_RING_M,
-          semiMinorAxis: JAMMER_RING_M,
-          // Explicit height: outlines are unsupported on terrain-clamped ellipses.
-          height: 0,
-          material: new C.Color(0.86, 0.7, 0.35, 0.18),
-          outline: true,
-          outlineColor: new C.Color(0.86, 0.7, 0.35, 0.6),
-        },
+    const [r, g, b] = AOE_RGB.gnss_civil;
+    const base = new C.Color(r / 255, g / 255, b / 255, 1);
+    const faded = (alpha: number) => new C.CallbackProperty(() => base.withAlpha(alpha * fadeRef.current), false);
+    const ring = (coords: readonly (readonly number[])[]) => C.Cartesian3.fromDegreesArray(coords.flatMap((c) => [c[0]!, c[1]!]));
+    const closed = (coords: readonly (readonly number[])[]) => {
+      const f = coords[0];
+      const l = coords[coords.length - 1];
+      return f && l && (f[0] !== l[0] || f[1] !== l[1]) ? [...coords, f] : coords;
+    };
+    const add = (e: CesiumNs.Entity.ConstructorOptions) => overlayEntitiesRef.current.add(viewer.entities.add(e));
+    const drawn: string[] = [];
+    if (c90 && !stale) {
+      c90.polygon.coordinates.forEach((poly, i) => {
+        const [outer, ...holes] = poly;
+        if (!outer) return;
+        add({
+          id: `aoe-fill90-gnss_civil-${i}`,
+          polygon: {
+            hierarchy: new C.PolygonHierarchy(ring(outer), holes.map((h) => new C.PolygonHierarchy(ring(h)))),
+            material: new C.ColorMaterialProperty(faded(AOE_FILL_ALPHA)),
+            classificationType: C.ClassificationType.TERRAIN,
+          },
+        });
       });
-      overlayEntitiesRef.current.add(ent);
+      drawn.push('fill90-gnss_civil');
     }
-
-    if (props.directionalFrom && props.directionalTo) {
-      const ent = viewer.entities.add({
-        id: 'directional-overlay',
-        polyline: {
-          positions: C.Cartesian3.fromDegreesArray([
-            props.directionalFrom.lon,
-            props.directionalFrom.lat,
-            props.directionalTo.lon,
-            props.directionalTo.lat,
-          ]),
-          width: 2,
-          material: new C.Color(0.86, 0.7, 0.35, 0.55),
-          clampToGround: true,
-        },
+    if (c90) {
+      c90.polygon.coordinates.flat().forEach((rg, i) => {
+        add({
+          id: `aoe-edge90-gnss_civil-${i}`,
+          polyline: { positions: ring(closed(rg)), width: stale ? AOE_STALE_EDGE_PX : AOE_EDGE90_PX, clampToGround: true, material: new C.ColorMaterialProperty(faded(1)) },
+        });
       });
-      overlayEntitiesRef.current.add(ent);
+      drawn.push('edge90-gnss_civil');
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    ready,
-    props.jammerLocation?.lat,
-    props.jammerLocation?.lon,
-    props.directionalFrom?.lat,
-    props.directionalFrom?.lon,
-    props.directionalTo?.lat,
-    props.directionalTo?.lon,
-  ]);
+    if (c50) {
+      c50.polygon.coordinates.flat().forEach((rg, i) => {
+        add({
+          id: `aoe-edge50-gnss_civil-${i}`,
+          polyline: {
+            positions: ring(closed(rg)),
+            width: AOE_EDGE50_PX,
+            clampToGround: true,
+            // 12 px period, half on / half off (~ the 7 / 5 px MapLibre dash).
+            material: new C.PolylineDashMaterialProperty({ color: faded(0.95), dashLength: 12 }),
+          },
+        });
+      });
+      drawn.push('edge50-gnss_civil');
+    }
+    setAoeDrawn((p) => (p.join() === drawn.join() ? p : drawn));
+    declDirtyRef.current = true;
+    declutterRef.current?.call();
+  }, [ready, c90, c50, stale]);
+
 
   // Basemap imagery layer (per mode; swapped in place when the mode changes).
   const [imageryOn, setImageryOn] = useState(false);
@@ -585,6 +625,21 @@ export function CesiumSpine(props: CesiumSpineProps) {
           manual={manual}
           reducedMotion={reducedMotion}
           nowIso={nowIso}
+          aoe={
+            est.entry && est.state ? (
+              <AoeScreen
+                state={est.state}
+                label={mapLabel(est.entry, est.state, est.nowMs)}
+                anchor={decl.positions[AOE_LABEL_KEY] ?? null}
+                viewport={decl.viewport}
+                layers={est.state === 'unbounded' ? [] : aoeDrawn}
+                opacity={aoeOpacity}
+                reducedMotion={reducedMotion}
+                avoid={[...singles, ...stacks.map((st) => st.anchor)]}
+                avoidPx={sizePx}
+              />
+            ) : null
+          }
         />
       )}
     </div>

@@ -1,13 +1,15 @@
 'use client';
 
 // Store → production track symbol (src/components/symbol) for the live COP
-// spines. ONE list of map symbols — tracks, the jammer fix and the FR-04a
-// candidate sites — that CesiumSpine and MapSpine draw, declutter and
-// explain identically.
+// spines. ONE list of map symbols — tracks and the FR-04a candidate sites —
+// that CesiumSpine and MapSpine draw, declutter and explain identically.
+// There is no jammer symbol: the jammer's position is never presumed (HS-20);
+// the emitter estimate is an area graphic drawn by each spine (FR-06a).
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { FingerprintCandidate } from '@hamilton/contracts';
-import { STALE_AFTER_S, rateLinkTrust, type Corroboration, type JOverride } from '@/lib/link-trust-rating';
+import { SPATIAL_RADIUS_M, STALE_AFTER_S, rateLinkTrust, type Corroboration, type JOverride } from '@/lib/link-trust-rating';
+import { haversineM } from '@/lib/camera-fit';
 import { SYMBOL_FUNCTIONS, symbolFunctionOf } from '@/lib/track-sidc';
 import { affiliationRank } from '@/lib/declutter';
 import { copNowMs, designationOf, functionOverrideOf, isStaleAt } from '@/lib/cop-symbols';
@@ -29,7 +31,6 @@ export interface CandidateSite {
 export type Evaluations = Readonly<Record<string, { corroboration?: Corroboration | undefined; jOverride?: JOverride | undefined }>>;
 
 export interface SpineSymbolInputs {
-  jammerLocation?: { lat: number; lon: number; method_id?: string | undefined } | undefined;
   /** Geolocated FR-04a candidate sites, drawn as anticipated (status 1, dashed). Omit when there are none. */
   candidateSites?: readonly CandidateSite[] | undefined;
   evaluations?: Evaluations | undefined;
@@ -37,7 +38,7 @@ export interface SpineSymbolInputs {
 
 export interface SpineSymbol {
   id: string;
-  kind: 'track' | 'jammer' | 'candidate';
+  kind: 'track' | 'candidate';
   lat: number;
   lon: number;
   track: SymbolTrack;
@@ -48,8 +49,6 @@ export interface SpineSymbol {
   /** Accessible name (describeTrackSymbol label). */
   label: string;
 }
-
-export const JAMMER_SYMBOL_ID = '__jammer';
 
 function titleOf(t: TrackState, track: SymbolTrack): string {
   return `${track.designation} · ${UNIT_ROLES[t.source_id] ?? SYMBOL_FUNCTIONS[symbolFunctionOf(track)].name}`;
@@ -83,8 +82,15 @@ export function buildSpineSymbols(
     const evaluation = opts.evaluations?.[t.source_id];
     const stale = isStaleAt(t.last_update, opts.nowMs, STALE_AFTER_S);
     const track = trackToSymbol(t, stale, evaluation);
+    // FR-03 neighbours: same-side units within the engine's spatial radius (500 m). With the
+    // km-scale layout there are none, and the tooltip says so instead of naming far units.
     const neighbours = tracks
-      .filter((o) => o.source_id !== t.source_id && o.affiliation === t.affiliation)
+      .filter(
+        (o) =>
+          o.source_id !== t.source_id &&
+          o.affiliation === t.affiliation &&
+          haversineM({ lat: t.lat, lon: t.lon }, { lat: o.lat, lon: o.lon }) <= SPATIAL_RADIUS_M,
+      )
       .slice(0, 2)
       .map((o) => designationOf(o.source_id));
     const top = opts.candidates?.source_id === t.source_id ? opts.candidates.items[0] : undefined;
@@ -108,16 +114,6 @@ export function buildSpineSymbols(
         jOverride: evaluation?.jOverride,
       }),
     });
-  }
-  if (opts.jammerLocation) {
-    const j = opts.jammerLocation;
-    // The fix: hostile EW jamming (Table 5-3 p 5-18). The FR-04a method is the
-    // H amplifier (right of the frame) — part of the symbol, so it moves with
-    // it into a declutter stack instead of crossing the stack's leader line.
-    // On the map the H field carries the short method name; the accessible name gets the full one.
-    const track: SymbolTrack = { affiliation: 'enemy', fn: 'ew-jamming', designation: 'J1', info: j.method_id ? methodShortName(j.method_id) : undefined };
-    const label = j.method_id ? labelOf({ ...track, info: methodName(j.method_id) }) : labelOf(track);
-    out.push({ id: JAMMER_SYMBOL_ID, kind: 'jammer', lat: j.lat, lon: j.lon, track, rank: affiliationRank('enemy'), label });
   }
   (opts.candidateSites ?? []).forEach((c, i) => {
     const score = c.score !== undefined ? c.score.toFixed(2) : undefined;
@@ -152,12 +148,12 @@ export function useSpineSymbols(inputs: SpineSymbolInputs): { symbols: SpineSymb
     return () => window.clearInterval(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-  const { jammerLocation, candidateSites, evaluations } = inputs;
+  const { candidateSites, evaluations } = inputs;
   const symbols = useMemo(
-    () => buildSpineSymbols(tracks, { nowMs: nowMs(), candidates, jammerLocation, candidateSites, evaluations }),
+    () => buildSpineSymbols(tracks, { nowMs: nowMs(), candidates, candidateSites, evaluations }),
     // staleKey: rebuild when a track crosses STALE_AFTER_S with no new data.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [tracks, candidates, jammerLocation, candidateSites, evaluations, staleKey],
+    [tracks, candidates, candidateSites, evaluations, staleKey],
   );
   return { symbols, tracks, nowIso: () => new Date(nowMs()).toISOString() };
 }

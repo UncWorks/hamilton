@@ -17,6 +17,15 @@ export function useHamiltonMqtt(): void {
   const setLlmStatus = useHamilton((s) => s.setLlmStatus);
   const upsertMission = useHamilton((s) => s.upsertMission);
   const removeMission = useHamilton((s) => s.removeMission);
+  const receiveEmitterEstimate = useHamilton((s) => s.receiveEmitterEstimate);
+  const clearEmitterEstimate = useHamilton((s) => s.clearEmitterEstimate);
+  const tickEmitterEstimate = useHamilton((s) => s.tickEmitterEstimate);
+
+  // The C2 marks an unrefreshed estimate stale on its own clock (HS-25).
+  useEffect(() => {
+    const id = window.setInterval(() => tickEmitterEstimate(), 1000);
+    return () => window.clearInterval(id);
+  }, [tickEmitterEstimate]);
 
   useEffect(() => {
     const url = process.env.NEXT_PUBLIC_MQTT_WS_URL ?? FALLBACK_URL;
@@ -29,10 +38,12 @@ export function useHamiltonMqtt(): void {
       },
       onMission: upsertMission,
       onMissionRemoved: removeMission,
+      onEmitterEstimate: (p) => receiveEmitterEstimate(p),
+      onEmitterEstimateCleared: () => clearEmitterEstimate(),
       onConnectionChange: (connected) => {
         if (!connected) setLlmStatus('unreachable');
       },
     });
     return () => handle.disconnect();
-  }, [applyScore, setCandidates, setTraceBullets, setLlmStatus, upsertMission, removeMission]);
+  }, [applyScore, setCandidates, setTraceBullets, setLlmStatus, upsertMission, removeMission, receiveEmitterEstimate, clearEmitterEstimate]);
 }

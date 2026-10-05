@@ -4,7 +4,7 @@
 // FM 1-02 ¶5-8 stack shows (Decisions/Track Symbology decision 6: three or
 // more symbols within 1.5·s):
 //  - B + two friendlies → a stack of 3;
-//  - a hostile / unknown knot on the jammer + the jammer fix J1 → 3 frames + "+1";
+//  - a hostile / unknown knot → a stack of 3 (hostile first);
 //  - a north-west trio → a stack of 3;
 //  - a north-east PAIR → stays two singles (below the 3-symbol rule).
 
@@ -29,7 +29,7 @@ export function denseTracks(track: Base): TrackState[] {
     // ~15–25 m off Unit B — never separable at an AO-wide fit.
     at('fr_squad_2', 'friendly', 'recon_mobile', 48.14015, 37.74522, 0.95),
     at('fr_squad_3', 'friendly', 'detection', 48.13988, 37.74528, 0.88),
-    // On the jammer (48.142, 37.762): hostile EW + AD, unknown emitter.
+    // Hostile knot east of B: hostile EW + AD, unknown emitter (synthetic tracks, not a jammer fix).
     at('hostile_ew_1', 'enemy', 'defense', 48.142, 37.762, 0.45),
     at('hostile_ad_2', 'enemy', 'defense', 48.14225, 37.76235, 0.62),
     at('unk_emitter_3', 'unknown', 'detection', 48.14178, 37.76195, 0.3),

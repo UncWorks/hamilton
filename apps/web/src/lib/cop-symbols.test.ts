@@ -72,3 +72,7 @@ test('stackOffsetPx: right by default, flipped left near the right edge', () => 
   assert.equal(M.stackOffsetPx(100, 32, 1000), 80);
   assert.ok(M.stackOffsetPx(950, 32, 1000) < 0);
 });
+
+test('designationOf: the 8-unit layout unit_a … unit_h prints A … H', () => {
+  for (const l of 'abcdefgh') assert.equal(M.designationOf(`unit_${l}`), l.toUpperCase());
+});

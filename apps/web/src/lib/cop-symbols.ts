@@ -42,12 +42,18 @@ const KNOWN_DESIGNATIONS: Readonly<Record<string, string>> = {
   unit_a: 'A',
   unit_b: 'B',
   unit_c: 'C',
+  unit_d: 'D',
+  unit_e: 'E',
+  unit_f: 'F',
+  unit_g: 'G',
+  unit_h: 'H',
 };
 
 /**
- * T amplifier for a source id: the scenario units are A / B / C (as on the
- * Decisions page); anything else gets the initials of its words plus its
- * number ("hostile_ew_1" → "HE1", "civ_relay" → "CR").
+ * T amplifier for a source id: the scenario units are A … H (the 8-unit
+ * Avdiivka layout, docs/plans/jammer-aoe.md §6); anything else gets the
+ * initials of its words plus its number ("hostile_ew_1" → "HE1",
+ * "civ_relay" → "CR").
  */
 export function designationOf(sourceId: string): string {
   const known = KNOWN_DESIGNATIONS[sourceId];

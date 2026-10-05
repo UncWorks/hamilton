@@ -4,5 +4,6 @@ export * from './fingerprint-candidates.js';
 export * from './affiliation.js';
 export * from './detection-event.js';
 export * from './telemetry.js';
+export * from './emitter-estimate.js';
 export * from './modal.js';
 export * from './fire-mission.js';

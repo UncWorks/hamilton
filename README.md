@@ -68,7 +68,7 @@ make demo-fallback
 | `B-0:45` | Unit B's icon begins to fade: cadence 1.0s → 1.17s, temporal anomaly fires, trust ≈0.70 (WATCH, at/above the 0.60 GPS-guided TSS minimum) |
 | `B-0:55` | Trust trace: "B-link: 6% corrupted frames, cadence 1.17s" (stability fault; trust ≈0.65, still WATCH) |
 | `B-0:30` | Call for fire AB1002 (OBS C, M795 HE) enters the fire-mission queue — `NOT GATED` (unguided) |
-| `B-1:05` | Side panel: "Degradation directional, vicinity B's flank corridor. Neighbors A, C unaffected." |
+| `B-1:05` | Side panel: "Degradation localized at B — no degrading unit within 500 m. A, C healthy." B is localized (spatial 0.60); A and C hold at 1.00 on their own scores |
 | `B-1:12` | Call for fire AB1001 (OBS B (FO), M982 Excalibur) enters the queue — `TSS: PASS — RELIABILITY C3 (min C)` |
 | `B-1:15` | Jammer at full power (6.1s gap, 14% CRC). Top-3 candidate cards reveal — `ground_based_gps_uhf_barrage (1.00)` → Excalibur, JDAM-ER, Switchblade 300, GMLRS-U. Trust 0.13 (E5): AB1001 flips in its row to `TSS: FAIL — RELIABILITY E5 (min C)` · `Rec. method of control: DO NOT LOAD (M982)`, with branches [1]–[4]. No modal |
 | `B-1:20` | **Call for fire at B fails TSS in-row.** Operator presses `1` on the focused row: Shift → M795 HE, adjust fire; TSS PASS; the branch is logged (mission, TSS result, J, report age, role, DTG). Other branches: [2] confirm via alt channel, [3] AT MY COMMAND — re-rate in 60 s, [4] accept risk (FSO) |

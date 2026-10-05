@@ -83,9 +83,7 @@ class FireMissionSpec:
 
 def iso_utc(dt: datetime) -> str:
     """RFC 3339 with milliseconds and a Z suffix (zod `.datetime()` accepts it)."""
-    return dt.astimezone(UTC).strftime("%Y-%m-%dT%H:%M:%S.") + (
-        f"{dt.microsecond // 1000:03d}Z"
-    )
+    return dt.astimezone(UTC).strftime("%Y-%m-%dT%H:%M:%S.") + (f"{dt.microsecond // 1000:03d}Z")
 
 
 M982 = Munition("M982", "Excalibur", "gps_guided")

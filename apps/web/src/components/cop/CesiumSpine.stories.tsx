@@ -3,19 +3,17 @@ import { expect, userEvent, waitFor, within } from '@storybook/test';
 import { CesiumSpine } from './CesiumSpine';
 import {
   AFFILIATION_TRACKS,
-  CANDIDATE_SITES,
-  JAMMER_LOCATION,
   PHASE_TRACKS,
   UNIT_EVALUATION,
   track,
+  clustered,
   tracksRecord,
 } from '@/stories/fixtures/avdiivka';
 import { denseTracks } from '@/stories/fixtures/dense-tracks';
 import { cesiumLoader } from '@/stories/support/cesium';
 import { spinePlay } from '@/stories/support/spine-play';
-
-const unitB = PHASE_TRACKS.degraded.unit_b!;
-const JAMMER = { ...JAMMER_LOCATION, method_id: 'ground_based_gps_uhf_barrage' };
+import { AoeStoryFrame, GnssPaletteTable, aoePlay, aoeSeed, colourVisionPlay } from '@/stories/support/aoe-stories';
+import { withVision } from '@/stories/support/vision-filters';
 
 const meta = {
   title: 'COP/CesiumSpine',
@@ -79,35 +77,16 @@ export const Nominal: Story = {
 /** 0:45 — B WATCH 0.70 (cadence 1.17 s); A and C 1.00. */
 export const Watching: Story = { parameters: { hamilton: { tracks: PHASE_TRACKS.watching } } };
 
-/**
- * 1:15 — B 0.13 (E5, gauge near empty), first below the GPS-guided TSS minimum: bearing line toward the suspected jammer.
- * The web draws the line when B < 0.60, i.e. from 1:15; Branding §10.3 places it at 1:05 (open UX
- * item, Branding Audit F02).
- */
-export const DirectionalVector: Story = {
-  args: { directionalFrom: { lat: unitB.lat, lon: unitB.lon }, directionalTo: JAMMER_LOCATION },
+/** 1:15 — B 0.13 (E5, gauge near empty), first below the GPS-guided TSS minimum. No jammer symbol, ring or bearing line (HS-20). */
+export const Degraded: Story = {
   parameters: { hamilton: { tracks: PHASE_TRACKS.degraded } },
+  play: spinePlay.noPresumedJammer,
 };
 
-/** 1:50 — B 0.22, still gated; the jammer fix J1 (hostile EW) with the top FR-04a method as its H field. */
-export const JammerOverlay: Story = {
-  args: {
-    directionalFrom: { lat: unitB.lat, lon: unitB.lon },
-    directionalTo: JAMMER_LOCATION,
-    jammerLocation: JAMMER,
-  },
+/** 1:50 — B 0.22, still gated. No jammer symbol, ring or bearing line (HS-20). */
+export const Failed: Story = {
   parameters: { hamilton: { tracks: PHASE_TRACKS.failed } },
-};
-
-/** 1:15 — FR-04a candidate sites (MOCK geolocations) as anticipated, dashed hostile EW symbols C1–C3. */
-export const CandidateSites: Story = {
-  args: {
-    directionalFrom: { lat: unitB.lat, lon: unitB.lon },
-    directionalTo: JAMMER_LOCATION,
-    candidateSites: CANDIDATE_SITES,
-    candidateNai: JAMMER_LOCATION,
-  },
-  parameters: { hamilton: { tracks: PHASE_TRACKS.degraded } },
+  play: spinePlay.noPresumedJammer,
 };
 
 /** Friendly / hostile / neutral / unknown frames across all four bands (hostile_ew_1 draws as EW jamming). */
@@ -119,12 +98,10 @@ export const MixedAffiliations: Story = {
 export const NoTracks: Story = {};
 
 /**
- * Fifteen tracks + the jammer fix. After the fit, three knots still hold ≥ 3 symbols
- * within 1.5·s → three bracketed stacks, hostile first. The jammer J1 joins the hostile knot's stack, so its
- * method label (H) can no longer cross that stack's locator line. The north-east pair stays two singles.
+ * Fifteen tracks. After the fit, three knots still hold ≥ 3 symbols within 1.5·s → three bracketed
+ * stacks, hostile first. The north-east pair stays two singles.
  */
 export const Dense: Story = {
-  args: { jammerLocation: JAMMER },
   parameters: { hamilton: { tracks: tracksRecord(...denseTracks(track)) } },
   play: spinePlay.dense,
 };
@@ -135,7 +112,7 @@ export const Dense: Story = {
  */
 export const ZoomedOut: Story = {
   args: { initialRangeM: 30_000 },
-  parameters: { hamilton: { tracks: PHASE_TRACKS.watching } },
+  parameters: { hamilton: { tracks: clustered(PHASE_TRACKS.watching) } }, // co-located A/B/C: the 8-unit layout never stacks
   play: async ({ canvasElement }) => {
     const c = within(canvasElement);
     const stack = await waitFor(() => c.getByTestId('declutter-stack'), { timeout: 15_000 });
@@ -145,10 +122,10 @@ export const ZoomedOut: Story = {
   },
 };
 
-/** Comparison: the jammer-overlay beat with `basemap="none"` — the pre-basemap dark globe. */
+/** Comparison: the 1:50 beat with `basemap="none"` — the pre-basemap dark globe. */
 export const BasemapOff: Story = {
   name: 'Basemap off',
-  args: { ...JammerOverlay.args, basemap: 'none' },
+  args: { basemap: 'none' },
   parameters: { hamilton: { tracks: PHASE_TRACKS.failed } },
   play: async ({ canvasElement }) => {
     const c = within(canvasElement);
@@ -156,4 +133,71 @@ export const BasemapOff: Story = {
     await expect(canvasElement.querySelector('[data-basemap]')?.getAttribute('data-basemap')).toBe('none');
     await expect(c.queryByTestId('basemap-attribution')).toBeNull();
   },
+};
+
+// ---------------------------------------------------------------------------
+// Jammer area of effect (FR-06a; converted from Previews/Jammer AoE)
+// ---------------------------------------------------------------------------
+
+const aoeDocs = (story: string) => ({ docs: { story: { inline: false, iframeHeight: 640 }, description: { story } } });
+
+/** 1:15 — first estimate (frozen CP1 fixture): civil 90% tint + edge, 50% dashed, label, key; the card block. */
+export const AoeFirstEstimate: Story = {
+  name: 'AoE 1:15 first estimate',
+  render: () => <AoeStoryFrame spine={(e) => <CesiumSpine emitterEstimate={e} evaluations={UNIT_EVALUATION} />} />,
+  parameters: {
+    hamilton: aoeSeed('b115'),
+    ...aoeDocs(
+      'GNSS degraded B, D, E, H; healthy C, A, F, G → `integrity/emitter/estimate`. Civil GPS only (military GPS / DAGR is listed in the card, D6). ' +
+        'No jammer symbol, ring or bearing (HS-20). The card names who is inside, GPS-dependent first, and what is not assessed. ' +
+        'D, E and H take synthetic link-trust samples (no engine beat for them yet).',
+    ),
+  },
+  play: aoePlay.b115,
+};
+
+/** 1:50 — B moved 5 km west: healthy now, its old degraded report still counts; the estimate updates. */
+export const AoeAfterMove: Story = {
+  name: 'AoE 1:50 after B moves',
+  render: () => <AoeStoryFrame spine={(e) => <CesiumSpine emitterEstimate={e} evaluations={UNIT_EVALUATION} />} />,
+  parameters: { hamilton: aoeSeed('b150'), ...aoeDocs('B is outside the 90% area at its new position; the card lists both B reports (✕ 39 s at the old position, ○ 2 s now).') },
+  play: aoePlay.b150,
+};
+
+/** 2:15 — jammer off, +10 s: STALE. Outline only, "Last est. HHMMZ", never "clear". */
+export const AoeStale: Story = {
+  name: 'AoE 2:15 stale',
+  render: () => <AoeStoryFrame spine={(e) => <CesiumSpine emitterEstimate={e} evaluations={UNIT_EVALUATION} />} />,
+  parameters: { hamilton: aoeSeed('b215'), ...aoeDocs('HS-25: outline only, no fill; label and card read "Last est. HHMMZ". It is removed on the empty retained payload (+120 s).') },
+  play: aoePlay.b215,
+};
+
+/** Every reporting civil unit degraded: nothing drawn, the card reads "edge not observed". */
+export const AoeUnbounded: Story = {
+  name: 'AoE unbounded',
+  render: () => <AoeStoryFrame spine={(e) => <CesiumSpine emitterEstimate={e} evaluations={UNIT_EVALUATION} />} />,
+  parameters: { hamilton: aoeSeed('unbounded'), ...aoeDocs('HS-21: no healthy unit of the class, so no edge was observed — no area is drawn.') },
+  play: aoePlay.unbounded,
+};
+
+/** 1:15 through a CVD filter (vision control) with the GNSS palette checks (FR-06a (4)). */
+export const AoeColourVision: Story = {
+  name: 'AoE colour vision',
+  args: { vision: 'deuteranopia' } as never,
+  argTypes: { vision: { control: 'inline-radio', options: ['normal', 'deuteranopia', 'protanopia', 'grayscale'] } } as never,
+  decorators: [withVision],
+  render: () => (
+    <div style={{ position: 'relative', height: '100vh' }}>
+      <AoeStoryFrame spine={(e) => <CesiumSpine emitterEstimate={e} evaluations={UNIT_EVALUATION} />} />
+      <GnssPaletteTable />
+    </div>
+  ),
+  parameters: {
+    hamilton: aoeSeed('b115'),
+    ...aoeDocs(
+      'Machado 2009 (severity 1.0) filters over the whole frame. Checks: AoE hues vs trust / gating / enemy ΔE76 ≥ 30 under normal, deuteranopia and protanopia; ' +
+        'edges ≥ 3:1 vs `--surface-base` (and vs the AO basemap pixels in `scripts/basemap/contrast-check.mjs`). Civil violet vs friendly blue is advisory (D2).',
+    ),
+  },
+  play: colourVisionPlay,
 };

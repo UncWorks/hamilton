@@ -75,7 +75,9 @@ def test_wire_shape_matches_the_ts_contract() -> None:
         assert body["status"] == "received"
         assert body["method_of_control"] == "when_ready"
         assert body["received_at"] == "2024-02-15T18:42:33.250Z"
-        assert body["dependencies"] and all(set(d) == {"source_id", "role"} for d in body["dependencies"])
+        assert body["dependencies"] and all(
+            set(d) == {"source_id", "role"} for d in body["dependencies"]
+        )
 
 
 def test_topic() -> None:
@@ -95,13 +97,17 @@ class _FakeClient:
         self.published.append((topic, payload, qos, retain))
 
 
-def test_runner_clears_then_publishes_missions_retained(monkeypatch) -> None:
+def test_runner_clears_then_publishes_missions_retained(monkeypatch, tmp_path) -> None:
     from comms_sim import runner
 
     fake = _FakeClient()
     monkeypatch.setattr(runner.mqtt, "Client", lambda *a, **k: fake)
     monkeypatch.setattr(runner.time, "sleep", lambda _s: None)
-    runner.run_scenario(runner.RunnerConfig("localhost", 1883, duration_s=80.0))
+    runner.run_scenario(
+        runner.RunnerConfig(
+            "localhost", 1883, duration_s=80.0, truth_path=str(tmp_path / "truth.json")
+        )
+    )
 
     mission_msgs = [p for p in fake.published if p[0].startswith("fires/mission/")]
     # Two clears (empty, retained) first, then one retained call for fire each.

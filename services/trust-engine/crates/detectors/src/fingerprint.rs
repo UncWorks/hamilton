@@ -1,3 +1,6 @@
+use std::collections::BTreeSet;
+
+use hamilton_contracts::RxClass;
 use serde::{Deserialize, Serialize};
 
 /// Time-domain pattern classifications matching the fingerprint library schema.
@@ -22,10 +25,71 @@ pub struct FingerprintEntry {
     pub gps_l1_overlap: bool,
     pub gps_l2_overlap: bool,
     pub time_domain_pattern: TimeDomainPattern,
-    /// Effective range threshold in km.
-    pub effective_range_km: f64,
+    /// Receiver classes the method affects (library v0.2, A1). Dimension 6:
+    /// the classes observed degraded at the source are non-empty and a subset
+    /// of this set (FRS FR-04 rev).
+    #[serde(default)]
+    pub affects_rx_classes: Vec<RxClass>,
     pub munitions_affected: Vec<String>,
     pub source_citation: String,
+    /// Optional emitter envelope (library v0.2 `emitter.modules[]`).
+    #[serde(default)]
+    pub emitter: EmitterEnvelope,
+}
+
+/// Library v0.2 `emitter` block. `modules` is empty when the envelope is not
+/// yet characterised.
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+pub struct EmitterEnvelope {
+    #[serde(default)]
+    pub modules: Vec<EmitterModule>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ModuleRole {
+    Gnss,
+    Comms,
+}
+
+/// One co-located emitter module. EIRP and mast are `[lo, hi]` ranges and may
+/// be `null` in the library (e.g. the comms module's EIRP is an assumption
+/// calibrated in the simulator), hence optional.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct EmitterModule {
+    pub role: ModuleRole,
+    pub class_name: String,
+    pub band_mhz: [f64; 2],
+    #[serde(default)]
+    pub eirp_w_claimed: Option<[f64; 2]>,
+    #[serde(default)]
+    pub emitter_height_m: Option<[f64; 2]>,
+    #[serde(default)]
+    pub sector_deg_min: Option<f64>,
+    #[serde(default)]
+    pub transmitter_power_w: Option<f64>,
+    #[serde(default)]
+    pub jams: Vec<String>,
+}
+
+impl FingerprintEntry {
+    /// The GNSS module of the envelope, if characterised.
+    pub fn gnss_module(&self) -> Option<&EmitterModule> {
+        self.emitter
+            .modules
+            .iter()
+            .find(|m| m.role == ModuleRole::Gnss)
+    }
+}
+
+/// How dimension 6 is evaluated. The library v0.1 range rule
+/// (`effective_range_km`) is gone: an emitter's range is not observable
+/// (library v0.2, FRS FR-04 rev).
+#[derive(Debug, Clone, Copy)]
+pub enum Dimension6<'a> {
+    /// FRS FR-04 rev: the receiver classes observed degraded at the source are
+    /// non-empty and a subset of the entry's `affects_rx_classes`.
+    ObservedClasses(&'a BTreeSet<RxClass>),
 }
 
 /// Observed RF fingerprint from the sensor stream.
@@ -38,8 +102,6 @@ pub struct RfFingerprint {
     pub gps_l1_overlap: bool,
     pub gps_l2_overlap: bool,
     pub time_domain_pattern: TimeDomainPattern,
-    /// Estimated effective range in km.
-    pub effective_range_km: f64,
 }
 
 /// The best-matching fingerprint library entry when overlap >= 0.5.
@@ -57,18 +119,24 @@ pub struct FingerprintMatch {
 
 const MIN_MATCH_THRESHOLD: f64 = 0.5;
 
-/// Match observed RF fingerprint against the library.
+/// Number of fingerprint dimensions.
+pub const TOTAL_DIMENSIONS: u32 = 6;
+
+/// Match an observed RF fingerprint against the library, with dimension 6 per
+/// [`Dimension6`] (FRS FR-04 rev).
 ///
 /// Score = matched_threshold_booleans / total_dimensions (R14-safe, FRS §2.4a).
 /// Returns the single best match if score >= 0.5, otherwise None.
-pub fn match_fingerprint(
+pub fn match_fingerprint_with(
     observed: &RfFingerprint,
+    dim6: Dimension6<'_>,
     library: &[FingerprintEntry],
 ) -> Option<FingerprintMatch> {
     library
         .iter()
         .map(|entry| {
-            let score = overlap_score(observed, entry);
+            let score =
+                f64::from(matched_dimensions(observed, dim6, entry)) / f64::from(TOTAL_DIMENSIONS);
             (entry, score)
         })
         .filter(|(_, score)| *score >= MIN_MATCH_THRESHOLD)
@@ -100,45 +168,44 @@ pub fn fingerprint_trust(best: Option<&FingerprintMatch>) -> f64 {
 ///   3. GPS L1 overlap match
 ///   4. GPS L2 overlap match
 ///   5. time-domain pattern match
-///   6. effective range (entry threshold ≥ observed)
-pub(crate) fn overlap_score(observed: &RfFingerprint, entry: &FingerprintEntry) -> f64 {
-    const TOTAL: f64 = 6.0;
+///   6. affected receiver classes (see [`matched_dimensions`])
+#[cfg(test)]
+pub(crate) fn overlap_score(
+    observed: &RfFingerprint,
+    dim6: Dimension6<'_>,
+    entry: &FingerprintEntry,
+) -> f64 {
+    f64::from(matched_dimensions(observed, dim6, entry)) / f64::from(TOTAL_DIMENSIONS)
+}
 
-    let mut matched = 0.0_f64;
-
-    // Dimension 1: frequency band containment
-    if entry.frequency_band_mhz[0] <= observed.frequency_band_mhz[0]
-        && entry.frequency_band_mhz[1] >= observed.frequency_band_mhz[1]
-    {
-        matched += 1.0;
-    }
-
-    // Dimension 2: hop spread capacity
-    if entry.hop_spread_hz >= observed.hop_spread_hz {
-        matched += 1.0;
-    }
-
-    // Dimension 3: GPS L1
-    if entry.gps_l1_overlap == observed.gps_l1_overlap {
-        matched += 1.0;
-    }
-
-    // Dimension 4: GPS L2
-    if entry.gps_l2_overlap == observed.gps_l2_overlap {
-        matched += 1.0;
-    }
-
-    // Dimension 5: time-domain pattern
-    if entry.time_domain_pattern == observed.time_domain_pattern {
-        matched += 1.0;
-    }
-
-    // Dimension 6: effective range capacity
-    if entry.effective_range_km >= observed.effective_range_km {
-        matched += 1.0;
-    }
-
-    matched / TOTAL
+/// Integer count of matched dimensions (0..=6). Comparisons between methods
+/// (the FR-04a lead, the AoE trigger) use these counts, never float scores.
+///
+///   1. frequency band containment (entry low ≤ observed low AND high ≥ observed high)
+///   2. hop spread (entry threshold ≥ observed)
+///   3. GPS L1 overlap match
+///   4. GPS L2 overlap match
+///   5. time-domain pattern match
+///   6. per [`Dimension6`]: affected receiver classes consistent (FR-04 rev)
+pub fn matched_dimensions(
+    observed: &RfFingerprint,
+    dim6: Dimension6<'_>,
+    entry: &FingerprintEntry,
+) -> u32 {
+    let checks = [
+        entry.frequency_band_mhz[0] <= observed.frequency_band_mhz[0]
+            && entry.frequency_band_mhz[1] >= observed.frequency_band_mhz[1],
+        entry.hop_spread_hz >= observed.hop_spread_hz,
+        entry.gps_l1_overlap == observed.gps_l1_overlap,
+        entry.gps_l2_overlap == observed.gps_l2_overlap,
+        entry.time_domain_pattern == observed.time_domain_pattern,
+        match dim6 {
+            Dimension6::ObservedClasses(classes) => {
+                !classes.is_empty() && classes.iter().all(|c| entry.affects_rx_classes.contains(c))
+            }
+        },
+    ];
+    checks.iter().filter(|&&ok| ok).count() as u32
 }
 
 #[cfg(test)]
@@ -163,8 +230,19 @@ mod tests {
             gps_l1_overlap: true,
             gps_l2_overlap: true,
             time_domain_pattern: TimeDomainPattern::Barrage,
-            effective_range_km: 30.0,
         }
+    }
+
+    /// B at 1:15: civil GNSS and the UHF link degraded.
+    fn b115() -> BTreeSet<RxClass> {
+        [RxClass::GnssCivil, RxClass::UhfComms].into()
+    }
+
+    fn match_fingerprint(
+        observed: &RfFingerprint,
+        library: &[FingerprintEntry],
+    ) -> Option<FingerprintMatch> {
+        match_fingerprint_with(observed, Dimension6::ObservedClasses(&b115()), library)
     }
 
     // FRS §2.4 acceptance: Unit B pattern → ground_based_gps_uhf_barrage at 6/6 = 1.00
@@ -238,7 +316,6 @@ mod tests {
             gps_l1_overlap: false,
             gps_l2_overlap: false,
             time_domain_pattern: TimeDomainPattern::Swept,
-            effective_range_km: 0.1,
         };
         // Not asserting None definitively because some entries may partially match;
         // we assert the returned score is consistent if present
@@ -270,12 +347,13 @@ mod tests {
             gps_l1_overlap: true,                // matches
             gps_l2_overlap: false,               // does NOT match (observed has true)
             time_domain_pattern: TimeDomainPattern::Pulsed, // does NOT match
-            effective_range_km: 10.0,            // does NOT match (observed 30.0 > 10.0)
+            affects_rx_classes: vec![],          // dimension 6 does NOT match
             munitions_affected: vec![],
             source_citation: "test".into(),
+            emitter: EmitterEnvelope::default(),
         };
-        let observed = unit_b_observed(); // gps_l2=true, pattern=Barrage, range=30
-        let score = super::overlap_score(&observed, &entry);
+        let observed = unit_b_observed(); // gps_l2=true, pattern=Barrage
+        let score = super::overlap_score(&observed, Dimension6::ObservedClasses(&b115()), &entry);
         assert!(
             (score - 0.5).abs() < 1e-10,
             "expected 3/6 = 0.5, got {score}"
@@ -297,12 +375,13 @@ mod tests {
             gps_l1_overlap: false,               // does NOT match
             gps_l2_overlap: false,               // does NOT match
             time_domain_pattern: TimeDomainPattern::Pulsed, // does NOT match
-            effective_range_km: 10.0,            // does NOT match
+            affects_rx_classes: vec![],          // does NOT match
             munitions_affected: vec![],
             source_citation: "test".into(),
+            emitter: EmitterEnvelope::default(),
         };
         let observed = unit_b_observed();
-        let score = super::overlap_score(&observed, &entry);
+        let score = super::overlap_score(&observed, Dimension6::ObservedClasses(&b115()), &entry);
         assert!(
             (score - 2.0 / 6.0).abs() < 1e-10,
             "expected 2/6, got {score}"
@@ -310,5 +389,68 @@ mod tests {
 
         let result = match_fingerprint(&observed, &[entry]);
         assert!(result.is_none(), "score < 0.5 must return None");
+    }
+
+    fn classes(c: &[RxClass]) -> BTreeSet<RxClass> {
+        c.iter().copied().collect()
+    }
+
+    // FR-04 rev dimension 6: B at 1:15 observes civil GNSS (gnss_fix) and its
+    // UHF link degraded; at 1:50 only the link. Both stay 6/6.
+    #[test]
+    fn dimension6_classes_keeps_unit_b_at_six_of_six_at_115_and_150() {
+        let lib = library();
+        let b115 = classes(&[RxClass::GnssCivil, RxClass::UhfComms]);
+        let b150 = classes(&[RxClass::UhfComms]);
+        for obs in [&b115, &b150] {
+            let m =
+                match_fingerprint_with(&unit_b_observed(), Dimension6::ObservedClasses(obs), &lib)
+                    .expect("match");
+            assert_eq!(m.method_id, "ground_based_gps_uhf_barrage");
+            assert!((m.match_strength - 1.0).abs() < 1e-12);
+        }
+    }
+
+    #[test]
+    fn dimension6_fails_on_empty_or_unaffected_classes() {
+        let lib = library();
+        let entry = lib
+            .iter()
+            .find(|e| e.method_id == "directional_gps_l1_spot")
+            .unwrap();
+        let rf = unit_b_observed();
+        let none = BTreeSet::new();
+        let civil = classes(&[RxClass::GnssCivil]);
+        let civil_uhf = classes(&[RxClass::GnssCivil, RxClass::UhfComms]);
+        let base = matched_dimensions(&rf, Dimension6::ObservedClasses(&civil), entry);
+        assert_eq!(
+            matched_dimensions(&rf, Dimension6::ObservedClasses(&none), entry),
+            base - 1
+        );
+        assert_eq!(
+            matched_dimensions(&rf, Dimension6::ObservedClasses(&civil_uhf), entry),
+            base - 1
+        );
+    }
+
+    #[test]
+    fn library_v0_2_envelope_is_parsed() {
+        let lib = library();
+        let demo = lib
+            .iter()
+            .find(|e| e.method_id == "ground_based_gps_uhf_barrage")
+            .unwrap();
+        let gnss = demo.gnss_module().expect("GNSS module");
+        assert_eq!(gnss.eirp_w_claimed, Some([300.0, 1000.0]));
+        assert_eq!(gnss.emitter_height_m, Some([10.0, 60.0]));
+        let comms = demo
+            .emitter
+            .modules
+            .iter()
+            .find(|m| m.role == ModuleRole::Comms)
+            .unwrap();
+        assert_eq!(comms.eirp_w_claimed, None);
+        assert_eq!(comms.emitter_height_m, None);
+        assert!(lib.iter().all(|e| !e.affects_rx_classes.is_empty()));
     }
 }

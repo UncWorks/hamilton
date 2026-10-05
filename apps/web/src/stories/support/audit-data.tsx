@@ -287,6 +287,7 @@ export const FINDINGS: Finding[] = [
     area: 'Symbology — resolved, wired into the live renderers',
     where: 'Spine.tsx:37-40 · MapSpine.tsx',
     finding:
+      'SUPERSEDED BY HS-20 (jammer AoE MVP, docs/plans/jammer-aoe.md W6–W9): the jammer\'s position is never presumed — the live spines no longer draw J1, the ring or the bearing line, and Spine takes `emitterEstimate` (an area of effect, FR-06a) instead of `jammerLocation`. Earlier record: ' +
       'RESOLVED BY DECISION (Decisions/Track Symbology → COP): confirmed fix J1 = hostile EW jamming (p 5-18, 150504 / UUMSEJ), candidates = status-1 dashed hostile EW inside the dashed NAI. FIXED IN THE LIVE RENDERERS (PR #3, symbol wiring): both spines draw the jammer as J1 (hostile EW jamming, method as H) and candidateSites as status-1 EW; Spine passes jammerLocation to both. Original: ' +
       'OPEN — pending option selection. Missing: MapSpine has no jammer symbol; Spine.tsx drops jammerLocation before it reaches MapSpine. B′ (story mock): confirmed fix J1 as a solid hostile jammer, candidates as status-1 dashed hostile diamonds inside a dashed NAI labelled with T (controlling HQ) and W (DTG). Renderer wiring still open.',
     spec: 'SIDC 10065200001102002500',
@@ -370,7 +371,7 @@ export const FINDINGS: Finding[] = [
     where: 'stories/fixtures/avdiivka.ts · stories/support/OptionBPrime.tsx (evidenceFor) · lib/link-trust-rating.ts (solveComponents)',
     finding:
       'RESOLVED. The Storybook workaround that read components.fingerprint as 1 − overlap is removed: stories now treat it directly as trust (1 − match strength, 1.0 = no match), and evidence strings derive the overlap ratio as 1 − trust, as the narrator does. Fixtures align with PR #1 (fix/fingerprint-trust-inversion) semantics, so the stories assume PR #1 is merged. ' +
-      'Candidates are what the engine emits for the Avdiivka jammer: ground_based_gps_uhf_barrage 1.00 (6/6), pulsed_uhf_wide 0.50 (3/6), cellular_uhf_barrage 0.17 (1/6), with munitions and citations from assets/fingerprints/library.json (replacing the unreachable 0.81 / 0.42 / 0.18). ' +
+      'Candidates are what the engine emits for the Avdiivka jammer: ground_based_gps_uhf_barrage 1.00 (6/6), pulsed_uhf_wide 0.67 (4/6), cellular_uhf_barrage 0.17 (1/6), with munitions and citations from assets/fingerprints/library.json (replacing the unreachable 0.81 / 0.42 / 0.18). ' +
       'Every fixture payload uses engine-reachable components (fingerprint ∈ {1, .5, .33, .17, 0}; spatial 1 / 0.6 / 0.3, mirroring the trust-oriented spatial detector) and reproduces its score exactly, so the B′ tooltip mismatch warning stays silent. ' +
       'Band samples changed: degraded 0.42 → 0.31 (a 6/6 match caps a localized source at 0.372), failed 0.18 → 0.13 (the engine\'s B-1:15 output); B now drops below the 0.60 TSS minimum (then "ROE floor") on the jammer match (0.72 → 0.31) instead of a gradual slide. ' +
       'SUPERSEDED by F02: fixtures now carry the engine\'s per-beat values (PR #1 @ 6733817) instead of solved approximations.',

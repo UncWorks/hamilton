@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import type { DetectionEvent } from '@hamilton/contracts';
-import { useHamilton, type DecisionLogEntry } from '@/store/hamilton';
+import { useHamilton, type DecisionLogEntry, type EmitterLogEntry } from '@/store/hamilton';
 import { engineUrl } from '@/lib/engine-api';
 import { eventKind, eventMessage, eventWho } from '@/lib/display-names';
 
@@ -55,9 +55,15 @@ function journalRow(e: DecisionLogEntry): TerminalRow {
   };
 }
 
+/** C2-side estimate state change (HS-24): one line per state, from the store (lib/emitter-estimate terminalLine). */
+function estimateRow(e: EmitterLogEntry): TerminalRow {
+  return { timestamp: e.dtg, who: 'C2', kind: 'est. GPS denial', message: e.message, journal: true };
+}
+
 export function EventTerminal({ height = 160 }: EventTerminalProps) {
   const [events, setEvents] = useState<DetectionEvent[]>([]);
   const journal = useHamilton((s) => s.decisionLog);
+  const estimateLog = useHamilton((s) => s.emitterLog);
   const [paused, setPaused] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -86,11 +92,14 @@ export function EventTerminal({ height = 160 }: EventTerminalProps) {
     if (paused) return;
     const node = containerRef.current;
     if (node) node.scrollTop = node.scrollHeight;
-  }, [events, journal, paused]);
+  }, [events, journal, estimateLog, paused]);
 
-  // Engine log (newest-first) + FDC journal, oldest-first for display.
+  // Engine log (newest-first) + FDC journal + estimate lines, oldest-first for display.
+  // The engine's own `emitter_estimate` rows are the after-action record; the
+  // terminal shows the C2's line for the same change instead (it names who is
+  // inside and includes the C2-side stale), so they are not listed twice.
   const rows: TerminalRow[] = [
-    ...events.map((e) => ({
+    ...events.filter((e) => e.kind !== 'emitter_estimate' || estimateLog.length === 0).map((e) => ({
       timestamp: e.timestamp,
       who: eventWho(e.source_id),
       kind: eventKind(e.kind),
@@ -98,6 +107,7 @@ export function EventTerminal({ height = 160 }: EventTerminalProps) {
       journal: false,
     })),
     ...journal.map(journalRow),
+    ...estimateLog.map(estimateRow),
   ]
     .sort((a, b) => Date.parse(a.timestamp) - Date.parse(b.timestamp))
     .slice(-MAX_ROWS);
@@ -170,6 +180,8 @@ function kindColor(kind: string): string {
       return 'var(--gating-primary)';
     case 'jammer match':
       return 'var(--trust-degraded)';
+    case 'est. GPS denial':
+      return 'var(--aoe-gnss-civil)';
     case 'recovery':
       return 'var(--trust-nominal)';
     default:

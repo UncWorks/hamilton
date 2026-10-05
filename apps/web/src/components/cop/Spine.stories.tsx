@@ -1,9 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { Spine } from './Spine';
-import { JAMMER_LOCATION, PHASE_TRACKS } from '@/stories/fixtures/avdiivka';
+import { PHASE_TRACKS } from '@/stories/fixtures/avdiivka';
 import { cesiumLoader } from '@/stories/support/cesium';
-
-const unitB = PHASE_TRACKS.degraded.unit_b!;
 
 const meta = {
   title: 'COP/Spine',
@@ -36,13 +34,8 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-/** Page wiring at 1:15 — directional vector + jammer overlay. */
+/** Page wiring at 1:15 — tracks only: no jammer symbol, ring or bearing line (HS-20). */
 export const AsWiredOnPage: Story = {
-  args: {
-    directionalFrom: { lat: unitB.lat, lon: unitB.lon },
-    directionalTo: JAMMER_LOCATION,
-    jammerLocation: { ...JAMMER_LOCATION, method_id: 'ground_based_gps_uhf_barrage' },
-  },
   parameters: { hamilton: { tracks: PHASE_TRACKS.degraded } },
 };
 

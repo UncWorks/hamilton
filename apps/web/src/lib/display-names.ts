@@ -12,13 +12,31 @@ import type { SensorType } from '@hamilton/contracts';
 // Units
 // ---------------------------------------------------------------------------
 
-const UNIT_LETTERS: Readonly<Record<string, string>> = { unit_a: 'A', unit_b: 'B', unit_c: 'C' };
+const UNIT_LETTERS: Readonly<Record<string, string>> = {
+  unit_a: 'A',
+  unit_b: 'B',
+  unit_c: 'C',
+  unit_d: 'D',
+  unit_e: 'E',
+  unit_f: 'F',
+  unit_g: 'G',
+  unit_h: 'H',
+};
 
-/** Role of each scenario unit, as the COP tooltip titles them. */
+/**
+ * Role of each scenario unit, as the COP tooltip titles them (the 8-unit
+ * Avdiivka layout, docs/plans/jammer-aoe.md §6). A is the AB1001 firing unit
+ * (FU A) and B its observer (OBS B).
+ */
 export const UNIT_ROLES: Readonly<Record<string, string>> = {
-  unit_a: 'FA observer team (COLT/FIST)',
-  unit_b: 'FA battery',
-  unit_c: 'FA target-acq radar platoon',
+  unit_a: 'FA battery (FU A)',
+  unit_b: 'Forward observer (OBS B)',
+  unit_c: 'FA target-acq radar (OBS C)',
+  unit_d: 'Forward observer 2',
+  unit_e: 'Forward observer 3',
+  unit_f: 'FA battery 2',
+  unit_g: 'AD section (Bn CP area)',
+  unit_h: 'UAS team',
 };
 
 const ACRONYMS = new Set(['ew', 'gps', 'uhf', 'fa', 'fo', 'fu', 'hpt', 'tgt', 'obs', 'colt', 'fist']);
@@ -76,6 +94,21 @@ export function methodShortName(methodId: string): string {
   return JAMMER_METHODS[methodId]?.short ?? humanize(methodId);
 }
 
+/**
+ * The equipment class the AoE label names (HS-21 "<method>-class"): the GNSS
+ * module whose envelope draws the layer. ground_based_gps_uhf_barrage keeps
+ * its id but its GNSS module is Pole-21E-class (docs/plans/jammer-aoe.md
+ * §0.3 b–c).
+ */
+const METHOD_CLASS: Readonly<Record<string, string>> = {
+  ground_based_gps_uhf_barrage: 'Pole-21-class',
+  directional_gps_l1_spot: 'Pole-21-class',
+};
+
+export function methodClassName(methodId: string): string {
+  return METHOD_CLASS[methodId] ?? `${methodShortName(methodId)}-class`;
+}
+
 // ---------------------------------------------------------------------------
 // After-action log (engine DetectionEvent → terminal line)
 // ---------------------------------------------------------------------------
@@ -89,6 +122,7 @@ export const ENGINE_KIND_LABEL: Readonly<Record<string, string>> = {
   modal_gated: 'TSS fail',
   modal_selection: 'branch',
   recovery: 'recovery',
+  emitter_estimate: 'est. GPS denial',
 };
 
 /** Engine branch options (POST /api/modal/selection) in FDC words. */

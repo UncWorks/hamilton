@@ -13,7 +13,7 @@ help:
 	@echo "  make up             docker compose up -d"
 	@echo "  make down           docker compose down"
 	@echo "  make build          Build all workspace members"
-	@echo "  make verify         Verify assets + dep budget + phosphor lint"
+	@echo "  make verify         Verify assets + dep budget + phosphor lint + no truth on the bus"
 	@echo "  make lint           Lint all workspaces"
 	@echo "  make test           Run all tests"
 	@echo "  make clean          Remove build artifacts"
@@ -48,6 +48,7 @@ verify:
 	bash scripts/verify-assets.sh
 	bash scripts/lint-phosphor.sh
 	bash scripts/count-deps.sh
+	bash scripts/check-no-truth.sh
 
 lint:
 	pnpm -r lint
