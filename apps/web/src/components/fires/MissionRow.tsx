@@ -92,6 +92,9 @@ export function MissionRow({ ms, now, selected, onSelect, onBranch }: MissionRow
     }
   };
 
+  // A mission that needs nothing from the FDC (not selected, no recommendation,
+  // no branches) folds to its two status lines so a FAIL row below keeps room.
+  const compact = !selected && !tss.recommended && !showBranches && !riskOpen;
   const chip = !tss.gated ? 'NOT GATED' : tss.verdict;
   const state = stateText(ms, amcLeft);
 
@@ -101,6 +104,7 @@ export function MissionRow({ ms, now, selected, onSelect, onBranch }: MissionRow
       tabIndex={0}
       data-testid={`fm-row-${mission.mission_id}`}
       data-verdict={tss.verdict}
+      data-compact={compact || undefined}
       aria-label={`Fire mission ${mission.mission_id}, ${mission.observer.label}, ${mission.munition.designation}. TSS ${tss.headline}${
         tss.recommended ? `. Recommended method of control: ${tss.recommended}` : ''
       }${showBranches ? '. Branches: keys 1 to 4.' : ''}`}
@@ -145,7 +149,7 @@ export function MissionRow({ ms, now, selected, onSelect, onBranch }: MissionRow
       </div>
 
       {/* Line 2: recommended method of control (text to the FDC, never a command) */}
-      {tss.recommended ? (
+      {compact ? null : tss.recommended ? (
         <div style={{ ...mono, color: 'var(--text-primary)' }} data-testid={`fm-rec-${mission.mission_id}`}>
           {firing ? 'Rec. to FDC: ' : 'Rec. method of control: '}
           <strong style={{ color: 'var(--gating-primary)', fontWeight: 600 }}>{tss.recommended}</strong>{' '}
@@ -157,42 +161,44 @@ export function MissionRow({ ms, now, selected, onSelect, onBranch }: MissionRow
       ) : null}
 
       {/* Detail: checks + dependency set */}
-      <div style={{ ...mono, fontSize: 'var(--text-micro)', color: 'var(--text-tertiary)', lineHeight: 1.6 }}>
-        <div>
-          Checks: reliability {checkText(tss.checks.reliability)} · report age {checkText(tss.checks.reportAge)} · accuracy{' '}
-          {tss.checks.accuracy.text}
+      {!compact && (
+        <div style={{ ...mono, fontSize: 'var(--text-micro)', color: 'var(--text-tertiary)', lineHeight: 1.6 }}>
+          <div>
+            Checks: reliability {checkText(tss.checks.reliability)} · report age {checkText(tss.checks.reportAge)} · accuracy{' '}
+            {tss.checks.accuracy.text}
+          </div>
+          <div>
+            Depends on:{' '}
+            {tss.sources.map((s, i) => (
+              <span key={s.source_id} style={{ color: s.failing ? 'var(--text-primary)' : undefined }}>
+                {i > 0 ? ' · ' : ''}
+                {designation(s.source_id)} {s.roles.map((r) => ROLE_SHORT[r]).join('/')} {s.j}
+                {s.failing ? ' FAIL' : ''}
+              </span>
+            ))}{' '}
+            · {mission.firing_unit.label} · tgt {mission.target.grid}
+            {mission.target.class === 'hpt' ? ' (HPT)' : ''}
+          </div>
+          {branches.shifted && (
+            <div>
+              Re-planned {branches.shifted.from.designation} → {mission.munition.designation} {mission.munition.name} by{' '}
+              {branches.shifted.by.role}/{branches.shifted.by.initials} {formatDtg(branches.shifted.at)}
+            </div>
+          )}
+          {branches.confirmation?.status === 'confirmed' && (
+            <div>
+              Confirmed via {branches.confirmation.via} {branches.confirmation.confirmed_at ? formatDtg(branches.confirmation.confirmed_at) : ''} ·
+              credibility → 1
+            </div>
+          )}
+          {branches.riskAccepted && (
+            <div>
+              Risk accepted by {branches.riskAccepted.by.role}/{branches.riskAccepted.by.initials} {formatDtg(branches.riskAccepted.at)} — “
+              {branches.riskAccepted.reason}” · evaluated against {tss.row.label}
+            </div>
+          )}
         </div>
-        <div>
-          Depends on:{' '}
-          {tss.sources.map((s, i) => (
-            <span key={s.source_id} style={{ color: s.failing ? 'var(--text-primary)' : undefined }}>
-              {i > 0 ? ' · ' : ''}
-              {designation(s.source_id)} {s.roles.map((r) => ROLE_SHORT[r]).join('/')} {s.j}
-              {s.failing ? ' FAIL' : ''}
-            </span>
-          ))}{' '}
-          · {mission.firing_unit.label} · tgt {mission.target.grid}
-          {mission.target.class === 'hpt' ? ' (HPT)' : ''}
-        </div>
-        {branches.shifted && (
-          <div>
-            Re-planned {branches.shifted.from.designation} → {mission.munition.designation} {mission.munition.name} by{' '}
-            {branches.shifted.by.role}/{branches.shifted.by.initials} {formatDtg(branches.shifted.at)}
-          </div>
-        )}
-        {branches.confirmation?.status === 'confirmed' && (
-          <div>
-            Confirmed via {branches.confirmation.via} {branches.confirmation.confirmed_at ? formatDtg(branches.confirmation.confirmed_at) : ''} ·
-            credibility → 1
-          </div>
-        )}
-        {branches.riskAccepted && (
-          <div>
-            Risk accepted by {branches.riskAccepted.by.role}/{branches.riskAccepted.by.initials} {formatDtg(branches.riskAccepted.at)} — “
-            {branches.riskAccepted.reason}” · evaluated against {tss.row.label}
-          </div>
-        )}
-      </div>
+      )}
 
       {showBranches && (
         <div role="group" aria-label={`Branches for ${mission.mission_id}`} style={{ display: 'grid', gap: 'var(--space-1)' }}>

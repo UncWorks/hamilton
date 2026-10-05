@@ -142,12 +142,19 @@ test('card at 1:15: the W15 strings', () => {
   assert.equal(c.evidence.findIndex((x) => x.state === 'healthy'), 4, 'degraded first');
 });
 
-test('card at 1:50: B healthy at its new position is no longer inside; both B reports listed', () => {
+test('card at 1:50: B healthy at its new position is no longer inside; B listed once with its earlier report', () => {
   const c = M.aoeCard({ payload: B150, receivedAtMs: LATER - 4_000 }, 'active', LATER, UNITS_150, [AB1001]);
   const inside = c.lines.find((l) => l.key === 'inside')!.text;
   assert.doesNotMatch(inside, /OBS B/);
   const b = c.evidence.filter((x) => x.designation === 'B').map((x) => x.text);
-  assert.deepEqual(b, ['✕ B 39s', '○ B 2s']);
+  assert.deepEqual(b, ['○ B 2s · was ✕ 39s']);
+  assert.equal(new Set(c.evidence.map((x) => x.key)).size, c.evidence.length, 'one entry per unit');
+});
+
+test('map label at 1:50 counts units, not reports (8 units → 3 degraded / 5 healthy)', () => {
+  assert.equal(B150.evidence.length, 9, 'fixture keeps both B reports');
+  assert.deepEqual(M.evidenceCounts(B150), { degraded: 3, healthy: 5 });
+  assert.match(M.mapLabel({ payload: B150, receivedAtMs: LATER - 4_000 }, 'active', LATER)!, / 3 degraded \/ 5 healthy$/);
 });
 
 test('card stale: "Last est. HHMMZ", never "clear" / "window open"', () => {

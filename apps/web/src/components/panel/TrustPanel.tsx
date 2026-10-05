@@ -49,9 +49,8 @@ export function TrustPanel() {
         gap: 'var(--space-6)',
         padding: 'var(--space-6)',
         background: 'var(--surface-panel)',
-        borderLeft: '1px solid var(--surface-elevated)',
-        height: '100%',
-        overflowY: 'auto',
+        alignContent: 'start',
+        flex: 1,
       }}
     >
       <header style={{ display: 'grid', gap: 'var(--space-1)' }}>

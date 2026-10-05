@@ -4,7 +4,6 @@ import type {
   EmitterEstimatePayload,
   FingerprintCandidate,
   FireMission,
-  ModalOption,
   Munition,
   SensorType,
   TrustComponents,
@@ -19,6 +18,7 @@ import {
   type TssTable,
 } from '@/lib/tss';
 import { engineUrl } from '@/lib/engine-api';
+import { ENGINE_OPTION } from '@/lib/branch-echo';
 import {
   payloadClockIso,
   reduceEstimate,
@@ -224,11 +224,6 @@ function evaluateOne(ms: MissionState, tracks: Record<string, TrackState>, table
   return { ...ms, tss, hysteresis: tss.hysteresis };
 }
 
-const ENGINE_OPTION: Partial<Record<TssBranchId, ModalOption>> = {
-  shift_munition: 'shift_non_gps',
-  confirm_alt: 'confirm_alt_channel',
-  at_my_command: 'delay_60s',
-};
 
 
 /**

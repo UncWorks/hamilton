@@ -90,7 +90,7 @@ export function AoeStoryFrame({ spine }: { spine: (emitterEstimate: ReturnType<t
       <div style={{ position: 'relative', minHeight: 0 }} data-testid="aoe-story-spine">
         {spine(emitterEstimate)}
       </div>
-      <div style={{ minHeight: 0, overflow: 'hidden' }}>
+      <div style={{ minHeight: 0, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
         <TrustPanel />
       </div>
     </div>

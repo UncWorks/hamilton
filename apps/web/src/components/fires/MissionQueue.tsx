@@ -47,10 +47,8 @@ export function MissionQueue() {
         gap: 'var(--space-2)',
         padding: 'var(--space-4) var(--space-6)',
         background: 'var(--surface-panel)',
-        borderLeft: '1px solid var(--surface-elevated)',
         borderBottom: '1px solid var(--surface-elevated)',
-        overflowY: 'auto',
-        maxHeight: '58vh',
+        flexShrink: 0,
       }}
     >
       <h2

@@ -436,6 +436,26 @@ fn to_payload(ep: &Episode, now_ms: i64, valid_for_ms: i64) -> EmitterEstimatePa
     }
 }
 
+/// Units by their newest report: (degraded, healthy). Evidence can hold two
+/// reports for one unit (`inputs::build_evidence` keeps B's earlier degraded
+/// report after it moved), so counting reports would over-count units.
+pub fn unit_counts(p: &EmitterEstimatePayload) -> (usize, usize) {
+    let mut newest: HashMap<&str, (f64, EvidenceState)> = HashMap::new();
+    for e in &p.evidence {
+        let slot = newest
+            .entry(e.source_id.as_str())
+            .or_insert((e.age_s, e.state));
+        if e.age_s < slot.0 {
+            *slot = (e.age_s, e.state);
+        }
+    }
+    let d = newest
+        .values()
+        .filter(|(_, s)| *s == EvidenceState::Degraded)
+        .count();
+    (d, newest.len() - d)
+}
+
 /// The `events` row for a transition (HS-24).
 pub fn transition_event(
     payload: Option<&EmitterEstimatePayload>,
@@ -444,14 +464,7 @@ pub fn transition_event(
     transition: Transition,
     timestamp: DateTime<Utc>,
 ) -> DetectionEvent {
-    let (degraded, healthy) = payload.map_or((0, 0), |p| {
-        let d = p
-            .evidence
-            .iter()
-            .filter(|e| e.state == EvidenceState::Degraded)
-            .count();
-        (d, p.evidence.len() - d)
-    });
+    let (degraded, healthy) = payload.map_or((0, 0), unit_counts);
     let state = payload.map_or("retired".to_string(), |p| {
         serde_json::to_value(p.state)
             .ok()

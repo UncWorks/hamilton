@@ -209,9 +209,27 @@ export function insideList(p: EmitterEstimatePayload, units: readonly PointLike[
 const pct = (l: ContourLevel) => `${Math.round(l * 100)}%`;
 const km2 = (v: number) => `~${Math.round(v)} km²`;
 
+type EvidenceItem = EmitterEstimatePayload['evidence'][number];
+
+/**
+ * One entry per unit: its newest report, plus its earlier opposite-state report
+ * when the engine kept one (K2: B's degraded 1:15 report after it moved and
+ * recovered). The estimator uses both; the UI counts and lists units.
+ */
+export function evidenceByUnit(p: EmitterEstimatePayload): { latest: EvidenceItem; earlier: EvidenceItem | undefined }[] {
+  const bySource = new Map<string, EvidenceItem[]>();
+  for (const e of p.evidence) bySource.set(e.source_id, [...(bySource.get(e.source_id) ?? []), e]);
+  return [...bySource.values()].map((xs) => {
+    const [latest, ...rest] = [...xs].sort((a, b) => a.age_s - b.age_s);
+    return { latest: latest!, earlier: rest.find((x) => x.state !== latest!.state) };
+  });
+}
+
+/** Units by their newest report — never more than the units reporting. */
 export function evidenceCounts(p: EmitterEstimatePayload): { degraded: number; healthy: number } {
-  const degraded = p.evidence.filter((e) => e.state === 'degraded').length;
-  return { degraded, healthy: p.evidence.length - degraded };
+  const units = evidenceByUnit(p);
+  const degraded = units.filter((u) => u.latest.state === 'degraded').length;
+  return { degraded, healthy: units.length - degraded };
 }
 
 /** The civil layer has no geometry (every reporting unit degraded). */
@@ -240,7 +258,7 @@ export interface CardEvidence {
   designation: string;
   state: 'degraded' | 'healthy';
   age_s: number;
-  /** "✕ B 4s" / "○ A 1s". */
+  /** "✕ B 4s" / "○ A 1s" / "○ B 2s · was ✕ 39s" (newest report first). */
   text: string;
 }
 
@@ -264,12 +282,14 @@ export function aoeCard(e: EstimateEntry, state: AoeDisplayState, nowMs: number,
         ? 'Area of effect · edge not observed'
         : `Area of effect · est. ${hhmmz(p.computed_at)} · ${estimateAgeS(e, nowMs)} s ago`;
 
-  const evidence: CardEvidence[] = [...p.evidence]
-    .sort((a, b) => (a.state === b.state ? designationOf(a.source_id).localeCompare(designationOf(b.source_id)) || a.age_s - b.age_s : a.state === 'degraded' ? -1 : 1))
-    .map((x, i) => {
+  const mark = (x: EvidenceItem) => (x.state === 'degraded' ? '✕' : '○');
+  const evidence: CardEvidence[] = evidenceByUnit(p)
+    .sort(({ latest: a }, { latest: b }) => (a.state === b.state ? designationOf(a.source_id).localeCompare(designationOf(b.source_id)) : a.state === 'degraded' ? -1 : 1))
+    .map(({ latest: x, earlier }) => {
       const d = designationOf(x.source_id);
       const ageS = Math.round(x.age_s);
-      return { key: `${x.source_id}-${i}`, designation: d, state: x.state, age_s: ageS, text: `${x.state === 'degraded' ? '✕' : '○'} ${d} ${ageS}s` };
+      const was = earlier ? ` · was ${mark(earlier)} ${Math.round(earlier.age_s)}s` : '';
+      return { key: x.source_id, designation: d, state: x.state, age_s: ageS, text: `${mark(x)} ${d} ${ageS}s${was}` };
     });
 
   const lines: AoeCardModel['lines'] = [];

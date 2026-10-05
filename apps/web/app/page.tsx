@@ -73,12 +73,15 @@ export default function Home() {
           <Spine emitterEstimate={emitterEstimate} />
         </div>
         <div
+          // One scroll container for the queue and the trust panel: a FAIL row's
+          // branches never clip under the panel, and the AoE card follows below.
           style={{
-            display: 'grid',
-            gridTemplateRows: 'auto minmax(0, 1fr)',
+            display: 'flex',
+            flexDirection: 'column',
             minHeight: 0,
-            overflow: 'hidden',
+            overflowY: 'auto',
             background: 'var(--surface-panel)',
+            borderLeft: '1px solid var(--surface-elevated)',
           }}
         >
           <MissionQueue />

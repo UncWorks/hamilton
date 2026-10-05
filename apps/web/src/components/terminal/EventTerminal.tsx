@@ -5,6 +5,7 @@ import type { DetectionEvent } from '@hamilton/contracts';
 import { useHamilton, type DecisionLogEntry, type EmitterLogEntry } from '@/store/hamilton';
 import { engineUrl } from '@/lib/engine-api';
 import { eventKind, eventMessage, eventWho } from '@/lib/display-names';
+import { journalEchoes } from '@/lib/branch-echo';
 
 
 const POLL_MS = 1_000;
@@ -98,8 +99,10 @@ export function EventTerminal({ height = 160 }: EventTerminalProps) {
   // The engine's own `emitter_estimate` rows are the after-action record; the
   // terminal shows the C2's line for the same change instead (it names who is
   // inside and includes the C2-side stale), so they are not listed twice.
+  // Likewise the engine's copy of a branch this console journaled (lib/branch-echo).
+  const echoes = journalEchoes(events, journal);
   const rows: TerminalRow[] = [
-    ...events.filter((e) => e.kind !== 'emitter_estimate' || estimateLog.length === 0).map((e) => ({
+    ...events.filter((e, i) => !echoes.has(i) && (e.kind !== 'emitter_estimate' || estimateLog.length === 0)).map((e) => ({
       timestamp: e.timestamp,
       who: eventWho(e.source_id),
       kind: eventKind(e.kind),

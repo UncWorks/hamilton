@@ -152,6 +152,21 @@ fn check_lifecycle(name: &str) -> Replay {
         "{name}"
     );
     assert!(b[0].1 < b[1].1, "{name}: newest first {b:?}");
+    // The events row counts units by their newest report, not reports:
+    // B's kept degraded report neither adds a unit nor counts as degraded.
+    let reports_degraded = upd
+        .1
+        .evidence
+        .iter()
+        .filter(|e| e.state == wire::EvidenceState::Degraded)
+        .count();
+    let (d, h) = super::unit_counts(upd.1);
+    assert_eq!(
+        d + h,
+        upd.1.evidence.len() - 1,
+        "{name}: one entry per unit"
+    );
+    assert_eq!(d, reports_degraded - 1, "{name}: B counts healthy");
     assert!(
         upd.1.emitter.area90_km2 < open.emitter.area90_km2,
         "{name}: healthy B shrinks region90"
