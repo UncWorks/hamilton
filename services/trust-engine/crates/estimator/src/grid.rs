@@ -231,3 +231,53 @@ pub fn fit_grid(
         prior,
     })
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::types::{RxClass, UnitState};
+
+    fn obs(lat: f64, lon: f64) -> Observation {
+        Observation {
+            source_id: "u".into(),
+            rx_class: RxClass::GnssCivil,
+            state: UnitState::Healthy,
+            lat,
+            lon,
+        }
+    }
+
+    #[test]
+    fn flot_depth_sign_and_extension() {
+        // A south→north FLOT at x = 1 km, enemy east (right of travel).
+        let pts = [(1.0, -12.0), (1.0, 12.0)];
+        assert_eq!(flot_depth_km(&pts, Side::Right, 3.0, 0.0), 2.0);
+        assert_eq!(flot_depth_km(&pts, Side::Right, -4.0, 0.0), -5.0);
+        // Beyond the end points the line is extended, not rounded off.
+        assert_eq!(flot_depth_km(&pts, Side::Right, 6.0, 40.0), 5.0);
+        assert_eq!(flot_depth_km(&pts, Side::Left, 6.0, 40.0), -5.0);
+        let p = PriorModel::default();
+        assert_eq!(prior_weight(&p, -5.0), 0.02);
+        assert_eq!(prior_weight(&p, 1.0), 0.1);
+        assert_eq!(prior_weight(&p, 2.0), 1.0);
+        assert_eq!(prior_weight(&p, 25.0), 1.0);
+        assert_eq!(prior_weight(&p, 26.0), 0.1);
+    }
+
+    #[test]
+    fn fit_grid_is_order_independent_and_covers_the_margin() {
+        let a = [obs(48.10, 37.60), obs(48.20, 37.75), obs(48.15, 37.70)];
+        let mut b = a.clone();
+        b.reverse();
+        let ga = fit_grid(&a, 38.0, 250.0, None, PriorModel::default()).unwrap();
+        let gb = fit_grid(&b, 38.0, 250.0, None, PriorModel::default()).unwrap();
+        assert_eq!(ga, gb);
+        let geom = GridGeom::new(&ga);
+        for o in &a {
+            let (x, y) = geom.to_enu(o.lat, o.lon);
+            assert!(x - 38.0 >= ga.x_km[0] - 1e-9 && x + 38.0 <= ga.x_km[1] + 1e-9);
+            assert!(y - 38.0 >= ga.y_km[0] - 1e-9 && y + 38.0 <= ga.y_km[1] + 1e-9);
+        }
+        assert!(fit_grid(&[], 38.0, 250.0, None, PriorModel::default()).is_none());
+    }
+}

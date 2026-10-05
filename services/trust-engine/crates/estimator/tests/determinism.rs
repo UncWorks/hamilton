@@ -4,7 +4,7 @@
 //! Timing is asserted only in the release profile:
 //! `cargo test -p trust-estimator --release --test determinism`.
 //!
-//! TEMPORARY input: `fixtures/temp-golden-cases.json` (see `common`).
+//! Input: `packages/contracts/fixtures/aoe/golden-cases.json` (see `common`).
 
 mod common;
 
@@ -28,7 +28,7 @@ fn identical_input_gives_identical_bytes() {
     let g = golden();
     let s = scenario(&g);
     for beat in ["demo_b115", "demo_b150"] {
-        let ev = evidence(case(&g, beat), 1_707_000_000_000);
+        let ev = evidence(demo_run(&g, beat), 1_707_000_000_000);
         let a = bytes(&estimate(&ev, &s.method, &s.receivers, &s.grid));
         let b = bytes(&estimate(
             &ev.clone(),
@@ -48,7 +48,7 @@ fn identical_input_gives_identical_bytes() {
 fn permutation_invariant() {
     let g = golden();
     let s = scenario(&g);
-    let ev = evidence(case(&g, "demo_b150"), 7);
+    let ev = evidence(demo_run(&g, "demo_b150"), 7);
     let base = bytes(&estimate(&ev, &s.method, &s.receivers, &s.grid));
     let n = ev.observations.len();
     for k in [1, 3, 5] {
@@ -78,7 +78,7 @@ fn adding_a_healthy_unit_never_enlarges_region90() {
         ..s.method.clone()
     };
     for beat in ["demo_b115", "demo_b150"] {
-        let ev = evidence(case(&g, beat), 0);
+        let ev = evidence(demo_run(&g, beat), 0);
         let base = analyze(&ev, &method, &s.receivers, &s.grid).area90_km2();
         // Positions around and beyond the friendly layout, and toward the enemy side.
         let spots = [
@@ -126,7 +126,7 @@ fn perf_input() -> (Scenario, Evidence) {
     let mut s = scenario(&g);
     s.grid.x_km = [-15.0, 20.0];
     s.grid.y_km = [-17.5, 17.5];
-    let mut ev = evidence(case(&g, "demo_b150"), 0);
+    let mut ev = evidence(demo_run(&g, "demo_b150"), 0);
     let (lat, lon) = s.to_latlon(-11.0, -2.0);
     ev.observations.push(Observation {
         source_id: "unit_i".into(),
@@ -168,7 +168,7 @@ fn compute_under_50ms_at_20k_cells_9_hyp_10_units() {
     // For the record: the preview generator's wider demo grid (341 × 241 = 82k cells).
     let g = golden();
     let d = scenario(&g);
-    let dev = evidence(case(&g, "demo_b115"), 0);
+    let dev = evidence(demo_run(&g, "demo_b115"), 0);
     let demo_ms = median_ms(|| {
         estimate(&dev, &d.method, &d.receivers, &d.grid);
     });
@@ -223,7 +223,7 @@ fn serialized_size_within_budget() {
     let g = golden();
     let s = scenario(&g);
     for beat in ["demo_b115", "demo_b150"] {
-        let ev = evidence(case(&g, beat), 0);
+        let ev = evidence(demo_run(&g, beat), 0);
         let e = estimate(&ev, &s.method, &s.receivers, &s.grid);
         let est = bytes(&e).len();
         let wire = serde_json::to_string(&payload(&e, &ev)).unwrap().len();
