@@ -60,6 +60,10 @@ pub fn rf_from_wire(o: &wire::RfObservation) -> RfFingerprint {
         gps_l1_overlap: o.gps_l1_overlap,
         gps_l2_overlap: o.gps_l2_overlap,
         time_domain_pattern: pattern,
-        effective_range_km: o.effective_range_km,
+        // telemetry/2 makes `effective_range_km` optional (contracts K1/K7). Until
+        // E20 replaces fingerprint dimension 6, an absent range is 0 km, so the
+        // range dimension still matches and B's 6/6 top match (and the K5 trust
+        // pins) do not move when the sim stops sending it.
+        effective_range_km: o.effective_range_km.unwrap_or(0.0),
     }
 }
