@@ -5,6 +5,7 @@ import { trustBand } from '@/lib/trust-gradient';
 import { methodName } from '@/lib/display-names';
 import type { AoeCardModel } from '@/lib/emitter-estimate';
 import { AoeCardBlock } from './AoeCardBlock';
+import { DemoSlot } from '@/components/admin/DemoSlot';
 
 interface CandidateCardsProps {
   candidates: FingerprintCandidate[];
@@ -149,7 +150,11 @@ function CandidateCard({ candidate, areaOfEffect }: { candidate: FingerprintCand
           (none in current inventory)
         </div>
       )}
-      {areaOfEffect && <AoeCardBlock model={areaOfEffect} />}
+      {areaOfEffect && (
+        <DemoSlot id="side.aoeCard">
+          <AoeCardBlock model={areaOfEffect} />
+        </DemoSlot>
+      )}
       <CitationHover citation={candidate.source_citation} />
     </article>
   );
