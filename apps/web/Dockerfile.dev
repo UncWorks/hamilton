@@ -1,18 +1,22 @@
 # syntax=docker/dockerfile:1.6
-# Dev image — hot reload via bind mount in compose.
+# Demo image: Next.js dev server (so ?admin=1 works) over a self-contained
+# copy of the source. `make demo` runs compose with --build, so a code change
+# is picked up on the next run. The basemap (apps/web/public/tiles) is not
+# baked in; compose bind-mounts it read-only.
 
 FROM node:20-slim
 WORKDIR /app
 
 RUN corepack enable
 
-COPY pnpm-workspace.yaml package.json ./
+COPY pnpm-workspace.yaml package.json pnpm-lock.yaml ./
 COPY packages/contracts/package.json ./packages/contracts/
 COPY apps/web/package.json ./apps/web/
 # postinstall (apps/web/scripts/stage-cesium.mjs) needs to exist before install
 COPY apps/web/scripts ./apps/web/scripts
 
-RUN pnpm install
+# Only the web app and its workspace deps, at the locked versions.
+RUN pnpm install --frozen-lockfile --filter @hamilton/web...
 
 COPY packages/contracts ./packages/contracts
 COPY apps/web ./apps/web
@@ -20,5 +24,6 @@ COPY apps/web ./apps/web
 RUN pnpm --filter @hamilton/contracts build
 
 WORKDIR /app/apps/web
+ENV NEXT_TELEMETRY_DISABLED=1
 EXPOSE 3000
 CMD ["pnpm", "dev"]

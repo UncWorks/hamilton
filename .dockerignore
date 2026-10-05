@@ -1,0 +1,24 @@
+# Build context for every image is the repo root (infra/docker/docker-compose.yml).
+# Keep it small: host installs and build outputs are rebuilt inside the images.
+.git
+.claude
+**/node_modules
+**/.next
+**/dist
+**/target
+**/storybook-static
+**/.venv
+**/__pycache__
+**/.pytest_cache
+**/*.duckdb*
+**/truth.json
+# Gitignored large assets: Cesium is staged by the web image's postinstall;
+# the basemap is bind-mounted read-only at run time (not baked in).
+apps/web/public/cesium/*
+apps/web/public/tiles/*
+assets/cesium-tiles
+assets/terrain
+assets/gltf
+.env
+.env.*
+!.env.example
