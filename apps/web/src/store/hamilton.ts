@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import type {
   Affiliation,
+  EmitterEstimatePayload,
   FingerprintCandidate,
   FireMission,
   ModalOption,
@@ -18,6 +19,24 @@ import {
   type TssTable,
 } from '@/lib/tss';
 import { engineUrl } from '@/lib/engine-api';
+import {
+  payloadClockIso,
+  reduceEstimate,
+  terminalLine,
+  type AoeDisplayState,
+  type EstimateAction,
+  type EstimateEntry,
+  type EstimateLogKind,
+} from '@/lib/emitter-estimate';
+
+/** One after-action terminal line per estimate state change (HS-24). */
+export interface EmitterLogEntry {
+  id: string;
+  dtg: string;
+  kind: EstimateLogKind;
+  estimate_id: string;
+  message: string;
+}
 
 export type LlmMode = 'claude' | 'local' | 'off';
 export type LlmStatus = 'pending' | 'active' | 'fallback' | 'unreachable';
@@ -113,6 +132,11 @@ interface HamiltonState {
   decisionLog: DecisionLogEntry[];
   /** Any mission failed TSS this session — the brand-bar hairline (Branding §10.6). */
   tssFailedThisSession: boolean;
+  /** FR-04b estimate as received (integrity/emitter/estimate), null = none / retired. */
+  emitterEstimate: EstimateEntry | null;
+  /** What the COP shows, on the C2's own clock (lib/emitter-estimate.ts). */
+  emitterState: AoeDisplayState | null;
+  emitterLog: EmitterLogEntry[];
   upsertTrack: (track: TrackState) => void;
   applyScore: (payload: TrustScorePayload) => void;
   setCandidates: (source_id: string, items: FingerprintCandidate[]) => void;
@@ -133,7 +157,15 @@ interface HamiltonState {
   ) => DecisionLogEntry | null;
   /** S6 / observer confirmed the report via alternate means (credibility → 1). */
   receiveConfirmation: (mission_id: string, via: string) => void;
+  /** A zod-parsed estimate arrived (nowMs = C2 receipt time). */
+  receiveEmitterEstimate: (payload: EmitterEstimatePayload, nowMs?: number) => void;
+  /** Empty retained payload: the estimate is retired. */
+  clearEmitterEstimate: (nowMs?: number) => void;
+  /** 1 Hz: the C2 marks an unrefreshed estimate stale by itself. */
+  tickEmitterEstimate: (nowMs?: number) => void;
 }
+
+let emitterSeq = 0;
 
 let logSeq = 0;
 const nowIso = () => new Date().toISOString();
@@ -235,7 +267,31 @@ function postToEngine(entry: DecisionLogEntry, ms: MissionState): void {
 const tssLine = (tss: TssResult) =>
   `TSS ${tss.headline}${tss.recommended ? ` · rec. ${tss.recommended}` : ''}`;
 
-export const useHamilton = create<HamiltonState>((set, get) => ({
+export const useHamilton = create<HamiltonState>((set, get) => {
+  /** Estimate reducer (lib/emitter-estimate.ts) + its terminal line. */
+  const applyEstimate = (a: EstimateAction) => {
+    const s = get();
+    const step = reduceEstimate({ entry: s.emitterEstimate, state: s.emitterState }, a);
+    const log: EmitterLogEntry[] = [];
+    if (step.log) {
+      emitterSeq += 1;
+      const missions = Object.values(s.missions).map((m) => m.mission);
+      log.push({
+        id: `est-${step.log.entry.payload.estimate_id}-${emitterSeq}`,
+        dtg: payloadClockIso(step.log.entry, step.log.atMs),
+        kind: step.log.kind,
+        estimate_id: step.log.entry.payload.estimate_id,
+        message: terminalLine(step.log.kind, step.log.entry, Object.values(s.tracks), missions),
+      });
+    }
+    if (step.entry === s.emitterEstimate && step.state === s.emitterState && !log.length) return;
+    set((st) => ({
+      emitterEstimate: step.entry,
+      emitterState: step.state,
+      emitterLog: log.length ? [...st.emitterLog, ...log] : st.emitterLog,
+    }));
+  };
+  return {
   tracks: {},
   candidates: null,
   selectedSource: null,
@@ -246,6 +302,15 @@ export const useHamilton = create<HamiltonState>((set, get) => ({
   selectedMission: null,
   decisionLog: [],
   tssFailedThisSession: false,
+  emitterEstimate: null,
+  emitterState: null,
+  emitterLog: [],
+
+  receiveEmitterEstimate: (payload, nowMs = Date.now()) => applyEstimate({ type: 'receive', payload, nowMs }),
+  clearEmitterEstimate: (nowMs = Date.now()) => applyEstimate({ type: 'clear', nowMs }),
+  tickEmitterEstimate: (nowMs = Date.now()) => {
+    if (get().emitterEstimate) applyEstimate({ type: 'tick', nowMs });
+  },
 
   upsertTrack: (track) =>
     set((state) => ({ tracks: { ...state.tracks, [track.source_id]: track } })),
@@ -447,7 +512,8 @@ export const useHamilton = create<HamiltonState>((set, get) => ({
       decisionLog: [...s.decisionLog, entry],
     }));
   },
-}));
+};
+});
 
 /** Has any mission failed TSS this session? The brand-bar hairline binds to
  * this — once on, stays on (Branding §10.6 "Hamilton was on its feet"). */

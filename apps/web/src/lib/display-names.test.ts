@@ -36,3 +36,10 @@ test('engine log lines are relabelled without snake_case ids', () => {
 test('rating breakdown factor labels carry no requirement ids', () => {
   assert.deepEqual(TRUST_FACTORS.map((f) => f.label), ['Message timing', 'Link errors', 'Neighbours', 'Jammer match']);
 });
+
+test('the 8-unit layout: units D–H read "Unit X"; A is the FU, B the FO (jammer-aoe.md §0.4)', () => {
+  for (const l of 'abcdefgh') assert.equal(D.unitName(`unit_${l}`), `Unit ${l.toUpperCase()}`);
+  assert.match(D.UNIT_ROLES.unit_a!, /FU A/);
+  assert.match(D.UNIT_ROLES.unit_b!, /OBS B/);
+  for (const l of 'defgh') assert.ok(D.UNIT_ROLES[`unit_${l}`], `role for unit_${l}`);
+});

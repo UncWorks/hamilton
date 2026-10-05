@@ -23,11 +23,10 @@ import { MapSpine } from '@/components/cop/MapSpine';
 import { MissionQueue } from '@/components/fires/MissionQueue';
 import { AB1001_AT_CLOCK_S, AB1002_AT_CLOCK_S, ab1001, ab1002, missionState, missionsRecord } from '@/stories/fixtures/missions';
 import { StoreSeed, TrustHeartbeat } from '@/stories/support/mocks';
+import { PRESUMED_CANDIDATE_SITES, PRESUMED_JAMMER_POINT } from '@/stories/archive/presumed-jammer';
 import {
   BAND_SAMPLES,
   CANDIDATES,
-  CANDIDATE_SITES as CANDIDATE_SITES_FIXTURE,
-  JAMMER_LOCATION,
   beatTrack,
   tracksRecord,
   PHASE_TRACKS,
@@ -411,8 +410,12 @@ const LAT0 = 48.1335;
 const LAT1 = 48.1485;
 const project = (lat: number, lon: number): [number, number] => [((lon - LON0) / (LON1 - LON0)) * SCENE_W, ((LAT1 - lat) / (LAT1 - LAT0)) * SCENE_H];
 
-/** Mock geolocations for the three FR-04a candidates (fixtures: CANDIDATE_SITES; the engine publishes scores only). */
-const CANDIDATE_SITES = CANDIDATE_SITES_FIXTURE;
+/**
+ * HISTORICAL mock geolocations for the three FR-04a candidates and the old fixed jammer point (the engine publishes
+ * scores only). This decision record predates HS-20; the live COP no longer draws a presumed jammer (FR-06a).
+ */
+const CANDIDATE_SITES = PRESUMED_CANDIDATE_SITES;
+const PRESUMED_JAMMER = PRESUMED_JAMMER_POINT;
 const UNIT_META: Record<string, { designation: string; title: string; neighbours: string }> = {
   unit_a: { designation: 'A', title: 'A · FA observer team (COLT/FIST)', neighbours: 'neighbours B, C' },
   unit_b: { designation: 'B', title: 'B · FA battery (its FO, OBS B, calls AB1001)', neighbours: 'neighbours A, C' },
@@ -466,15 +469,15 @@ function CopScene({ clock, size, s2Override, overlay }: Pick<Args, 'clock' | 'si
   });
   const b = units.find((u) => u.id === 'unit_b')!;
   const bPt = project(b.t.lat, b.t.lon);
-  const jPt = project(JAMMER_LOCATION.lat, JAMMER_LOCATION.lon);
+  const jPt = project(PRESUMED_JAMMER.lat, PRESUMED_JAMMER.lon);
   const sites = CANDIDATE_SITES.map((st) => project(st.lat, st.lon));
   const all = [jPt, ...sites];
   const cx = all.reduce((a, p) => a + p[0], 0) / all.length;
   const cy = all.reduce((a, p) => a + p[1], 0) / all.length;
   const rx = Math.max(...all.map((p) => Math.abs(p[0] - cx))) + 52;
   const ry = Math.max(...all.map((p) => Math.abs(p[1] - cy))) + 40;
-  const dx = (JAMMER_LOCATION.lon - b.t.lon) * Math.cos((b.t.lat * Math.PI) / 180);
-  const dy = JAMMER_LOCATION.lat - b.t.lat;
+  const dx = (PRESUMED_JAMMER.lon - b.t.lon) * Math.cos((b.t.lat * Math.PI) / 180);
+  const dy = PRESUMED_JAMMER.lat - b.t.lat;
   const bearing = ((Math.atan2(dx, dy) * 180) / Math.PI + 360) % 360;
   const ordered = [...CANDIDATES].sort((p, q) => q.score - p.score);
   const showBearing = b.rating.score < TSS_MIN_GPS_SCORE;
@@ -612,9 +615,6 @@ function LiveSpineCop({ clock, s2Override }: Pick<Args, 'clock' | 's2Override'>)
             <div style={{ position: 'relative', height: 560 }} data-testid="cop-live-spine">
               <MapSpine
                 evaluations={evaluations}
-                {...(b.score < TSS_MIN_GPS_SCORE ? { directionalFrom: { lat: b.lat, lon: b.lon }, directionalTo: JAMMER_LOCATION } : {})}
-                {...(showCandidates ? { candidateSites: CANDIDATE_SITES, candidateNai: JAMMER_LOCATION } : {})}
-                {...(clock >= FIX_CLOCK ? { jammerLocation: { ...JAMMER_LOCATION, method_id: CANDIDATES[0]!.method_id } } : {})}
               />
             </div>
             <div style={{ maxHeight: 560, overflowY: 'auto', alignSelf: 'start' }}>
@@ -637,8 +637,8 @@ export const CopLiveSpine: Story = {
       description: {
         story:
           'The COP story above, on the real renderer: the store is seeded with the PR #1 engine beat at **clock** and `MapSpine` draws ' +
-          'the production symbols, declutter stacks and rating tooltips. From 1:15 the candidate sites (mock positions) appear as ' +
-          'anticipated EW symbols; from 1:20 the fix J1. B is selected (double frame). The fire-mission queue beside it holds the calls ' +
+          'the production symbols, declutter stacks and rating tooltips. Since HS-20 the live spine draws no jammer fix, candidate ' +
+          'sites or bearing line (the static COP story above keeps them as the historical decision record). B is selected (double frame). The fire-mission queue beside it holds the calls ' +
           'for fire due by **clock**: AB1002 (OBS C, M795, from 0:30, never gated) and AB1001 (OBS B, M982, from 1:12) — TSS PASS at 1:12 ' +
           '(B C3), TSS FAIL — RELIABILITY E5 (min C), rec. DO NOT LOAD from 1:15. No modal anywhere (Fires/Mission Row). The spine draws over the offline Protomaps basemap (`NEXT_PUBLIC_BASEMAP`, default offline once `make fetch-tiles` has provisioned `/public/tiles`; see **COP/MapSpine › Basemap off**).',
       },
@@ -650,7 +650,8 @@ export const CopLiveSpine: Story = {
     const bHit = await waitFor(() => c.getByTestId('cop-symbol-unit_b'), { timeout: 15_000 });
     await expect(bHit.getAttribute('aria-label')).toMatch(/J E5/);
     await expect(canvasElement.querySelector('[data-cop-symbol="unit_b"] [data-field="J"]')?.textContent).toBe('E5');
-    await waitFor(() => expect(canvasElement.querySelector('[data-symbol-id="__jammer"]')).toBeTruthy());
+    // HS-20: the live spine never presumes the jammer's position.
+    await expect(canvasElement.querySelector('[data-symbol-id="__jammer"]')).toBeNull();
     const row = await c.findByTestId('fm-row-AB1001');
     await waitFor(() => expect(row).toHaveAttribute('data-verdict', 'FAIL'));
   },

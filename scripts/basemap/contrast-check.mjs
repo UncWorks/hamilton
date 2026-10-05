@@ -7,8 +7,15 @@
 // camera fit lands on). They are drawn by MapLibre Native from the same
 // extract + style the MapLibre spine draws, so they stand in for both spines.
 // Each colour is converted to grayscale luminance (as glance-eval.ts does) and
-// compared with every basemap pixel. Translucent graphics (bearing line,
-// jammer ring) are alpha-blended over each pixel first.
+// compared with every basemap pixel. Translucent graphics (the AoE 90% fill)
+// are alpha-blended over each pixel first.
+//
+// The jammer area of effect (FR-06a (4), docs/plans/jammer-aoe.md W20) is
+// checked against a second, wider pixel set: the AoE spans the whole 8-unit
+// layout (~10 × 11 km), so its pixels are z12 + z13 over the raster bounds
+// (the zooms the track fit lands on at that spread). Its edges are GATED:
+// every AoE edge must reach ≥ 3:1 against ≥ 99% of those pixels, else the
+// script exits 1. The symbol rows stay report-only.
 //
 // Usage: node scripts/basemap/contrast-check.mjs <tool-cache-node-dir>
 
@@ -68,9 +75,19 @@ const OPAQUE = {
   'gauge --trust-degraded': token('trust-degraded'),
   'gauge --trust-failed-stroke': token('trust-failed-stroke'),
 };
-const BLENDED = {
-  'bearing line [220,178,90] α110': [[220, 178, 90], 110 / 255],
-  'jammer ring outline α153': [[220, 178, 90], 153 / 255],
+const BLENDED = {};
+
+// Jammer AoE (tokens.css --aoe-*). Edges are opaque strokes (gated); the 90%
+// fill is the --aoe-fill-opacity tint over the map (reported: a tint is not an
+// edge, and the edge is drawn on top of it).
+const fillOpacity = Number(/--aoe-fill-opacity:\s*([\d.]+)/.exec(css)?.[1] ?? NaN);
+if (!Number.isFinite(fillOpacity)) throw new Error('token aoe-fill-opacity not found');
+const AOE_EDGES = {
+  'AoE civil edge --aoe-gnss-civil': token('aoe-gnss-civil'),
+  'AoE mil edge --aoe-gnss-mil': token('aoe-gnss-mil'),
+};
+const AOE_BLENDED = {
+  [`AoE civil 90% fill α${fillOpacity}`]: [token('aoe-gnss-civil'), fillOpacity],
 };
 
 // --- basemap pixels -------------------------------------------------------------
@@ -86,69 +103,84 @@ const lat2y = (lat, z) => {
   const r = (lat * Math.PI) / 180;
   return ((1 - Math.log(Math.tan(r) + 1 / Math.cos(r)) / Math.PI) / 2) * 2 ** z;
 };
-const ys = [];
-const counts = new Map();
-for (const z of [14, 15]) {
-  for (let x = Math.floor(lon2x(AO.w, z)); x <= Math.floor(lon2x(AO.e, z)); x++) {
-    for (let y = Math.floor(lat2y(AO.n, z)); y <= Math.floor(lat2y(AO.s, z)); y++) {
-      const f = path.join(RASTER, String(z), String(x), `${y}.png`);
-      if (!existsSync(f)) continue;
-      const { data, info } = await sharp(f).removeAlpha().raw().toBuffer({ resolveWithObject: true });
-      for (let i = 0; i < info.width * info.height; i++) {
-        const k = `${data[3 * i]},${data[3 * i + 1]},${data[3 * i + 2]}`;
-        counts.set(k, (counts.get(k) ?? 0) + 1);
+
+/** Luminance-sorted distinct basemap pixels (with counts) over a bbox at some zooms. */
+async function pixelSet(bbox, zooms) {
+  const counts = new Map();
+  for (const z of zooms) {
+    for (let x = Math.floor(lon2x(bbox.w, z)); x <= Math.floor(lon2x(bbox.e, z)); x++) {
+      for (let y = Math.floor(lat2y(bbox.n, z)); y <= Math.floor(lat2y(bbox.s, z)); y++) {
+        const f = path.join(RASTER, String(z), String(x), `${y}.png`);
+        if (!existsSync(f)) continue;
+        const { data, info } = await sharp(f).removeAlpha().raw().toBuffer({ resolveWithObject: true });
+        for (let i = 0; i < info.width * info.height; i++) {
+          const k = `${data[3 * i]},${data[3 * i + 1]},${data[3 * i + 2]}`;
+          counts.set(k, (counts.get(k) ?? 0) + 1);
+        }
       }
     }
   }
+  let total = 0;
+  const px = [...counts].map(([k, n]) => {
+    total += n;
+    const rgb = k.split(',').map(Number);
+    return { rgb, n, y: Y(rgb) };
+  });
+  px.sort((a, b) => a.y - b.y);
+  const pct = (p) => {
+    let acc = 0;
+    for (const q of px) {
+      acc += q.n;
+      if (acc >= p * total) return q;
+    }
+    return px[px.length - 1];
+  };
+  return { px, total, P50: pct(0.5), P95: pct(0.95), P99: pct(0.99), MAX: px[px.length - 1] };
 }
-let total = 0;
-const px = [...counts].map(([k, n]) => {
-  total += n;
-  const rgb = k.split(',').map(Number);
-  return { rgb, n, y: Y(rgb) };
-});
-px.sort((a, b) => a.y - b.y);
-const pct = (p) => {
-  let acc = 0;
-  for (const q of px) {
-    acc += q.n;
-    if (acc >= p * total) return q;
-  }
-  return px[px.length - 1];
-};
-const surface = token('surface-base');
-const P50 = pct(0.5);
-const P95 = pct(0.95);
-const P99 = pct(0.99);
-const MAX = px[px.length - 1];
-console.log(`basemap pixels: ${total} (z14+z15 around the AO), ${px.length} distinct colours`);
-console.log(`  luminance  surface-base ${Y(surface).toFixed(4)} · p50 ${P50.y.toFixed(4)} rgb(${P50.rgb}) · p95 ${P95.y.toFixed(4)} rgb(${P95.rgb}) · p99 ${P99.y.toFixed(4)} rgb(${P99.rgb}) · max ${MAX.y.toFixed(4)} rgb(${MAX.rgb})`);
 
-const rows = [];
-const row = (name, f) => {
-  let pass = 0;
-  for (const q of px) if (f(q) >= 3) pass += q.n;
-  rows.push({
-    name,
-    flat: f({ rgb: surface, y: Y(surface) }),
-    p50: f(P50),
-    p95: f(P95),
-    p99: f(P99),
-    pass: (100 * pass) / total,
-  });
-};
-for (const [name, rgb] of Object.entries(OPAQUE)) {
-  const y = Y(rgb);
-  row(name, (q) => ratio(y, q.y));
+const surface = token('surface-base');
+
+function report(title, set, opaque, blended) {
+  const { px, total, P50, P95, P99, MAX } = set;
+  console.log(`${title}: ${total} basemap pixels, ${px.length} distinct colours`);
+  console.log(`  luminance  surface-base ${Y(surface).toFixed(4)} · p50 ${P50.y.toFixed(4)} rgb(${P50.rgb}) · p95 ${P95.y.toFixed(4)} rgb(${P95.rgb}) · p99 ${P99.y.toFixed(4)} rgb(${P99.rgb}) · max ${MAX.y.toFixed(4)} rgb(${MAX.rgb})`);
+  const rows = [];
+  const row = (name, f) => {
+    let pass = 0;
+    for (const q of px) if (f(q) >= 3) pass += q.n;
+    rows.push({ name, flat: f({ rgb: surface, y: Y(surface) }), p50: f(P50), p95: f(P95), p99: f(P99), pass: (100 * pass) / total });
+  };
+  for (const [name, rgb] of Object.entries(opaque)) {
+    const y = Y(rgb);
+    row(name, (q) => ratio(y, q.y));
+  }
+  for (const [name, [rgb, a]] of Object.entries(blended)) {
+    row(name, (q) => {
+      const mix = rgb.map((c, i) => Math.round(a * c + (1 - a) * q.rgb[i]));
+      return ratio(Y(mix), q.y);
+    });
+  }
+  return rows;
 }
-for (const [name, [rgb, a]] of Object.entries(BLENDED)) {
-  row(name, (q) => {
-    const mix = rgb.map((c, i) => Math.round(a * c + (1 - a) * q.rgb[i]));
-    return ratio(Y(mix), q.y);
-  });
-}
+
+const symbolRows = report('symbols (z14+z15 around B)', await pixelSet(AO, [14, 15]), OPAQUE, BLENDED);
+const [rw, rs, re, rn] = JSON.parse(readFileSync(path.join(RASTER, 'tiles.json'), 'utf8')).bounds;
+const aoeRows = report('\nAoE (z12+z13 over the raster bounds, the 8-unit layout)', await pixelSet({ w: rw, s: rs, e: re, n: rn }, [12, 13]), AOE_EDGES, AOE_BLENDED);
+
 const f2 = (v) => v.toFixed(2).padStart(6);
-console.log('\nT5 grayscale contrast (≥ 3:1)        flat-map  p50-px  p95-px  p99-px  %px≥3');
-for (const r of rows) {
-  console.log(`  ${r.name.padEnd(34)} ${f2(r.flat)}  ${f2(r.p50)}  ${f2(r.p95)}  ${f2(r.p99)}  ${r.pass.toFixed(1).padStart(5)}%`);
+const table = (rows) => {
+  console.log('\nT5 grayscale contrast (≥ 3:1)        flat-map  p50-px  p95-px  p99-px  %px≥3');
+  for (const r of rows) {
+    console.log(`  ${r.name.padEnd(34)} ${f2(r.flat)}  ${f2(r.p50)}  ${f2(r.p95)}  ${f2(r.p99)}  ${r.pass.toFixed(1).padStart(5)}%`);
+  }
+};
+table(symbolRows);
+table(aoeRows);
+
+// FR-06a (4): every AoE edge ≥ 3:1 against ≥ 99% of the AO basemap pixels.
+const failing = aoeRows.filter((r) => r.name.includes('edge') && r.pass < 99);
+if (failing.length) {
+  console.error(`\nFAIL FR-06a (4): AoE edge below 3:1 on > 1% of pixels: ${failing.map((r) => r.name).join(', ')}`);
+  process.exit(1);
 }
+console.log('\nPASS FR-06a (4): every AoE edge ≥ 3:1 against ≥ 99% of the AO basemap pixels');

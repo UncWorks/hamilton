@@ -10,6 +10,7 @@ import {
 } from '@/stories/fixtures/avdiivka';
 import { cesiumLoader } from '@/stories/support/cesium';
 import { TrustHeartbeat } from '@/stories/support/mocks';
+import { EstimateHeartbeat, aoeSeed } from '@/stories/support/aoe-stories';
 import { ab1001, ab1002, liveTracks, missionState, missionsRecord, B_SCORES } from '@/stories/fixtures/missions';
 
 const candidates = { source_id: 'unit_b', items: CANDIDATES };
@@ -69,6 +70,27 @@ export const CandidateReveal: Story = {
   parameters: {
     hamilton: { tracks: PHASE_TRACKS.degraded, candidates, llmStatus: 'active' },
     engineApi: { events: terminalEventsUntil(75) },
+  },
+};
+
+/**
+ * 1:15 with the jammer area of effect (FR-06a): the 8-unit layout, the frozen CP1 estimate on the spine (civil GPS 90% / 50%,
+ * label, key), the Area of effect block in the top candidate card and the terminal line "Est. GPS denial opened …". No jammer
+ * symbol, ring or bearing (HS-20).
+ */
+export const AoeEstimate: Story = {
+  name: 'AoE estimate (1:15)',
+  decorators: [(S) => (<><EstimateHeartbeat /><S /></>)],
+  parameters: {
+    mqtt: { script: 'silent' },
+    hamilton: aoeSeed('b115'),
+    engineApi: { events: terminalEventsUntil(75) },
+  },
+  play: async ({ canvasElement }) => {
+    const c = within(canvasElement);
+    await waitFor(() => expect(c.getByTestId('aoe-layer')).toHaveAttribute('data-state', 'active'), { timeout: 20_000 });
+    await waitFor(() => expect(c.getByTestId('aoe-card-block').textContent).toContain('Inside: OBS B (AB1001 observer) — 90%'), { timeout: 20_000 });
+    await waitFor(() => expect(canvasElement.textContent).toContain('Est. GPS denial opened · Pole-21-class · OBS B inside (90%)'), { timeout: 20_000 });
   },
 };
 

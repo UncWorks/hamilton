@@ -19,7 +19,6 @@ import {
   BAND_SAMPLES,
   BAND_SAMPLE_SOURCE,
   CANDIDATES,
-  JAMMER_LOCATION,
   PHASE_TRACKS,
   at,
   beatAt,
@@ -27,6 +26,8 @@ import {
   componentsFor,
   telemetryFor,
 } from '@/stories/fixtures/avdiivka';
+// HISTORICAL presumed jammer point (superseded by HS-20) — archive only.
+import { PRESUMED_JAMMER_POINT as JAMMER_LOCATION } from './presumed-jammer';
 import { TSS_MIN_GPS_SCORE, STALE_AFTER_S, firstCrossingClock, formatDtg, rateLinkTrust } from '@/lib/link-trust-rating';
 import {
   FireMissionPopup,

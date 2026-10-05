@@ -21,6 +21,9 @@ export type HamiltonSeed = Partial<
     | 'selectedMission'
     | 'decisionLog'
     | 'tssFailedThisSession'
+    | 'emitterEstimate'
+    | 'emitterState'
+    | 'emitterLog'
   >
 >;
 

@@ -287,6 +287,7 @@ export const FINDINGS: Finding[] = [
     area: 'Symbology — resolved, wired into the live renderers',
     where: 'Spine.tsx:37-40 · MapSpine.tsx',
     finding:
+      'SUPERSEDED BY HS-20 (jammer AoE MVP, docs/plans/jammer-aoe.md W6–W9): the jammer\'s position is never presumed — the live spines no longer draw J1, the ring or the bearing line, and Spine takes `emitterEstimate` (an area of effect, FR-06a) instead of `jammerLocation`. Earlier record: ' +
       'RESOLVED BY DECISION (Decisions/Track Symbology → COP): confirmed fix J1 = hostile EW jamming (p 5-18, 150504 / UUMSEJ), candidates = status-1 dashed hostile EW inside the dashed NAI. FIXED IN THE LIVE RENDERERS (PR #3, symbol wiring): both spines draw the jammer as J1 (hostile EW jamming, method as H) and candidateSites as status-1 EW; Spine passes jammerLocation to both. Original: ' +
       'OPEN — pending option selection. Missing: MapSpine has no jammer symbol; Spine.tsx drops jammerLocation before it reaches MapSpine. B′ (story mock): confirmed fix J1 as a solid hostile jammer, candidates as status-1 dashed hostile diamonds inside a dashed NAI labelled with T (controlling HQ) and W (DTG). Renderer wiring still open.',
     spec: 'SIDC 10065200001102002500',

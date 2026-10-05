@@ -5,6 +5,7 @@ import { minScoreForLetter, tssRow } from '@/lib/tss';
 import { UNIT_ROLES, sensorTypeLabel, unitName } from '@/lib/display-names';
 import { TrustReadout } from './TrustReadout';
 import { CandidateCards } from './CandidateCards';
+import { useAoeCard } from '@/hooks/useEmitterEstimate';
 
 export function TrustPanel() {
   const tracks = useHamilton((s) => s.tracks);
@@ -13,6 +14,7 @@ export function TrustPanel() {
   const tssTable = useHamilton((s) => s.tssTable);
   const gpsMin = tssRow(tssTable, 'gps_guided').min_reliability;
   const tssMin = (gpsMin && minScoreForLetter(gpsMin)) ?? 0.6;
+  const aoeCardModel = useAoeCard();
 
   const focused =
     (selectedSource && tracks[selectedSource]) ??
@@ -80,7 +82,7 @@ export function TrustPanel() {
 
       <TraceBullets bullets={focused.trace_bullets} />
 
-      <CandidateCards candidates={candidatesForFocused} />
+      <CandidateCards candidates={candidatesForFocused} areaOfEffect={aoeCardModel} />
     </aside>
   );
 }
