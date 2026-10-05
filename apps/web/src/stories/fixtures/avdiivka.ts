@@ -85,14 +85,6 @@ export const BAND_SAMPLES = {
   failed: bAt(75).score,
 } as const;
 
-/** Where each band sample comes from — shown next to the rating stories. */
-export const BAND_SAMPLE_SOURCE: Record<keyof typeof BAND_SAMPLES, string> = {
-  nominal: 'engine beat 0:00 (Unit B)',
-  watching: 'engine beat 0:45 (Unit B)',
-  degraded: 'synthetic — not in the demo timeline',
-  failed: 'engine beat 1:15 (Unit B)',
-};
-
 /** Band edges, inclusive at the top — used for edge-case stories. */
 export const BAND_EDGES = [1.0, 0.85, 0.849, 0.6, 0.599, 0.3, 0.299, 0.0] as const;
 
@@ -225,17 +217,6 @@ export const PHASE_TRACKS = {
 } as const;
 
 /**
- * Symbol-function overrides for fixture sources whose contract `sensor_type`
- * cannot express what they are. hostile_ew_1 is an EW jamming emitter
- * (FM 1-02 / MCRP 5-12A Table 5-3 p 5-18; 2525B SHGPUUMSEJ), but SensorType has
- * no EW value, so its "defense" would draw a hostile air-defense dome.
- * Symbology stories must consult this before mapping sensor_type to an icon.
- */
-export const SYMBOL_FUNCTION_OVERRIDES: Record<string, 'ew-jamming'> = {
-  hostile_ew_1: 'ew-jamming',
-};
-
-/**
  * J evaluation inputs (decision 3, J split) — OPTIONAL per-unit fields. Absent =
  * uncorroborated (the band's digit) and no override.
  * - `corroboration: 'confirmed'` → credibility 1 (confirmed on an alternate
@@ -262,7 +243,7 @@ export const S2_OVERRIDE_B: JOverride = {
 };
 export const S2_OVERRIDE_CLOCK = 85;
 
-/** Mixed-affiliation track list for icon/halo coverage. */
+/** Mixed-affiliation track list for symbol coverage. */
 export const AFFILIATION_TRACKS: TrackState[] = [
   track('unit_a', BAND_SAMPLES.nominal),
   { ...track('unit_b', BAND_SAMPLES.degraded), source_id: 'hostile_ew_1', affiliation: 'enemy', sensor_type: 'defense', lat: 48.142, lon: 37.762 },
@@ -365,9 +346,6 @@ export function beatPayload(source_id: AvdiivkaUnit, clockS: number, timestamp =
   } satisfies TrustScorePayload);
   return { ...parsed, ...AVDIIVKA_POSITIONS[source_id] };
 }
-
-/** Unit B at every engine beat (0:00 … 2:15). */
-export const B_BEAT_PAYLOADS: PositionedTrustScorePayload[] = AVDIIVKA_BEATS.map((b) => beatPayload('unit_b', b.clockS));
 
 export interface CrescendoStep {
   clockS: number;

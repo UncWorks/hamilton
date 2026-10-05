@@ -393,7 +393,7 @@ const B_CROSSING_CLOCK = firstCrossingClock() ?? 75;
 const fmtClock = (c: number) => `${Math.floor(c / 60)}:${String(Math.round(c % 60)).padStart(2, '0')}`;
 
 // ---------------------------------------------------------------------------
-// COP — the same beats on the REAL spine (MapSpine, store-driven)
+// COP — the decided symbol on the real spine (MapSpine, store-driven)
 // ---------------------------------------------------------------------------
 
 function LiveSpineCop({ clock, s2Override }: Pick<Args, 'clock' | 's2Override'>) {
@@ -406,7 +406,6 @@ function LiveSpineCop({ clock, s2Override }: Pick<Args, 'clock' | 's2Override'>)
     beatTrack('unit_b', beat.clockS, { last_update: fresh }),
     beatTrack('unit_c', beat.clockS, { last_update: fresh }),
   );
-  const b = tracks.unit_b!;
   const showCandidates = clock >= B_CROSSING_CLOCK;
   const evaluations = {
     ...UNIT_EVALUATION,
