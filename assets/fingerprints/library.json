@@ -1,6 +1,15 @@
 {
-  "version": "0.1.0",
+  "version": "0.2.0",
   "source_note": "Public-source EW characterizations per FRS §2.4a. Library is data, not code (NFR-06). Citations: Bronk RUSI 2024, JAPCC 2023, WaPo 2024.",
+  "v0_2_note": "v0.2 (docs/plans/jammer-aoe.md A1): every v0.1 id kept. Adds `affects_rx_classes` to every entry (fingerprint dimension 6, FRS FR-04 rev) and an optional `emitter.modules[]` envelope (empty = not yet characterised). `effective_range_km` is kept for the v0.1 parser and is deprecated (not observable). affects_rx_classes rule [DES]: gnss_civil + gnss_mil when gps_l1_overlap or gps_l2_overlap; uhf_comms when the band overlaps 225-400 MHz; fpv_link when it overlaps an FPV control / video band (868-928, 2400-2483.5, 5725-5875 MHz); gnss_mil_crpa never (CRPA not modelled). The Pole-21 / R-330Zh split and the verification §5 corrections are a separate data PR.",
+  "provenance_tags": {
+    "VMC": "verified manufacturer claim (ua-jamming-verification §4)",
+    "RC": "recomputed by the verifier",
+    "STD": "standard",
+    "DES": "design worked-example value",
+    "ASM": "assumption",
+    "UNV": "unverifiable / do not use"
+  },
   "entries": [
     {
       "method_id": "ground_based_gps_uhf_barrage",
@@ -11,8 +20,43 @@
       "gps_l2_overlap": true,
       "time_domain_pattern": "barrage",
       "effective_range_km": 30,
+      "affects_rx_classes": ["gnss_civil", "gnss_mil", "uhf_comms", "fpv_link"],
       "munitions_affected": ["Excalibur", "JDAM-ER", "Switchblade 300", "GMLRS-U"],
-      "source_citation": "Bronk RUSI 2024"
+      "source_citation": "Bronk RUSI 2024",
+      "emitter": {
+        "modules": [
+          {
+            "role": "gnss",
+            "class_name": "Pole-21E-class",
+            "band_mhz": [1176, 1602],
+            "jams": ["gps_l1", "gps_l2", "glonass"],
+            "eirp_w_claimed": [300, 1000],
+            "emitter_height_m": [10, 60],
+            "sector_deg_min": 125,
+            "provenance": {
+              "band_mhz": "DES (GNSS span L5 1176 to GLONASS G1 1602 MHz, as in the preview; GPS + GLONASS jamming is VMC)",
+              "jams": "VMC (Izvestia 2016: Pole-21 jams GLONASS)",
+              "eirp_w_claimed": "VMC (per module, single-frequency mode)",
+              "emitter_height_m": "VMC (range: mast up to 60 m)",
+              "sector_deg_min": "VMC (>=125 deg az x ~25 deg el)"
+            }
+          },
+          {
+            "role": "comms",
+            "class_name": "R-934B-class",
+            "band_mhz": [100, 400],
+            "transmitter_power_w": 500,
+            "eirp_w_claimed": null,
+            "emitter_height_m": null,
+            "provenance": {
+              "band_mhz": "VMC (Med confidence)",
+              "transmitter_power_w": "VMC (Med, AGG)",
+              "eirp_w_claimed": "ASM: calibrated on B's beats in comms-sim (C3)",
+              "emitter_height_m": "ASM: co-located with the GNSS module"
+            }
+          }
+        ]
+      }
     },
     {
       "method_id": "cellular_uhf_barrage",
@@ -23,8 +67,12 @@
       "gps_l2_overlap": false,
       "time_domain_pattern": "barrage",
       "effective_range_km": 15,
+      "affects_rx_classes": ["fpv_link"],
       "munitions_affected": ["ATAK position-share", "FPV C2 link"],
-      "source_citation": "JAPCC 2023"
+      "source_citation": "JAPCC 2023",
+      "emitter": {
+        "modules": []
+      }
     },
     {
       "method_id": "swept_uhf_low_power",
@@ -35,8 +83,12 @@
       "gps_l2_overlap": false,
       "time_domain_pattern": "swept",
       "effective_range_km": 8,
+      "affects_rx_classes": ["uhf_comms", "fpv_link"],
       "munitions_affected": [],
-      "source_citation": "WaPo 2024"
+      "source_citation": "WaPo 2024",
+      "emitter": {
+        "modules": []
+      }
     },
     {
       "method_id": "directional_gps_l1_spot",
@@ -47,8 +99,12 @@
       "gps_l2_overlap": false,
       "time_domain_pattern": "continuous",
       "effective_range_km": 20,
+      "affects_rx_classes": ["gnss_civil", "gnss_mil"],
       "munitions_affected": ["Excalibur", "JDAM-ER"],
-      "source_citation": "Bronk RUSI 2024"
+      "source_citation": "Bronk RUSI 2024",
+      "emitter": {
+        "modules": []
+      }
     },
     {
       "method_id": "pulsed_uhf_wide",
@@ -59,8 +115,12 @@
       "gps_l2_overlap": true,
       "time_domain_pattern": "pulsed",
       "effective_range_km": 12,
+      "affects_rx_classes": ["gnss_civil", "gnss_mil", "uhf_comms", "fpv_link"],
       "munitions_affected": ["FPV C2 link", "Switchblade 300"],
-      "source_citation": "JAPCC 2023"
+      "source_citation": "JAPCC 2023",
+      "emitter": {
+        "modules": []
+      }
     }
   ]
 }

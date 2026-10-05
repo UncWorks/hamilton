@@ -1,0 +1,76 @@
+[
+ {
+  "crc_error_rate": 0.002,
+  "duplicate_rate": 0.0,
+  "gnss_fix": "none",
+  "inter_arrival_seconds": 1.0,
+  "lat": 48.14,
+  "lon": 37.745,
+  "rf": {
+   "frequency_band_mhz": [
+    100.0,
+    2000.0
+   ],
+   "gps_l1_overlap": true,
+   "gps_l2_overlap": true,
+   "hop_spread_hz": 50000.0,
+   "time_domain_pattern": "barrage"
+  },
+  "rx_class": "gnss_civil",
+  "schema": "telemetry/2",
+  "source_id": "unit_b"
+ },
+ {
+  "crc_error_rate": 0.002,
+  "duplicate_rate": 0.0,
+  "gnss_fix": "3d",
+  "inter_arrival_seconds": 1.0,
+  "lat": 48.14,
+  "lon": 37.745,
+  "rx_class": "gnss_mil",
+  "schema": "telemetry/2",
+  "source_id": "unit_a"
+ },
+ {
+  "crc_error_rate": 0.002,
+  "duplicate_rate": 0.0,
+  "gnss_fix": "2d",
+  "inter_arrival_seconds": 1.0,
+  "lat": 48.14,
+  "lon": 37.745,
+  "rx_class": "gnss_civil",
+  "schema": "telemetry/2",
+  "source_id": "unit_e"
+ },
+ {
+  "crc_error_rate": 0.002,
+  "duplicate_rate": 0.0,
+  "gnss_fix": "3d",
+  "inter_arrival_seconds": 1.0,
+  "lat": 48.14,
+  "lon": 37.745,
+  "rx_class": "gnss_mil_crpa",
+  "schema": "telemetry/2",
+  "source_id": "unit_x_crpa"
+ },
+ {
+  "crc_error_rate": 0.002,
+  "duplicate_rate": 0.0,
+  "inter_arrival_seconds": 1.0,
+  "lat": 48.14,
+  "lon": 37.745,
+  "rx_class": "uhf_comms",
+  "schema": "telemetry/2",
+  "source_id": "unit_x_uhf"
+ },
+ {
+  "crc_error_rate": 0.002,
+  "duplicate_rate": 0.0,
+  "inter_arrival_seconds": 1.0,
+  "lat": 48.14,
+  "lon": 37.745,
+  "rx_class": "fpv_link",
+  "schema": "telemetry/2",
+  "source_id": "unit_x_fpv"
+ }
+]

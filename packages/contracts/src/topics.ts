@@ -17,3 +17,9 @@ export const TOPIC_FIRE_MISSION_PREFIX = 'fires/mission' as const;
 
 export const fireMissionTopic = (missionId: string): string =>
   `${TOPIC_FIRE_MISSION_PREFIX}/${missionId}`;
+
+/**
+ * Jammer area-of-effect estimate (FR-04b, System Design §5.4): retained, QoS 1.
+ * Retire = an empty retained payload on this topic.
+ */
+export const TOPIC_EMITTER_ESTIMATE = 'integrity/emitter/estimate' as const;
