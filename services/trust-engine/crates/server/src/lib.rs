@@ -4,7 +4,7 @@
 use anyhow::Result;
 use axum::{
     extract::{Query, State},
-    http::StatusCode,
+    http::{HeaderValue, Method, StatusCode},
     response::IntoResponse,
     routing::{get, post},
     Json, Router,
@@ -13,6 +13,7 @@ use chrono::Utc;
 use hamilton_contracts::{BranchOption, DetectionEvent, DetectionKind};
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
+use tower_http::cors::{AllowOrigin, CorsLayer};
 use tracing::info;
 use trust_transport::AfterActionLog;
 
@@ -27,7 +28,47 @@ pub fn router(state: AppState) -> Router {
         .route("/api/events", get(list_events))
         .route("/api/missions/decision", post(mission_decision))
         .with_state(state)
+        .layer(cors_layer())
 }
+
+/// Browser CORS, so a web client on another origin can call the engine
+/// directly (the Next.js app still goes through its same-origin
+/// `/engine/api` proxy). Default: the usual localhost dev origins.
+/// `HAMILTON_CORS_ORIGINS` overrides with a comma-separated allow-list;
+/// `*` allows any origin.
+fn cors_layer() -> CorsLayer {
+    let base = CorsLayer::new()
+        .allow_methods([Method::GET, Method::POST, Method::OPTIONS])
+        .allow_headers([axum::http::header::CONTENT_TYPE]);
+    let raw = std::env::var("HAMILTON_CORS_ORIGINS").unwrap_or_default();
+    allow_origins(base, raw.trim())
+}
+
+fn allow_origins(base: CorsLayer, raw: &str) -> CorsLayer {
+    if raw == "*" {
+        return base.allow_origin(AllowOrigin::any());
+    }
+    let origins: Vec<&str> = if raw.is_empty() {
+        DEFAULT_CORS_ORIGINS.to_vec()
+    } else {
+        raw.split(',')
+            .map(str::trim)
+            .filter(|o| !o.is_empty())
+            .collect()
+    };
+    let configured: Vec<HeaderValue> = origins
+        .into_iter()
+        .filter_map(|o| HeaderValue::from_str(o).ok())
+        .collect();
+    base.allow_origin(AllowOrigin::list(configured))
+}
+
+const DEFAULT_CORS_ORIGINS: [&str; 4] = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+];
 
 pub async fn serve(port: u16, state: AppState) -> Result<()> {
     let app = router(state);
@@ -104,4 +145,55 @@ async fn mission_decision(
             .into_response();
     }
     (StatusCode::OK, Json(serde_json::json!({ "ok": true }))).into_response()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use axum::{body::Body, http::Request};
+    use std::path::PathBuf;
+    use tower::ServiceExt;
+    use trust_transport::LogConfig;
+
+    fn app() -> Router {
+        let log = AfterActionLog::open(LogConfig {
+            db_path: PathBuf::from(":memory:"),
+        })
+        .unwrap();
+        router(AppState { log: Arc::new(log) })
+    }
+
+    async fn preflight(origin: &str) -> Option<String> {
+        let res = app()
+            .oneshot(
+                Request::builder()
+                    .method(Method::OPTIONS)
+                    .uri("/api/missions/decision")
+                    .header("origin", origin)
+                    .header("access-control-request-method", "POST")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        res.headers()
+            .get("access-control-allow-origin")
+            .map(|v| v.to_str().unwrap().to_string())
+    }
+
+    #[tokio::test]
+    async fn cors_allows_the_default_dev_origins_only() {
+        assert_eq!(
+            preflight("http://localhost:3000").await.as_deref(),
+            Some("http://localhost:3000")
+        );
+        assert_eq!(preflight("http://evil.example").await, None);
+    }
+
+    #[test]
+    fn cors_override_list_and_wildcard() {
+        // Builds without panicking for a list, a wildcard and junk entries.
+        let _ = allow_origins(CorsLayer::new(), "http://a.test, ,http://b.test");
+        let _ = allow_origins(CorsLayer::new(), "*");
+    }
 }
