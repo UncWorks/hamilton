@@ -9,6 +9,8 @@ RUN corepack enable
 COPY pnpm-workspace.yaml package.json ./
 COPY packages/contracts/package.json ./packages/contracts/
 COPY apps/web/package.json ./apps/web/
+# postinstall (apps/web/scripts/stage-cesium.mjs) needs to exist before install
+COPY apps/web/scripts ./apps/web/scripts
 
 RUN pnpm install
 

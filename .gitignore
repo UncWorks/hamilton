@@ -53,3 +53,5 @@ Thumbs.db
 .idea/
 *.swp
 storybook-static/
+.claude/worktrees/
+.claude/cargo-target-*/
