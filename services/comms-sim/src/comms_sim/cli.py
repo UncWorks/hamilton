@@ -47,7 +47,13 @@ def _broker_from_env() -> tuple[str, int]:
     show_default=True,
     help="Total scenario duration in scenario-seconds.",
 )
-def main(scenario: str, speed: float, seed: int, duration: float) -> int:
+@click.option(
+    "--truth-out",
+    default=lambda: os.environ.get("COMMS_SIM_TRUTH_OUT", "truth.json"),
+    show_default="truth.json",
+    help="Sim-only hidden-truth file (eval / AAR). Never published. '' to skip.",
+)
+def main(scenario: str, speed: float, seed: int, duration: float, truth_out: str) -> int:
     logging.basicConfig(
         level=logging.INFO,
         format="%(asctime)s %(levelname)s %(name)s: %(message)s",
@@ -63,6 +69,7 @@ def main(scenario: str, speed: float, seed: int, duration: float) -> int:
         speed=speed,
         seed=seed,
         duration_s=duration,
+        truth_path=truth_out or None,
     )
     try:
         run_scenario(config)
