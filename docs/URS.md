@@ -97,7 +97,7 @@ This counterfactual is the operational basis for every UR below. It is **one Fir
 |---|---|
 | **ID** | `UR-04` |
 | **Statement** | *"As Adam, I need the system to tell me whether a degradation is localized to one corridor or affecting everything, and to name the suspected jammer profile when criteria are met — so I'm not flying blind on attribution."* |
-| **Success criterion** | At `B-1:05`, side panel reads *"Degradation directional, vicinity B's flank corridor. Neighbors A, C unaffected."* At `B-1:15`, banner reads *"Suspected ground-based GPS+UHF barrage jammer."* |
+| **Success criterion** | At `B-1:05`, side panel reads *"Degradation localized at B — no degrading unit within 500 m. A, C healthy."* At `B-1:15`, banner reads *"Suspected ground-based GPS+UHF barrage jammer."* |
 | **Satisfied by** | `FR-03`, `FR-04` |
 | **Demo beat** | `B-1:05`, `B-1:15` |
 | **Priority** | P0 |
