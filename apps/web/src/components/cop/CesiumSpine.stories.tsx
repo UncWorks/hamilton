@@ -11,6 +11,8 @@ import {
 import { denseTracks } from '@/stories/fixtures/dense-tracks';
 import { cesiumLoader } from '@/stories/support/cesium';
 import { spinePlay } from '@/stories/support/spine-play';
+import { AoeStoryFrame, GnssPaletteTable, aoePlay, aoeSeed, colourVisionPlay } from '@/stories/support/aoe-stories';
+import { withVision } from '@/stories/support/vision-filters';
 
 const meta = {
   title: 'COP/CesiumSpine',
@@ -130,4 +132,71 @@ export const BasemapOff: Story = {
     await expect(canvasElement.querySelector('[data-basemap]')?.getAttribute('data-basemap')).toBe('none');
     await expect(c.queryByTestId('basemap-attribution')).toBeNull();
   },
+};
+
+// ---------------------------------------------------------------------------
+// Jammer area of effect (FR-06a; converted from Previews/Jammer AoE)
+// ---------------------------------------------------------------------------
+
+const aoeDocs = (story: string) => ({ docs: { story: { inline: false, iframeHeight: 640 }, description: { story } } });
+
+/** 1:15 — first estimate (frozen CP1 fixture): civil 90% tint + edge, 50% dashed, label, key; the card block. */
+export const AoeFirstEstimate: Story = {
+  name: 'AoE 1:15 first estimate',
+  render: () => <AoeStoryFrame spine={(e) => <CesiumSpine emitterEstimate={e} evaluations={UNIT_EVALUATION} />} />,
+  parameters: {
+    hamilton: aoeSeed('b115'),
+    ...aoeDocs(
+      'GNSS degraded B, D, E, H; healthy C, A, F, G → `integrity/emitter/estimate`. Civil GPS only (military GPS / DAGR is listed in the card, D6). ' +
+        'No jammer symbol, ring or bearing (HS-20). The card names who is inside, GPS-dependent first, and what is not assessed. ' +
+        'D, E and H take synthetic link-trust samples (no engine beat for them yet).',
+    ),
+  },
+  play: aoePlay.b115,
+};
+
+/** 1:50 — B moved 5 km west: healthy now, its old degraded report still counts; the estimate updates. */
+export const AoeAfterMove: Story = {
+  name: 'AoE 1:50 after B moves',
+  render: () => <AoeStoryFrame spine={(e) => <CesiumSpine emitterEstimate={e} evaluations={UNIT_EVALUATION} />} />,
+  parameters: { hamilton: aoeSeed('b150'), ...aoeDocs('B is outside the 90% area at its new position; the card lists both B reports (✕ 39 s at the old position, ○ 2 s now).') },
+  play: aoePlay.b150,
+};
+
+/** 2:15 — jammer off, +10 s: STALE. Outline only, "Last est. HHMMZ", never "clear". */
+export const AoeStale: Story = {
+  name: 'AoE 2:15 stale',
+  render: () => <AoeStoryFrame spine={(e) => <CesiumSpine emitterEstimate={e} evaluations={UNIT_EVALUATION} />} />,
+  parameters: { hamilton: aoeSeed('b215'), ...aoeDocs('HS-25: outline only, no fill; label and card read "Last est. HHMMZ". It is removed on the empty retained payload (+120 s).') },
+  play: aoePlay.b215,
+};
+
+/** Every reporting civil unit degraded: nothing drawn, the card reads "edge not observed". */
+export const AoeUnbounded: Story = {
+  name: 'AoE unbounded',
+  render: () => <AoeStoryFrame spine={(e) => <CesiumSpine emitterEstimate={e} evaluations={UNIT_EVALUATION} />} />,
+  parameters: { hamilton: aoeSeed('unbounded'), ...aoeDocs('HS-21: no healthy unit of the class, so no edge was observed — no area is drawn.') },
+  play: aoePlay.unbounded,
+};
+
+/** 1:15 through a CVD filter (vision control) with the GNSS palette checks (FR-06a (4)). */
+export const AoeColourVision: Story = {
+  name: 'AoE colour vision',
+  args: { vision: 'deuteranopia' } as never,
+  argTypes: { vision: { control: 'inline-radio', options: ['normal', 'deuteranopia', 'protanopia', 'grayscale'] } } as never,
+  decorators: [withVision],
+  render: () => (
+    <div style={{ position: 'relative', height: '100vh' }}>
+      <AoeStoryFrame spine={(e) => <CesiumSpine emitterEstimate={e} evaluations={UNIT_EVALUATION} />} />
+      <GnssPaletteTable />
+    </div>
+  ),
+  parameters: {
+    hamilton: aoeSeed('b115'),
+    ...aoeDocs(
+      'Machado 2009 (severity 1.0) filters over the whole frame. Checks: AoE hues vs trust / gating / enemy ΔE76 ≥ 30 under normal, deuteranopia and protanopia; ' +
+        'edges ≥ 3:1 vs `--surface-base` (and vs the AO basemap pixels in `scripts/basemap/contrast-check.mjs`). Civil violet vs friendly blue is advisory (D2).',
+    ),
+  },
+  play: colourVisionPlay,
 };

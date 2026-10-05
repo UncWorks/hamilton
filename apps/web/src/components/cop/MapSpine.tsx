@@ -37,6 +37,7 @@ import maplibregl from 'maplibre-gl';
 import { Protocol as PmtilesProtocol } from 'pmtiles';
 import { MapboxOverlay } from '@deck.gl/mapbox';
 import { WebMercatorViewport, type MapViewState } from '@deck.gl/core';
+import { PathLayer, PolygonLayer } from '@deck.gl/layers';
 import { basemapMode, maplibreStyle, type BasemapMode } from '@/lib/basemap';
 import { usePrefersReducedMotion } from '@/hooks/usePrefersReducedMotion';
 import { useHamilton } from '@/store/hamilton';
@@ -45,7 +46,11 @@ import { declutter, DECLUTTER_THROTTLE_MS, throttle, type DeclutterItem, type De
 import { LIVE_SYMBOL_PX, declutterBoxFor } from '@/lib/cop-symbols';
 import { SpineOverlay, placeSymbols } from './SpineOverlay';
 import { useSpineSymbols, type CandidateSite, type Evaluations } from './spine-symbols';
-import type { AoeEstimateLike } from '@/lib/aoe';
+import { contourOf, dashRing, labelAnchor, largestOuterRing, layerOf, metersPerPixel, screenLabelAnchor } from '@/lib/aoe';
+import { mapLabel, type EstimateEntry } from '@/lib/emitter-estimate';
+import { AOE_DASH_PX, AOE_EDGE50_PX, AOE_EDGE90_PX, AOE_FILL_ALPHA, AOE_RGB, AOE_STALE_EDGE_PX } from '@/lib/aoe-style';
+import { useAoeFade, useEstimateView } from '@/hooks/useEmitterEstimate';
+import { AoeScreen } from './AoeKey';
 import { BasemapAttribution } from './BasemapAttribution';
 
 // One pmtiles:// protocol handler per page (maplibre's protocol registry is global).
@@ -77,7 +82,7 @@ type FitPoint = LatLon & { id: string };
 
 interface MapSpineProps {
   /** FR-04b emitter estimate, drawn as the FR-06a area of effect. The camera fit stays tracks-only (plan cut 5). */
-  emitterEstimate?: AoeEstimateLike | null | undefined;
+  emitterEstimate?: EstimateEntry | null | undefined;
   /** Geolocated FR-04a candidate sites — drawn as anticipated (dashed) hostile EW symbols. */
   candidateSites?: readonly CandidateSite[];
   /** S2 evaluation inputs (corroboration / J override) per source. */
@@ -93,7 +98,7 @@ interface MapSpineProps {
   basemap?: BasemapMode;
 }
 
-export function MapSpine({ candidateSites, evaluations, symbolSizePx, initialZoom, basemap }: MapSpineProps) {
+export function MapSpine({ emitterEstimate, candidateSites, evaluations, symbolSizePx, initialZoom, basemap }: MapSpineProps) {
   const mode = basemap ?? basemapMode();
   const selectSource = useHamilton((s) => s.selectSource);
   const selectedId = useHamilton((s) => s.selectedSource);
@@ -317,8 +322,90 @@ export function MapSpine({ candidateSites, evaluations, symbolSizePx, initialZoo
 
   const { singles, stacks } = useMemo(() => placeSymbols(symbols, grouping, positions), [symbols, grouping, positions]);
 
-  // --- Area graphics (deck.gl) ----------------------------------------------
-  // The emitter-estimate AoE layers (overlayRef) land here after the contract freeze (CP1).
+  // --- Area graphics (deck.gl): the FR-06a area of effect --------------------
+  // Civil GNSS only (D6). Active: 90% tint + 2 px edge, 50% dashed outline.
+  // Stale: both outlines, no fill (HS-25). Unbounded: nothing drawn.
+  const est = useEstimateView(emitterEstimate);
+  const aoeOpacity = useAoeFade(est.state && est.state !== 'unbounded' ? est.entry!.payload.estimate_id : null, reducedMotion);
+  const civil = est.entry && est.state && est.state !== 'unbounded' ? layerOf(est.entry.payload, 'gnss_civil') : undefined;
+  const c90 = contourOf(civil, 0.9);
+  const c50 = contourOf(civil, 0.5);
+  const stale = est.state === 'stale';
+  // Dash geometry depends on the zoom (pixel pattern → ground metres); quarter-zoom steps.
+  const dashZoom = Math.round(viewState.zoom * 4) / 4;
+  const aoe = useMemo(() => {
+    const rgb = [...AOE_RGB.gnss_civil] as [number, number, number];
+    const layers: unknown[] = [];
+    const drawn: string[] = [];
+    if (c90 && !stale) {
+      layers.push(
+        new PolygonLayer({
+          id: 'aoe-fill90-gnss_civil',
+          data: c90.polygon.coordinates,
+          getPolygon: (rings: unknown) => rings as [number, number][][],
+          filled: true,
+          stroked: false,
+          getFillColor: [...rgb, Math.round(AOE_FILL_ALPHA * 255)],
+          opacity: aoeOpacity,
+          updateTriggers: { getFillColor: [rgb.join()] },
+        }),
+      );
+      drawn.push('fill90-gnss_civil');
+    }
+    if (c90) {
+      layers.push(
+        new PathLayer({
+          id: 'aoe-edge90-gnss_civil',
+          data: c90.polygon.coordinates.flat(),
+          getPath: (ring: unknown) => ring as [number, number][],
+          getColor: [...rgb, 255],
+          getWidth: stale ? AOE_STALE_EDGE_PX : AOE_EDGE90_PX,
+          widthUnits: 'pixels',
+          jointRounded: true,
+          opacity: aoeOpacity,
+          updateTriggers: { getWidth: [stale] },
+        }),
+      );
+      drawn.push('edge90-gnss_civil');
+    }
+    if (c50) {
+      const lat = c50.polygon.coordinates[0]?.[0]?.[0]?.[1] ?? 48.14;
+      const mpp = metersPerPixel(lat, dashZoom);
+      const dashes = c50.polygon.coordinates.flat().flatMap((ring) => dashRing(ring, AOE_DASH_PX[0] * mpp, AOE_DASH_PX[1] * mpp));
+      layers.push(
+        new PathLayer({
+          id: 'aoe-edge50-gnss_civil',
+          data: dashes,
+          getPath: (d: unknown) => d as [number, number][],
+          getColor: [...rgb, 242],
+          getWidth: AOE_EDGE50_PX,
+          widthUnits: 'pixels',
+          capRounded: false,
+          opacity: aoeOpacity,
+        }),
+      );
+      drawn.push('edge50-gnss_civil');
+    }
+    return { layers, drawn };
+  }, [c90, c50, stale, dashZoom, aoeOpacity]);
+
+  useEffect(() => {
+    overlayRef.current?.setProps({ layers: aoe.layers as never });
+  }, [aoe]);
+
+  const aoeAnchor = useMemo(() => {
+    const poly = c90?.polygon ?? c50?.polygon;
+    if (!poly || !size) return null;
+    const vp = new WebMercatorViewport({ ...viewState, ...size });
+    const proj = (c: readonly number[]) => {
+      const [x, y] = vp.project([c[0]!, c[1]!]);
+      return { x: x!, y: y! };
+    };
+    const onScreen = screenLabelAnchor((largestOuterRing(poly) ?? []).map(proj), size);
+    if (onScreen) return onScreen;
+    const a = labelAnchor(poly);
+    return a ? proj([a.lon, a.lat]) : null;
+  }, [c90, c50, viewState, size]);
 
   return (
     <div
@@ -346,6 +433,19 @@ export function MapSpine({ candidateSites, evaluations, symbolSizePx, initialZoo
           manual={manual}
           reducedMotion={reducedMotion}
           nowIso={nowIso}
+          aoe={
+            est.entry && est.state ? (
+              <AoeScreen
+                state={est.state}
+                label={mapLabel(est.entry, est.state, est.nowMs)}
+                anchor={aoeAnchor}
+                viewport={size}
+                layers={aoe.drawn}
+                opacity={aoeOpacity}
+                reducedMotion={reducedMotion}
+              />
+            ) : null
+          }
         />
       )}
     </div>

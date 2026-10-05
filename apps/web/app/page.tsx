@@ -40,6 +40,7 @@ export default function Home() {
   useHamiltonMqtt();
   const upsertTrack = useHamilton((s) => s.upsertTrack);
   const tracks = useHamilton((s) => s.tracks);
+  const emitterEstimate = useHamilton((s) => s.emitterEstimate);
 
   useEffect(() => {
     if (Object.keys(tracks).length === 0) {
@@ -69,7 +70,7 @@ export default function Home() {
         <div style={{ position: 'relative' }}>
           {/* The jammer's position is never presumed (HS-20): the spine draws only
               the published emitter estimate's area of effect (FR-06a). */}
-          <Spine />
+          <Spine emitterEstimate={emitterEstimate} />
         </div>
         <div
           style={{

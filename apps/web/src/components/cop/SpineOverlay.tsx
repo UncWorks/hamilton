@@ -11,11 +11,12 @@
 //  - an invisible, focusable hit target over every symbol: hover or Tab opens
 //    the rating breakdown (RatingExplanation, WCAG 1.4.13: hoverable,
 //    Escape dismisses), click / Enter selects the track;
-//  - the "Fit to tracks" control.
+//  - the "Fit to tracks" control;
+//  - the area-of-effect label, key and state marker (AoeKey.tsx), below the symbols.
 //
 // Renderer-agnostic: each spine projects its own points.
 
-import { useEffect, useRef, useState, type CSSProperties, type KeyboardEvent } from 'react';
+import { useEffect, useRef, useState, type CSSProperties, type KeyboardEvent, type ReactNode } from 'react';
 import {
   DeclutterStack,
   RatingExplanation,
@@ -67,6 +68,8 @@ export interface SpineOverlayProps {
   manual: boolean;
   reducedMotion: boolean;
   nowIso: () => string;
+  /** Area-of-effect label / key (AoeScreen), drawn under the symbols. */
+  aoe?: ReactNode;
 }
 
 /** Singles + stacks in screen space from a declutter result. */
@@ -211,6 +214,7 @@ export function SpineOverlay(p: SpineOverlayProps) {
   return (
     <div data-testid="spine-overlay" style={{ position: 'absolute', inset: 0, pointerEvents: 'none', overflow: 'hidden', zIndex: 2 }}>
       <style>{TRIGGER_CSS}</style>
+      {p.aoe}
       <svg width="100%" height="100%" style={{ position: 'absolute', inset: 0, overflow: 'visible' }} aria-hidden>
         {p.drawSingles &&
           p.singles.map(({ sym, x, y }) => (
