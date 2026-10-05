@@ -12,13 +12,31 @@ import type { SensorType } from '@hamilton/contracts';
 // Units
 // ---------------------------------------------------------------------------
 
-const UNIT_LETTERS: Readonly<Record<string, string>> = { unit_a: 'A', unit_b: 'B', unit_c: 'C' };
+const UNIT_LETTERS: Readonly<Record<string, string>> = {
+  unit_a: 'A',
+  unit_b: 'B',
+  unit_c: 'C',
+  unit_d: 'D',
+  unit_e: 'E',
+  unit_f: 'F',
+  unit_g: 'G',
+  unit_h: 'H',
+};
 
-/** Role of each scenario unit, as the COP tooltip titles them. */
+/**
+ * Role of each scenario unit, as the COP tooltip titles them (the 8-unit
+ * Avdiivka layout, docs/plans/jammer-aoe.md §6). A is the AB1001 firing unit
+ * (FU A) and B its observer (OBS B).
+ */
 export const UNIT_ROLES: Readonly<Record<string, string>> = {
-  unit_a: 'FA observer team (COLT/FIST)',
-  unit_b: 'FA battery',
-  unit_c: 'FA target-acq radar platoon',
+  unit_a: 'FA battery (FU A)',
+  unit_b: 'Forward observer (OBS B)',
+  unit_c: 'FA target-acq radar (OBS C)',
+  unit_d: 'Forward observer 2',
+  unit_e: 'Forward observer 3',
+  unit_f: 'FA battery 2',
+  unit_g: 'AD section (Bn CP area)',
+  unit_h: 'UAS team',
 };
 
 const ACRONYMS = new Set(['ew', 'gps', 'uhf', 'fa', 'fo', 'fu', 'hpt', 'tgt', 'obs', 'colt', 'fist']);
