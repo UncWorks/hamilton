@@ -1,4 +1,4 @@
-import type { NarrationInput, Provider } from '../types';
+import type { NarrationInput, Provider } from '../types.js';
 
 const SYSTEM_PROMPT = `You are a trust-trace narrator. Reply with valid JSON only:
 {"bullets": ["...", "...", "..."]}

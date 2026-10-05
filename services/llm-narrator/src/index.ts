@@ -11,10 +11,10 @@ import {
   TOPIC_TRUST_PREFIX,
   type TrustScorePayload,
 } from '@hamilton/contracts';
-import { deterministicProvider } from './providers/deterministic';
-import { makeAnthropicProvider } from './providers/anthropic';
-import { makeLocalProvider } from './providers/local';
-import type { NarrationOutput, Provider } from './types';
+import { deterministicProvider } from './providers/deterministic.js';
+import { makeAnthropicProvider } from './providers/anthropic.js';
+import { makeLocalProvider } from './providers/local.js';
+import type { NarrationOutput, Provider } from './types.js';
 
 const PROVIDER_TIMEOUT_MS = 2_000;
 const PER_SOURCE_DEBOUNCE_MS = 1_000;

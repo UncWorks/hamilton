@@ -1,5 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk';
-import type { NarrationInput, Provider } from '../types';
+import type { NarrationInput, Provider } from '../types.js';
 
 const SYSTEM = `You are a trust-trace narrator for the Hamilton comms-integrity layer.
 
