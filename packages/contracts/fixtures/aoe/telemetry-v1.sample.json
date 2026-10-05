@@ -1,0 +1,21 @@
+[
+ {
+  "crc_error_rate": 0.14,
+  "duplicate_rate": 0.0,
+  "inter_arrival_seconds": 6.1,
+  "lat": 48.14,
+  "lon": 37.745,
+  "rf": {
+   "effective_range_km": 30.0,
+   "frequency_band_mhz": [
+    100.0,
+    2000.0
+   ],
+   "gps_l1_overlap": true,
+   "gps_l2_overlap": true,
+   "hop_spread_hz": 50000.0,
+   "time_domain_pattern": "barrage"
+  },
+  "source_id": "unit_b"
+ }
+]
