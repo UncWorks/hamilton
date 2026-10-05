@@ -11,8 +11,8 @@ monitoring never interrupted.
 
 The demo is the Avdiivka Excalibur counterfactual: GPS-guided round, jammer
 densifying in the target's grid, FDC officer at the COP screen — the system
-fades Unit B's icon, names the candidate jamming method, and gates the strike
-35 seconds before commit.
+drops Unit B's trust score, names the candidate jamming method, draws the
+estimated jammer area of effect, and gates the strike 35 seconds before commit.
 
 ## Architecture (single sentence per layer)
 
@@ -34,38 +34,52 @@ fades Unit B's icon, names the candidate jamming method, and gates the strike
   TSS mission check at FR-07 (reliability + report age per dependency source, per mission).
 - **NFR-01** — fully offline. No CDN. No Google Fonts. No Cesium ion. Self-hosted everything.
 
-## Bring-up
+## Quick start
+
+Prerequisites: Docker Desktop (running). On the **first** run only, network
+access plus Node 20+ on the host, to provision the offline basemap (~90 MB,
+gitignored) into `apps/web/public/tiles`.
 
 ```bash
-# 1. Start the broker + Ollama + service containers
-make up
-
-# 2. Pre-pull the local Llama model (once, ~2 GB)
-docker exec hamilton-ollama ollama pull llama3.2:3b
-
-# 3. Run the demo (uses MapLibre spine — Cesium swap deferred per §6c gate)
-make demo
-# open http://localhost:3000
+make demo        # build + run everything in the foreground; Ctrl-C stops it
+# or: make up    # same, detached; returns once all services are healthy
+make down        # stop and remove the stack
 ```
 
-For dev iteration with the scenario running 10× faster:
+Then open **http://localhost:3000** (renderer: Cesium). Presenter Admin menu
+(demo view filter): **http://localhost:3000/?admin=1**, or `make demo ADMIN=1`
+to have it always on.
 
-```bash
-COMMS_SIM_SPEED=10 make demo
-```
+`make demo` starts the broker (`:1883`, WebSockets `:9001`), the trust engine
+(`:8080`, `/healthz`, `/api/events`), the web app and the comms simulator. The
+simulator loops: each run is 300 scenario-seconds (open → update → stale →
+retire of the AoE estimate), then the scenario restarts from 0:00. The first
+build takes several minutes (Rust engine); later runs reuse the build cache.
 
-To force the verified MapLibre fallback path:
+If the basemap cannot be fetched (offline, no Node), the demo still starts
+without a basemap and prints a warning; the next `make demo` retries.
 
-```bash
-make demo-fallback
-```
+Options (combine freely):
+
+| | |
+|---|---|
+| `make demo-fallback` | MapLibre renderer instead of Cesium (`RENDERER=maplibre`) |
+| `make demo NEXT_PUBLIC_BASEMAP=none` | no basemap, no fetch |
+| `make demo NARRATOR=1` | add the LLM narrator (deterministic strings; Claude if `ANTHROPIC_API_KEY` is set) |
+| `make demo NARRATOR=ollama` | also run Ollama and pull Llama 3.2 3B (~9 GB image + ~2 GB model) |
+| `COMMS_SIM_SPEED=10 make demo` | scenario 10× faster (dev only) |
+| `make up-broker` | only the broker, for running services natively |
+
+The default demo needs no API key and pulls no model. The COP builds its trust
+trace in the browser and does not subscribe to the narrator's
+`integrity/narration/*` topic, so the narrator is opt-in.
 
 ## Demo flow (5 minutes)
 
 | Beat | What you see |
 |---|---|
-| `B-0:00` | Three healthy units (A, B, C) at full opacity |
-| `B-0:45` | Unit B's icon begins to fade: cadence 1.0s → 1.17s, temporal anomaly fires, trust ≈0.70 (WATCH, at/above the 0.60 GPS-guided TSS minimum) |
+| `B-0:00` | Eight healthy units (A–H) |
+| `B-0:45` | Unit B degrades: cadence 1.0s → 1.17s, temporal anomaly fires, trust ≈0.70 (WATCH, at/above the 0.60 GPS-guided TSS minimum) |
 | `B-0:55` | Trust trace: "B-link: 6% corrupted frames, cadence 1.17s" (stability fault; trust ≈0.65, still WATCH) |
 | `B-0:30` | Call for fire AB1002 (OBS C, M795 HE) enters the fire-mission queue — `NOT GATED` (unguided) |
 | `B-1:05` | Side panel: "Degradation localized at B — no degrading unit within 500 m. A, C healthy." B is localized (spatial 0.60); A and C hold at 1.00 on their own scores |

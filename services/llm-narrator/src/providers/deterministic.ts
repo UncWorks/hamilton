@@ -1,4 +1,4 @@
-import type { NarrationInput, Provider } from '../types';
+import type { NarrationInput, Provider } from '../types.js';
 
 /** Deterministic-string provider — pure function over the components payload.
  * R14-compliant by construction: bullets reference component values verbatim.
