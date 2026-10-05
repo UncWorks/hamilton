@@ -1,12 +1,8 @@
-"""C2 propagation vs the reference link budget (≤ 0.01 dB).
+"""C2 propagation vs the frozen contract fixture (≤ 0.01 dB).
 
-Two sources of truth:
-
-1. ``packages/contracts/fixtures/aoe/propagation-vectors.json`` (WS-A, frozen at
-   CP1). The test below loads it when present and is skipped until then.
-2. TEMPORARY (until CP1 lands the fixture): values computed by
-   ``scripts/aoe-preview/gen_fixtures.py`` (``path_loss_db``, ``truth_obs``),
-   frozen here. Delete this block once (1) runs green.
+``packages/contracts/fixtures/aoe/propagation-vectors.json`` (CP1,
+aoe-contracts-v1) holds path-loss / J/S vectors and denial radii;
+``golden-cases.json`` holds the demo truth's per-unit evidence at seed 7.
 """
 
 from __future__ import annotations
@@ -19,99 +15,90 @@ import numpy as np
 import pytest
 
 from comms_sim.propagation import (
+    THRESHOLD_DB,
     gnss_js_db,
     path_loss_db,
     radio_horizon_km,
     sector_gain_db,
-    shadowing_db,
 )
 from comms_sim.scenarios.avdiivka import B_WAYPOINT_T_S, UNITS, AvdiivkaScenario
 
-TOL_DB = 0.01
 REPO = Path(__file__).resolve().parents[3]
-VECTORS = REPO / "packages/contracts/fixtures/aoe/propagation-vectors.json"
+FIXTURES = REPO / "packages/contracts/fixtures/aoe"
+PROP = json.loads((FIXTURES / "propagation-vectors.json").read_text())
+GOLDEN = json.loads((FIXTURES / "golden-cases.json").read_text())
+TOL_DB = PROP["model"]["tolerance_db"]
 
 
-# --- TEMPORARY: frozen from gen_fixtures.py (path_loss_db at L1, h_rx 2 m) ----
-# [d_km, h_tx_m, path loss dB]
-GEN_FIXTURES_PATH_LOSS = [
-    [0.05, 10.0, 70.3751],
-    [0.3, 10.0, 85.9381],
-    [1.0, 10.0, 96.3957],
-    [2.5, 10.0, 109.897],
-    [2.5, 30.0, 104.3545],
-    [2.5, 60.0, 104.3545],
-    [5.0, 10.0, 121.9382],
-    [5.0, 30.0, 112.3958],
-    [5.0, 60.0, 110.3751],
-    [9.55, 10.0, 133.1795],
-    [9.55, 30.0, 123.6371],
-    [9.55, 60.0, 117.6165],
-    [12.0, 10.0, 137.1466],
-    [12.0, 30.0, 127.6042],
-    [12.0, 60.0, 121.5836],
-    [18.9, 10.0, 165.0379],
-    [18.9, 30.0, 135.4954],
-    [18.9, 60.0, 129.4748],
-    [19.5, 10.0, 165.5808],
-    [19.5, 30.0, 136.0384],
-    [19.5, 60.0, 130.0178],
-    [25.0, 10.0, 169.897],
-    [25.0, 30.0, 140.3546],
-    [25.0, 60.0, 134.334],
-    [40.0, 10.0, 178.0618],
-    [40.0, 30.0, 168.5194],
-    [40.0, 60.0, 162.4988],
-]
-# truth_obs() at the demo truth (300 W / 10 m / az 270, seed 7): per-unit GNSS
-# J/S incl. sector gain and shadowing, and degraded (J/S >= class threshold).
-GEN_FIXTURES_UNIT_JS = {
-    "B": (41.5921, True),
-    "D": (42.9019, True),
-    "E": (38.8959, True),
-    "C": (33.0124, False),
-    "A": (30.2658, False),
-    "F": (27.9992, False),
-    "G": (30.2446, False),
-    "H": (42.8656, True),
-    "B@moved": (34.3008, False),
-}
-GEN_FIXTURES_SHADOW = {
-    "B": 0.004921,
-    "D": 1.194982,
-    "E": -1.096551,
-    "C": -3.562367,
-    "A": -1.818683,
-    "F": -3.966586,
-    "G": 0.240574,
-    "H": 5.360861,
-}
+def test_fixture_tolerance_is_a_hundredth_of_a_db() -> None:
+    assert TOL_DB == 0.01
+    assert len(PROP["vectors"]) > 100
+    # both the GNSS (L1) and the comms-module (300 MHz) bands are covered
+    assert {v["f_mhz"] for v in PROP["vectors"]} >= {1575.42, 300.0}
 
 
-@pytest.mark.parametrize(("d_km", "h_tx", "expected"), GEN_FIXTURES_PATH_LOSS)
-def test_temporary_path_loss_matches_gen_fixtures(d_km: float, h_tx: float, expected: float):
-    assert abs(float(path_loss_db(d_km, h_tx)) - expected) <= TOL_DB
+@pytest.mark.parametrize(
+    "v", PROP["vectors"], ids=lambda v: f"{v['f_mhz']}MHz-{v['d_km']}km-{v['h_tx_m']}m"
+)
+def test_path_loss_and_js_match_contract_vectors(v: dict) -> None:
+    got = float(path_loss_db(v["d_km"], v["h_tx_m"], v["h_rx_m"], v["f_mhz"]))
+    assert abs(got - v["path_loss_db"]) <= TOL_DB
+    for erp, js in v.get("js_db", {}).items():  # J/S is given at L1 only
+        got_js = float(gnss_js_db(v["d_km"], float(erp), v["h_tx_m"], v["h_rx_m"], v["f_mhz"]))
+        assert abs(got_js - js) <= TOL_DB, erp
 
 
-def test_temporary_shadowing_matches_gen_fixtures_seed_7() -> None:
-    order = [u.key for u in UNITS]
-    assert order == ["B", "D", "E", "C", "A", "F", "G", "H"]
-    got = shadowing_db(7, order, 4.0)
-    for key, expected in GEN_FIXTURES_SHADOW.items():
-        assert abs(got[key] - expected) < 1e-6
+@pytest.mark.parametrize(
+    "r", PROP["denial_radii"], ids=lambda r: f"{r['rx_class']}-{r['erp_dbm']}-{r['mast_m']}"
+)
+def test_denial_radii_match_contract(r: dict) -> None:
+    ds = np.arange(0.01, 80, 0.01)
+    ok = ds[gnss_js_db(ds, r["erp_dbm"], r["mast_m"]) >= r["threshold_db"]]
+    radius = float(ok.max()) if len(ok) else 0.0
+    assert r["threshold_db"] == THRESHOLD_DB[r["rx_class"]]
+    assert abs(radius - r["denial_radius_km"]) <= 0.01 + 1e-9
 
 
-def test_temporary_unit_gnss_js_matches_gen_fixtures_truth_obs() -> None:
+def test_demo_truth_matches_golden_cases() -> None:
     s = AvdiivkaScenario()
+    tr = GOLDEN["demo_truth"]
+    lat, lon = s.truth.lat_lon
+    assert (round(lat, 5), round(lon, 5)) == (tr["lat"], tr["lon"])
+    assert list(s.truth.enu_km) == tr["enu_km"]
+    assert s.truth.mast_m == tr["mast_m"]
+    assert s.truth.sector_az_deg == tr["sector_az_deg"]
+    assert s.truth.sector_width_deg == tr["sector_width_deg"]
+    assert s.truth.back_db == tr["back_db"]
+    assert s.truth.shadow_seed == tr["shadow_seed"]
+    assert abs(s.truth.eirp_dbm("gnss", 75.0) - tr["erp_dbm"]) < 1e-3
+
+
+def test_unit_layout_matches_golden_cases() -> None:
+    golden = {u["source_id"]: u for u in GOLDEN["units"]}
+    assert [u.key for u in UNITS] == GOLDEN["model"]["order"]
     for u in UNITS:
-        lb = s.link_budget(u.source_id, 75.0)
-        js, degraded = GEN_FIXTURES_UNIT_JS[u.key]
-        assert lb.gnss_js_db is not None
-        assert abs(lb.gnss_js_db - js) <= TOL_DB, u.key
-        assert (lb.gnss_js_db >= {"gnss_civil": 36.0, "gnss_mil": 41.0}[u.rx_class]) == degraded
-    moved = s.link_budget("unit_b", B_WAYPOINT_T_S).gnss_js_db
-    assert moved is not None
-    assert abs(moved - GEN_FIXTURES_UNIT_JS["B@moved"][0]) <= TOL_DB
+        g = golden[u.source_id]
+        assert (u.key, u.rx_class, list(u.enu_km)) == (g["key"], g["rx_class"], g["enu_km"])
+        assert (u.lat, u.lon) == (g["lat"], g["lon"])
+
+
+def test_unit_gnss_js_and_shadow_match_golden_demo() -> None:
+    """Per-unit J/S (sector + seed-7 shadowing) at the 1:15 and 1:50 beats."""
+    s = AvdiivkaScenario()
+    shadow = s.truth.shadow()
+    assert len(GOLDEN["demo"]) >= 2
+    for case in GOLDEN["demo"]:
+        moved = any(e["key"].startswith("B@") for e in case["evidence"])
+        t = B_WAYPOINT_T_S if moved else 75.0
+        for e in case["evidence"]:
+            if e["source_id"] == "unit_b" and moved != e["key"].startswith("B@"):
+                continue
+            lb = s.link_budget(e["source_id"], t)
+            assert lb.gnss_js_db is not None
+            assert abs(lb.gnss_js_db - e["js_db"]) <= TOL_DB, e["key"]
+            assert abs(shadow[e["source_id"]] - e["shadow_db"]) < 0.0005
+            degraded = lb.gnss_js_db >= THRESHOLD_DB[e["rx_class"]]
+            assert degraded == (e["state"] == "degraded"), e["key"]
 
 
 # --- model properties -------------------------------------------------------
@@ -146,31 +133,3 @@ def test_gnss_js_is_the_worked_example_link_budget() -> None:
     p = 10 * math.log10(300e3)
     expected = p - 5.0 - float(path_loss_db(9.55, 10.0)) + 125.0
     assert abs(float(gnss_js_db(9.55, p, 10.0)) - expected) < 1e-9
-
-
-# --- CP1 fixture (WS-A) -----------------------------------------------------
-def _vector_rows() -> list[dict]:
-    raw = json.loads(VECTORS.read_text())
-    rows = raw.get("vectors", raw) if isinstance(raw, dict) else raw
-    assert isinstance(rows, list) and rows
-    return rows
-
-
-@pytest.mark.skipif(not VECTORS.exists(), reason="propagation-vectors.json lands at CP1 (WS-A)")
-def test_matches_contract_propagation_vectors() -> None:
-    """Every vector's path loss (and J/S when given) within 0.01 dB.
-
-    Field names follow the plan's §3.2 description; align after CP1 if the
-    frozen fixture names them differently."""
-
-    for row in _vector_rows():
-        d_km = row["d_km"] if "d_km" in row else row["distance_km"]
-        h_tx = row["h_tx_m"]
-        h_rx = row.get("h_rx_m", 2.0)
-        f = row.get("f_mhz", 1575.42)
-        if "path_loss_db" in row:
-            got = float(path_loss_db(d_km, h_tx, h_rx, f))
-            assert abs(got - row["path_loss_db"]) <= TOL_DB, row
-        if "js_db" in row and "eirp_dbm" in row:
-            got = float(gnss_js_db(d_km, row["eirp_dbm"], h_tx, h_rx, f))
-            assert abs(got - row["js_db"]) <= TOL_DB, row

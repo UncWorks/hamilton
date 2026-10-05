@@ -8,7 +8,9 @@ through the link budget and g(·), not out of per-unit scripting.
 from __future__ import annotations
 
 import itertools
+import json
 import math
+from pathlib import Path
 
 import numpy as np
 import pytest
@@ -55,11 +57,11 @@ def test_eight_units_with_rx_class_match_the_preview_layout() -> None:
         "unit_a",
         "unit_b",
         "unit_c",
-        "d",
-        "e",
-        "f",
-        "g",
-        "h",
+        "unit_d",
+        "unit_e",
+        "unit_f",
+        "unit_g",
+        "unit_h",
     }
     by_key = {u.key: u for u in UNITS}
     assert by_key["A"].rx_class == "gnss_mil"
@@ -287,3 +289,41 @@ def test_telemetry_v2_wire_shape(scenario: AvdiivkaScenario) -> None:
 
 def test_beat_labels_cover_the_storyboard() -> None:
     assert [b.tick_seconds for b in avdiivka_beats()] == [0.0, 45.0, 55.0, 75.0, 110.0, 135.0]
+
+
+# --- frozen contract (CP1, aoe-contracts-v1) ---------------------------------------
+_FIXTURES = Path(__file__).resolve().parents[3] / "packages/contracts/fixtures/aoe"
+
+
+def test_wire_keys_are_a_subset_of_the_frozen_v2_sample(scenario: AvdiivkaScenario) -> None:
+    sample = json.loads((_FIXTURES / "telemetry-v2.sample.json").read_text())
+    allowed = set().union(*(set(s) for s in sample))
+    rf_allowed = set().union(*(set(s["rf"]) for s in sample if s.get("rf")))
+    rx_classes = {s["rx_class"] for s in sample if "rx_class" in s}
+    for t in BEATS:
+        for p in scenario.telemetry(t):
+            wire = p.to_wire()
+            assert set(wire) <= allowed
+            assert wire["rx_class"] in rx_classes
+            if "rf" in wire:
+                assert set(wire["rf"]) <= rf_allowed
+
+
+def test_recorded_run_hits_the_beats() -> None:
+    """telemetry-beats.recorded.jsonl: one real run through the dev broker."""
+    rows = [
+        json.loads(line)
+        for line in (_FIXTURES / "telemetry-beats.recorded.jsonl").read_text().splitlines()
+    ]
+    assert len(rows) == 266 * 8
+    b = {r["t"]: r["payload"] for r in rows if r["topic"] == "telemetry/unit_b/raw"}
+    assert 1.15 < b[45]["inter_arrival_seconds"] < 1.20
+    assert b[55]["crc_error_rate"] > 0.05
+    assert abs(b[75]["inter_arrival_seconds"] - 6.1) < 0.2 and "rf" in b[75]
+    assert abs(b[110]["inter_arrival_seconds"] - 1.8) < 0.06 and b[110]["gnss_fix"] == "3d"
+    assert b[135]["inter_arrival_seconds"] < 1.05 and "rf" not in b[135]
+    for r in rows:
+        assert "effective_range_km" not in r["payload"].get("rf", {})
+        if r["topic"] in ("telemetry/unit_a/raw", "telemetry/unit_c/raw"):
+            assert r["payload"]["inter_arrival_seconds"] < 1.05
+            assert r["payload"]["crc_error_rate"] <= 0.005

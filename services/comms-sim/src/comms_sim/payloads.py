@@ -8,11 +8,9 @@ Telemetry v2 (docs/plans/jammer-aoe.md §3.1, plan row C4, trimmed MVP):
 `schema: "telemetry/2"`, `rx_class`, `gnss_fix`. `RfObservation` carries no
 `effective_range_km` (FR-04 rev: the sim never sends it).
 
-TEMPORARY (pending the CP1 contract freeze): this shape follows the plan's
-§3.1 sketch. Until CP1 merges into feat/aoe-mvp the engine still requires
-`effective_range_km` and rejects the three v2 fields, so this branch must not
-merge before CP1. Re-align with `packages/contracts/src/telemetry.ts` and
-`fixtures/aoe/telemetry-v2.sample.json` after the freeze.
+Frozen at CP1 (tag aoe-contracts-v1): packages/contracts/src/telemetry.ts
+`TelemetryPayloadSchema` ↔ contracts-rs `TelemetryPayload`. Every recorded
+payload in fixtures/aoe/telemetry-beats.recorded.jsonl parses under both.
 """
 
 from __future__ import annotations

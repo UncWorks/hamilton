@@ -59,7 +59,8 @@ class Unit:
     net: str  # key into NETS
 
 
-# The 8-unit layout = `units` in apps/web/src/stories/fixtures/aoe-preview.json
+# The 8-unit layout = `units` in packages/contracts/fixtures/aoe/golden-cases.json
+# (source ids frozen at CP1) and apps/web/src/stories/fixtures/aoe-preview.json
 # (design §5, plan D1), in the worked example's order (it fixes the shadowing
 # draw order). Nets [ASM]: observers report on the fire-support net to the Bn
 # FDC; the TA radar and the AD section on the Bn command net; the batteries on
@@ -78,7 +79,7 @@ UNITS: tuple[Unit, ...] = (
     ),
     Unit(
         "D",
-        "d",
+        "unit_d",
         "gnss_civil",
         "recon_static",
         "FO 2",
@@ -89,7 +90,7 @@ UNITS: tuple[Unit, ...] = (
     ),
     Unit(
         "E",
-        "e",
+        "unit_e",
         "gnss_civil",
         "recon_static",
         "FO 3",
@@ -120,10 +121,20 @@ UNITS: tuple[Unit, ...] = (
         37.65077,
         "battery",
     ),
-    Unit("F", "f", "gnss_mil", "offense", "Battery 2", (-6.0, -5.0), 48.09508, 37.66423, "battery"),
+    Unit(
+        "F",
+        "unit_f",
+        "gnss_mil",
+        "offense",
+        "Battery 2",
+        (-6.0, -5.0),
+        48.09508,
+        37.66423,
+        "battery",
+    ),
     Unit(
         "G",
-        "g",
+        "unit_g",
         "gnss_civil",
         "defense",
         "AD section (Bn CP area)",
@@ -134,7 +145,7 @@ UNITS: tuple[Unit, ...] = (
     ),
     Unit(
         "H",
-        "h",
+        "unit_h",
         "gnss_civil",
         "recon_mobile",
         "UAS team",
