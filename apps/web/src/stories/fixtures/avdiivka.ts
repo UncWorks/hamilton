@@ -174,6 +174,22 @@ export function tracksRecord(...list: TrackState[]): Record<string, TrackState> 
   return Object.fromEntries(list.map((t) => [t.source_id, t]));
 }
 
+/**
+ * The pre-AoE A / B / C cluster (A and C ~245 m N / S of B). The 8-unit layout spreads the units
+ * over km (K5), so stories that exercise symbol declutter at a regional zoom move A, B, C here.
+ */
+export const DECLUTTER_CLUSTER: Readonly<Record<AvdiivkaUnit, { lat: number; lon: number }>> = {
+  unit_a: { lat: 48.1422, lon: 37.745 },
+  unit_b: { lat: 48.14, lon: 37.745 },
+  unit_c: { lat: 48.1378, lon: 37.745 },
+};
+
+export function clustered(tracks: Record<string, TrackState>): Record<string, TrackState> {
+  return Object.fromEntries(
+    Object.entries(tracks).map(([k, t]) => [k, { ...t, ...(DECLUTTER_CLUSTER[k as AvdiivkaUnit] ?? {}) }]),
+  );
+}
+
 const beatTracks = (clockS: number, prevClockS: number | null, bullets: readonly string[]) =>
   tracksRecord(
     beatTrack('unit_a', clockS),
