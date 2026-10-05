@@ -10,6 +10,9 @@ const basemap = process.env.NEXT_PUBLIC_BASEMAP || (tilesPresent ? 'offline' : '
 // opens that one origin only in this mode; offline / none stay 'self'-only.
 const ONLINE_TILE_ORIGIN = 'https://tile.openstreetmap.org';
 const onlineOrigins = basemap === 'online' ? ` ${ONLINE_TILE_ORIGIN}` : '';
+// The broker WebSocket the client connects to (useHamiltonMqtt); a stack on
+// other ports (e.g. ws://localhost:9002) must be allowed by connect-src too.
+const mqttWsOrigin = process.env.NEXT_PUBLIC_MQTT_WS_URL || 'ws://localhost:9001';
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
@@ -33,7 +36,7 @@ const nextConfig = {
       "font-src 'self'",
       "worker-src 'self' blob:",
       // Basemap tiles + glyphs (/tiles) are same-origin.
-      `connect-src 'self' ws://localhost:9001 http://localhost:8080${onlineOrigins}`,
+      `connect-src 'self' ${mqttWsOrigin} http://localhost:8080${onlineOrigins}`,
       "frame-src 'none'",
       "object-src 'none'",
       "base-uri 'self'",
