@@ -497,7 +497,7 @@ Slide 4 → live demo. The transition is:
 
 - **Enters viewport:** side panel reveals top-3 candidate jamming methods, **staggered**:
   - Candidate 1: `ground_based_gps_uhf_barrage (1.00)` → affected: `Excalibur, JDAM-ER, Switchblade 300, GMLRS-U` (60ms in)
-  - Candidate 2: `pulsed_uhf_wide (0.50)` → affected: `FPV C2 link, Switchblade 300` (120ms in)
+  - Candidate 2: `pulsed_uhf_wide (0.67)` → affected: `FPV C2 link, Switchblade 300` (120ms in)
   - Candidate 3: `cellular_uhf_barrage (0.17)` → affected: `ATAK position-share, FPV C2 link` (180ms in)
 - **Active tokens:** the score readout for each candidate uses the gradient — 1.00 reads in `--trust-nominal` (this is *fingerprint match strength*, repurposing the gradient to mean "deterministic overlap"; it is NOT the trust component, which is `1 − match strength`), 0.50 in `--trust-degraded`, 0.17 in `--trust-failed`. Per-candidate citations rendered in `--text-citation`.
 - **Motion:** `fingerprint-candidate-reveal` primitive — left-to-right `clip-path: inset()` reveal, staggered 60ms.
