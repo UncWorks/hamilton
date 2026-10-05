@@ -74,20 +74,41 @@ export const CandidateReveal: Story = {
 };
 
 /**
+ * The AoE seed on the story's own clock: the fixture tracks and AB1001 are stamped at the 2024 scenario clock, which the
+ * fire-mission queue (TSS report age, evaluated against the wall clock as live) would read as hours-old reports and mark
+ * STALE. Live, the engine stamps every payload with the real time, so this rebases only the story: tracks "now" (kept fresh
+ * by TrustHeartbeat), AB1001 received 3 s ago, so the row shows the intended 1:15 state.
+ */
+function aoeSeedNow(beat: Parameters<typeof aoeSeed>[0]) {
+  return () => {
+    const seed = aoeSeed(beat)();
+    const now = new Date().toISOString();
+    const tracks = Object.fromEntries(Object.entries(seed.tracks ?? {}).map(([k, t]) => [k, { ...t, last_update: now }]));
+    const missions = missionsRecord(missionState(ab1001(new Date(Date.now() - 3000).toISOString())));
+    return { ...seed, tracks, missions };
+  };
+}
+
+/**
  * 1:15 with the jammer area of effect (FR-06a): the 8-unit layout, the frozen CP1 estimate on the spine (civil GPS 90% / 50%,
  * label, key), the Area of effect block in the top candidate card and the terminal line "Est. GPS denial opened …". No jammer
- * symbol, ring or bearing (HS-20).
+ * symbol, ring or bearing (HS-20). AB1001 shows TSS FAIL on reliability E5 in its row (not STALE); no modal.
  */
 export const AoeEstimate: Story = {
   name: 'AoE estimate (1:15)',
-  decorators: [(S) => (<><EstimateHeartbeat /><S /></>)],
+  decorators: [(S) => (<TrustHeartbeat><EstimateHeartbeat /><S /></TrustHeartbeat>)],
   parameters: {
     mqtt: { script: 'silent' },
-    hamilton: aoeSeed('b115'),
+    hamilton: aoeSeedNow('b115'),
     engineApi: { events: terminalEventsUntil(75) },
   },
   play: async ({ canvasElement }) => {
     const c = within(canvasElement);
+    const row = await c.findByTestId('fm-row-AB1001', {}, { timeout: 20_000 });
+    await waitFor(() => expect(row).toHaveAttribute('data-verdict', 'FAIL'), { timeout: 20_000 });
+    await waitFor(() => expect(row.textContent).toMatch(/RELIABILITY E5/), { timeout: 20_000 });
+    await expect(row.textContent).not.toMatch(/STALE/);
+    await expect(document.querySelector('[aria-modal="true"]')).toBeNull();
     await waitFor(() => expect(c.getByTestId('aoe-layer')).toHaveAttribute('data-state', 'active'), { timeout: 20_000 });
     await waitFor(() => expect(c.getByTestId('aoe-card-block').textContent).toContain('Inside: OBS B (AB1001 observer) — 90%'), { timeout: 20_000 });
     await waitFor(() => expect(canvasElement.textContent).toContain('Est. GPS denial opened · Pole-21-class · OBS B inside (90%)'), { timeout: 20_000 });
