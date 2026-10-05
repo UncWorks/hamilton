@@ -288,7 +288,6 @@ fn jammer_rf() -> RfFingerprint {
         gps_l1_overlap: true,
         gps_l2_overlap: true,
         time_domain_pattern: TimeDomainPattern::Barrage,
-        effective_range_km: 0.0,
     }
 }
 

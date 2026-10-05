@@ -23,9 +23,8 @@ struct RawEntry {
     gps_l1_overlap: bool,
     gps_l2_overlap: bool,
     time_domain_pattern: String,
-    /// Deprecated in v0.2 (not observable); optional.
-    #[serde(default)]
-    effective_range_km: Option<f64>,
+    // `effective_range_km` (v0.1) is deprecated in v0.2 (an emitter range is
+    // not observable): still accepted in the file, ignored by the loader.
     /// v0.2 (A1). Absent in v0.1 files.
     #[serde(default)]
     affects_rx_classes: Vec<RxClass>,
@@ -64,7 +63,6 @@ pub fn parse_library(json: &str) -> Result<Vec<FingerprintEntry>> {
                 gps_l1_overlap: raw.gps_l1_overlap,
                 gps_l2_overlap: raw.gps_l2_overlap,
                 time_domain_pattern: pattern,
-                effective_range_km: raw.effective_range_km.unwrap_or(0.0),
                 affects_rx_classes: raw.affects_rx_classes,
                 munitions_affected: raw.munitions_affected,
                 source_citation: raw.source_citation,
@@ -207,7 +205,6 @@ mod tests {
         let e = parse_library(v01).unwrap();
         assert!(e[0].affects_rx_classes.is_empty());
         assert!(e[0].emitter.modules.is_empty());
-        assert_eq!(e[0].effective_range_km, 5.0);
     }
 
     #[test]

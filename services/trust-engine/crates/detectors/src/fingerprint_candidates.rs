@@ -27,20 +27,12 @@ pub fn lead_dimensions(ranked: &[RankedCandidate]) -> u32 {
     top.saturating_sub(second)
 }
 
-/// Produce the top-3 ranked candidates for an observed RF fingerprint.
+/// Produce the top-3 ranked candidates for an observed RF fingerprint, with
+/// dimension 6 per [`Dimension6`] (FRS FR-04 rev).
 ///
 /// Score = matched_threshold_booleans / total_dimensions (R14-safe, FRS §2.4a).
 /// Result is always exactly 3 entries, padded with score-0 sentinel entries
 /// when fewer than 3 library entries produce non-zero scores (System Design §5.2).
-pub fn rank_candidates(
-    observed: &RfFingerprint,
-    library: &[FingerprintEntry],
-) -> Vec<RankedCandidate> {
-    rank_candidates_with(observed, Dimension6::LegacyRange, library)
-}
-
-/// [`rank_candidates`] with an explicit dimension-6 rule; the engine passes
-/// [`Dimension6::ObservedClasses`] (FRS FR-04 rev).
 pub fn rank_candidates_with(
     observed: &RfFingerprint,
     dim6: Dimension6<'_>,
@@ -110,8 +102,16 @@ mod tests {
             gps_l1_overlap: true,
             gps_l2_overlap: true,
             time_domain_pattern: TimeDomainPattern::Barrage,
-            effective_range_km: 30.0,
         }
+    }
+
+    /// B at 1:15: civil GNSS and the UHF link degraded.
+    fn rank_candidates(
+        observed: &RfFingerprint,
+        library: &[FingerprintEntry],
+    ) -> Vec<RankedCandidate> {
+        let b115: BTreeSet<RxClass> = [RxClass::GnssCivil, RxClass::UhfComms].into();
+        rank_candidates_with(observed, Dimension6::ObservedClasses(&b115), library)
     }
 
     // Result is always exactly 3 entries
@@ -178,8 +178,7 @@ mod tests {
             gps_l1_overlap: true,
             gps_l2_overlap: true,
             time_domain_pattern: TimeDomainPattern::Barrage,
-            effective_range_km: 30.0,
-            affects_rx_classes: vec![],
+            affects_rx_classes: vec![RxClass::GnssCivil, RxClass::UhfComms],
             munitions_affected: vec!["Excalibur".into()],
             source_citation: "test".into(),
             emitter: Default::default(),
@@ -221,24 +220,6 @@ mod tests {
             );
             assert_eq!(lead_dimensions(&c), 2);
             assert!((c[1].score - 4.0 / 6.0).abs() < 1e-12);
-        }
-    }
-
-    // Legacy dimension 6 (range; telemetry v1 path kept for the aggregator
-    // beat test until E23): 6/6, 3/6, 1/6 as before.
-    #[test]
-    fn demo_top_three_are_k_over_six() {
-        let lib = library();
-        let c = rank_candidates(&unit_b_observed(), &lib);
-        let got: Vec<(&str, f64)> = c.iter().map(|c| (c.method_id.as_str(), c.score)).collect();
-        let want = [
-            ("ground_based_gps_uhf_barrage", 6.0 / 6.0),
-            ("pulsed_uhf_wide", 3.0 / 6.0),
-            ("cellular_uhf_barrage", 1.0 / 6.0),
-        ];
-        for ((gid, gs), (wid, ws)) in got.iter().zip(want.iter()) {
-            assert_eq!(gid, wid);
-            assert!((gs - ws).abs() < 1e-10, "{gid}: {gs} != {ws}");
         }
     }
 

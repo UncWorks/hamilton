@@ -516,11 +516,14 @@ export function exportAmplifiers(rating: LinkTrustRating, lastGoodIso: string): 
 export type AvdiivkaUnit = 'unit_a' | 'unit_b' | 'unit_c';
 export const AVDIIVKA_UNITS: readonly AvdiivkaUnit[] = ['unit_a', 'unit_b', 'unit_c'];
 
-/** avdiivka.py SOURCE_POSITIONS (= apps/web/app/page.tsx SEED_TRACKS): A/C ~245 m N/S of B. */
+/**
+ * avdiivka.py `UNITS` start positions (= apps/web/app/page.tsx SEED_TRACKS): A ~7.0 km W
+ * and C ~3.4 km SW of B, so no neighbour is inside the 500 m radius (FRS FR-03 note).
+ */
 export const AVDIIVKA_POSITIONS: Readonly<Record<AvdiivkaUnit, { lat: number; lon: number }>> = {
-  unit_a: { lat: 48.14 + 0.0022, lon: 37.745 },
+  unit_a: { lat: 48.14449, lon: 37.65077 },
   unit_b: { lat: 48.14, lon: 37.745 },
-  unit_c: { lat: 48.14 - 0.0022, lon: 37.745 },
+  unit_c: { lat: 48.12653, lon: 37.70462 },
 };
 
 /** spatial.rs DEFAULT_RADIUS_M (TRUST_ENGINE_SPATIAL_RADIUS_M). */
@@ -613,7 +616,7 @@ export const AVDIIVKA_BEATS: readonly EngineBeat[] = [
   beat(0, '0:00 three healthy units', T.healthy),
   beat(45, '0:45 B cadence 1.0 s → 1.17 s (WATCH)', T.watch),
   beat(55, '0:55 B CRC 0.2 % → 6 % (WATCH)', T.watchCrc),
-  beat(65, '1:05 spatial: localized, A and C unaffected', T.watchCrc),
+  beat(65, '1:05 Degradation localized at B — no degrading unit within 500 m. A, C healthy.', T.watchCrc),
   beat(75, '1:15 jammer at full power: 6.1 s gap, 14 % CRC, RF fingerprint 6/6', T.jammed),
   beat(80, '1:20 TSS beat (telemetry unchanged)', T.jammed),
   beat(110, '1:50 B recovery initiates', T.recovering),
