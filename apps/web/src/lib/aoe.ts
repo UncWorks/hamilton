@@ -221,3 +221,50 @@ export function dashRing(ring: readonly LonLat[], onM: number, offM: number): [n
   if (drawing && cur.length > 1) out.push(cur);
   return out;
 }
+
+// ---------------------------------------------------------------------------
+// Label placement (keep the map label off unit symbols)
+// ---------------------------------------------------------------------------
+
+export interface ScreenRect {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
+
+function overlaps(a: ScreenRect, b: ScreenRect): boolean {
+  return a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
+}
+
+/**
+ * Nudge the label plate `rect` vertically off the symbol boxes in `avoid`
+ * (centre points, `boxPx` square plus `padPx`). It first moves the plate just
+ * above the symbol it covers, then (if that leaves the view's `minY`) just
+ * below it. When every candidate collides, the original position is kept —
+ * the label still reads; a symbol is never hidden by declutter for it.
+ */
+export function nudgeLabelRect(
+  rect: ScreenRect,
+  avoid: readonly { x: number; y: number }[],
+  boxPx: number,
+  viewport: { width: number; height: number },
+  minY = 48,
+  padPx = 6,
+): ScreenRect {
+  const half = boxPx / 2 + padPx;
+  const boxes = avoid
+    .filter((p) => Number.isFinite(p.x) && Number.isFinite(p.y))
+    .map((p) => ({ x: p.x - half, y: p.y - half, w: 2 * half, h: 2 * half }));
+  const maxY = viewport.height - rect.h - 8;
+  const free = (r: ScreenRect) => r.y >= minY && r.y <= maxY && !boxes.some((b) => overlaps(r, b));
+  if (!boxes.some((b) => overlaps(rect, b))) return rect;
+  const tries: ScreenRect[] = [];
+  for (const b of boxes) {
+    if (!overlaps(rect, b)) continue;
+    tries.push({ ...rect, y: b.y - rect.h - 2 }, { ...rect, y: b.y + b.h + 2 });
+  }
+  // Prefer the smallest move.
+  tries.sort((a, b) => Math.abs(a.y - rect.y) - Math.abs(b.y - rect.y));
+  return tries.find(free) ?? rect;
+}

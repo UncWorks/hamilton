@@ -443,6 +443,8 @@ export function MapSpine({ emitterEstimate, candidateSites, evaluations, symbolS
                 layers={aoe.drawn}
                 opacity={aoeOpacity}
                 reducedMotion={reducedMotion}
+                avoid={[...singles, ...stacks.map((st) => st.anchor)]}
+                avoidPx={sizePx}
               />
             ) : null
           }
