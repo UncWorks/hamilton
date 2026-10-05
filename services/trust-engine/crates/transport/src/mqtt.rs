@@ -3,13 +3,18 @@
 //! Publishes:
 //! - `integrity/trust/{source_id}` — continuous trust score >=1Hz
 //! - `integrity/fingerprint/candidates` — top-3 ranked candidates on update
+//! - `integrity/emitter/estimate` — jammer AoE estimate, retained, QoS 1;
+//!   retire = empty retained payload (FR-04b, System Design §5.4)
 //!
 //! Payloads validated by serde against the shared contract before publish
 //! (defense-in-depth — even our own broker is "external data" per R14
 //! discipline).
 
 use anyhow::{Context, Result};
-use hamilton_contracts::{topics, FingerprintCandidatesPayload, TrustScorePayload};
+use hamilton_contracts::{
+    topics, EmitterEstimatePayload, FingerprintCandidatesPayload, TrustScorePayload,
+    EMITTER_ESTIMATE_MAX_BYTES,
+};
 use rumqttc::{AsyncClient, EventLoop, MqttOptions, QoS};
 use std::time::Duration;
 use tracing::{debug, info, warn};
@@ -79,6 +84,62 @@ impl MqttPublisher {
             top = payload.candidates.first().map(|c| c.method_id.as_str()).unwrap_or("none"),
             "candidates published"
         );
+        Ok(())
+    }
+}
+
+/// Broker `message_size_limit` (infra/docker/mosquitto/mosquitto.conf). A
+/// larger publish is dropped silently by the broker.
+pub const BROKER_MESSAGE_SIZE_LIMIT: usize = 8192;
+
+/// Serialize an estimate for the wire and check the size budget (F7).
+/// Errors above the broker limit (it would be dropped); warns above the
+/// 7168 B budget.
+pub fn encode_emitter_estimate(payload: &EmitterEstimatePayload) -> Result<Vec<u8>> {
+    let body = serde_json::to_vec(payload).context("serialize EmitterEstimatePayload")?;
+    if body.len() > BROKER_MESSAGE_SIZE_LIMIT {
+        anyhow::bail!(
+            "emitter estimate {} is {} B, over the broker limit {BROKER_MESSAGE_SIZE_LIMIT} B",
+            payload.estimate_id,
+            body.len()
+        );
+    }
+    if body.len() > EMITTER_ESTIMATE_MAX_BYTES {
+        warn!(
+            estimate_id = %payload.estimate_id,
+            bytes = body.len(),
+            budget = EMITTER_ESTIMATE_MAX_BYTES,
+            "emitter estimate over the wire-size budget (F7)"
+        );
+    }
+    Ok(body)
+}
+
+impl MqttPublisher {
+    /// Publish the AoE estimate on `integrity/emitter/estimate`, retained, QoS 1.
+    pub async fn publish_emitter_estimate(&self, payload: &EmitterEstimatePayload) -> Result<()> {
+        let body = encode_emitter_estimate(payload)?;
+        self.client
+            .publish(topics::EMITTER_ESTIMATE, QoS::AtLeastOnce, true, body)
+            .await
+            .context("publish emitter estimate")?;
+        debug!(estimate_id = %payload.estimate_id, state = ?payload.state, "emitter estimate published");
+        Ok(())
+    }
+
+    /// Retire the estimate: an EMPTY retained payload clears the retained
+    /// message, so late joiners see nothing (HS-25).
+    pub async fn retire_emitter_estimate(&self) -> Result<()> {
+        self.client
+            .publish(
+                topics::EMITTER_ESTIMATE,
+                QoS::AtLeastOnce,
+                true,
+                Vec::<u8>::new(),
+            )
+            .await
+            .context("retire emitter estimate")?;
+        info!("emitter estimate retired (empty retained payload)");
         Ok(())
     }
 }
