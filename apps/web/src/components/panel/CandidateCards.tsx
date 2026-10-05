@@ -2,16 +2,25 @@
 
 import type { FingerprintCandidate } from '@hamilton/contracts';
 import { trustBand } from '@/lib/trust-gradient';
+import { methodName } from '@/lib/display-names';
+import type { AoeCardModel } from '@/lib/emitter-estimate';
+import { AoeCardBlock } from './AoeCardBlock';
+import { DemoSlot } from '@/components/admin/DemoSlot';
 
 interface CandidateCardsProps {
   candidates: FingerprintCandidate[];
+  /**
+   * FR-06a "Area of effect" block (lib/emitter-estimate aoeCard), shown in the
+   * top card when the estimate's method is that card's method.
+   */
+  areaOfEffect?: (AoeCardModel & { method_id: string }) | null | undefined;
 }
 
-export function CandidateCards({ candidates }: CandidateCardsProps) {
+export function CandidateCards({ candidates, areaOfEffect }: CandidateCardsProps) {
   if (!candidates.length) return null;
   return (
     <section
-      aria-label="Top candidate jamming methods"
+      aria-label="Likely jamming methods"
       style={{ display: 'grid', gap: 'var(--space-3)' }}
     >
       <h3
@@ -23,7 +32,7 @@ export function CandidateCards({ candidates }: CandidateCardsProps) {
           color: 'var(--text-tertiary)',
         }}
       >
-        Top candidate methods · FR-04a
+        Likely jamming methods
       </h3>
       <ol
         style={{
@@ -40,7 +49,7 @@ export function CandidateCards({ candidates }: CandidateCardsProps) {
             className="motion-candidate-reveal"
             style={{ animationDelay: `${idx * 60}ms` }}
           >
-            <CandidateCard candidate={c} />
+            <CandidateCard candidate={c} areaOfEffect={idx === 0 && areaOfEffect?.method_id === c.method_id ? areaOfEffect : null} />
           </li>
         ))}
       </ol>
@@ -48,7 +57,7 @@ export function CandidateCards({ candidates }: CandidateCardsProps) {
   );
 }
 
-function CandidateCard({ candidate }: { candidate: FingerprintCandidate }) {
+function CandidateCard({ candidate, areaOfEffect }: { candidate: FingerprintCandidate; areaOfEffect: AoeCardModel | null }) {
   const empty = candidate.method_id === '' || candidate.score === 0;
   if (empty) {
     return (
@@ -89,12 +98,12 @@ function CandidateCard({ candidate }: { candidate: FingerprintCandidate }) {
       >
         <div
           style={{
-            fontFamily: 'var(--font-mono)',
             fontSize: 'var(--text-body)',
             color: 'var(--text-primary)',
           }}
+          data-method-id={candidate.method_id}
         >
-          {candidate.method_id}
+          {methodName(candidate.method_id)}
         </div>
         <div
           className="trust-readout"
@@ -140,6 +149,11 @@ function CandidateCard({ candidate }: { candidate: FingerprintCandidate }) {
         >
           (none in current inventory)
         </div>
+      )}
+      {areaOfEffect && (
+        <DemoSlot id="side.aoeCard">
+          <AoeCardBlock model={areaOfEffect} />
+        </DemoSlot>
       )}
       <CitationHover citation={candidate.source_citation} />
     </article>

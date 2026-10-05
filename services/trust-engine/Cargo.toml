@@ -22,4 +22,5 @@ trust-aggregator = { workspace = true }
 trust-library = { workspace = true }
 trust-transport = { workspace = true }
 trust-server = { workspace = true }
+trust-estimator = { workspace = true }
 rumqttc = { workspace = true }

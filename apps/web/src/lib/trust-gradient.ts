@@ -4,15 +4,15 @@
 
 export type Oklch = string;
 
-const ROE_FLOOR = 0.6;
+const TSS_MIN_GPS_SCORE = 0.6;
 
 /**
  * Map a score to its band token. The gradient inflection at 0.6 is the
- * ROE-floor visualization (§3.3): below it, the icon enters gated territory.
+ * TSS-minimum visualization (§3.3): below it (GPS-guided, C ≥ 0.60), GPS missions on the source fail TSS.
  */
 export function trustBand(score: number): 'nominal' | 'watching' | 'degraded' | 'failed' {
   if (score >= 0.85) return 'nominal';
-  if (score >= ROE_FLOOR) return 'watching';
+  if (score >= TSS_MIN_GPS_SCORE) return 'watching';
   if (score >= 0.3) return 'degraded';
   return 'failed';
 }
@@ -37,21 +37,6 @@ export function trustOklch(score: number): Oklch {
     case 'failed':
       return 'oklch(54% 0.16 47)';
   }
-}
-
-/** True when the icon's pulsing halo should activate (Branding §5.2). */
-export function shouldHaloPulse(score: number): boolean {
-  return score < ROE_FLOOR;
-}
-
-/** Halo radius in CSS px. (1 - score) * 24 per Branding §5.2. */
-export function haloRadiusPx(score: number): number {
-  return Math.max(0, (1 - score) * 24);
-}
-
-/** Halo period in ms — pulses faster as trust falls. */
-export function haloPeriodMs(score: number): number {
-  return Math.max(600, 1200 - (1 - score) * 600);
 }
 
 /**

@@ -1,14 +1,21 @@
 'use client';
 
 import { useHamilton } from '@/store/hamilton';
+import { minScoreForLetter, tssRow } from '@/lib/tss';
+import { UNIT_ROLES, sensorTypeLabel, unitName } from '@/lib/display-names';
 import { TrustReadout } from './TrustReadout';
 import { CandidateCards } from './CandidateCards';
+import { DemoSlot } from '@/components/admin/DemoSlot';
+import { useAoeCard } from '@/hooks/useEmitterEstimate';
 
 export function TrustPanel() {
   const tracks = useHamilton((s) => s.tracks);
   const selectedSource = useHamilton((s) => s.selectedSource);
   const candidates = useHamilton((s) => s.candidates);
-  const roeFloor = useHamilton((s) => s.roeFloor);
+  const tssTable = useHamilton((s) => s.tssTable);
+  const gpsMin = tssRow(tssTable, 'gps_guided').min_reliability;
+  const tssMin = (gpsMin && minScoreForLetter(gpsMin)) ?? 0.6;
+  const aoeCardModel = useAoeCard();
 
   const focused =
     (selectedSource && tracks[selectedSource]) ??
@@ -37,15 +44,14 @@ export function TrustPanel() {
 
   return (
     <aside
-      aria-label={`Trust panel for ${focused.source_id}`}
+      aria-label={`Trust panel for ${unitName(focused.source_id)}`}
       style={{
         display: 'grid',
         gap: 'var(--space-6)',
         padding: 'var(--space-6)',
         background: 'var(--surface-panel)',
-        borderLeft: '1px solid var(--surface-elevated)',
-        height: '100%',
-        overflowY: 'auto',
+        alignContent: 'start',
+        flex: 1,
       }}
     >
       <header style={{ display: 'grid', gap: 'var(--space-1)' }}>
@@ -58,7 +64,7 @@ export function TrustPanel() {
             letterSpacing: '0.04em',
           }}
         >
-          {focused.source_id.toUpperCase()}
+          {unitName(focused.source_id)}
         </h2>
         <span
           style={{
@@ -68,15 +74,21 @@ export function TrustPanel() {
             letterSpacing: '0.08em',
           }}
         >
-          {focused.affiliation.toUpperCase()} · {focused.sensor_type.replace('_', ' ')}
+          {focused.affiliation.toUpperCase()} · {UNIT_ROLES[focused.source_id] ?? sensorTypeLabel(focused.sensor_type)}
         </span>
       </header>
 
-      <TrustReadout score={focused.score} roeFloor={roeFloor} />
+      <DemoSlot id="side.trustReadout">
+        <TrustReadout score={focused.score} tssMin={tssMin} />
+      </DemoSlot>
 
-      <TraceBullets bullets={focused.trace_bullets} />
+      <DemoSlot id="side.trustTrace">
+        <TraceBullets bullets={focused.trace_bullets} />
+      </DemoSlot>
 
-      <CandidateCards candidates={candidatesForFocused} />
+      <DemoSlot id="side.candidates">
+        <CandidateCards candidates={candidatesForFocused} areaOfEffect={aoeCardModel} />
+      </DemoSlot>
     </aside>
   );
 }

@@ -115,7 +115,7 @@ OKLCH is non-negotiable — it is the only color space that gives the trust-scor
 | `--surface-base` | `oklch(14% 0.01 250)` | Page / map dead-space; near-black with a 1% blue undertone so it doesn't look like flat `#000` |
 | `--surface-panel` | `oklch(18% 0.012 250)` | Side panel, event terminal background |
 | `--surface-elevated` | `oklch(22% 0.014 250)` | Modal, hover cards, citation surfaces |
-| `--surface-modal-scrim` | `oklch(8% 0.005 250 / 0.72)` | Beat 1:20 modal scrim — knocks the COP back without erasing it (R16 — operator must still see context) |
+| `--surface-popover-shadow` | `oklch(8% 0.005 250 / 0.72)` | Shadow tint under tooltips and popovers (rating tooltip, stack list, Admin panel). Was `--surface-modal-scrim`, the Beat 1:20 modal scrim, retired with the modal |
 
 Three depth tiers minimum. Layering is how the *gating* moment reads as gravity rather than as a toast.
 
@@ -144,7 +144,10 @@ Continuous over `[0.0, 1.0]`. The inflection at `0.6` is the **ROE floor visuali
 
 **Why phosphor on the high end:** at 1.0 trust the system is doing its job and the operator can ignore it. Phosphor-green at high saturation reads as *the instrument is alive and reporting*, the same way a CRT phosphor at full brightness reads. It also doubles as the **gating accent** in §3.4 — the brand color for *"the system is the system"* moments.
 
-### 3.4 Kill-chain gating accent (load-bearing — the R16 gating edge)
+### 3.4 TSS gating accent (load-bearing — the R16 gating edge; formerly "kill-chain gating accent")
+
+> **SUPERSEDED (TSS mission row — `docs/plans/tss-mission-row.md`).** The kill-chain modal is retired. A call for fire that depends on a source failing the target selection standards (TSS) shows TSS FAIL inline in its fire-mission row: 2px `--gating-primary` left rule, text chips ("FAIL", "E5"), "Rec. method of control: DO NOT LOAD", branches `[1]`–`[4]`. No modal, scrim, blur, z-100 layer or focus steal; no motion. The text below is kept as the historical spec.
+
 
 | Token | OKLCH | Role |
 |---|---|---|
@@ -209,7 +212,7 @@ Two families. **No third font.** No serif "for headlines." The serif impulse is 
   --text-micro:  clamp(0.6875rem, 0.65rem + 0.15vw, 0.75rem);   /* citation, timestamp */
   --text-body:   clamp(0.8125rem, 0.78rem + 0.2vw, 0.9375rem);  /* trust-trace bullets */
   --text-panel:  clamp(0.9375rem, 0.88rem + 0.3vw, 1.0625rem);  /* side panel headers */
-  --text-modal:  clamp(1.5rem, 1.2rem + 1.2vw, 2.25rem);        /* "Kill-chain gated below ROE floor" */
+  /* --text-modal ("Kill-chain gated below ROE floor") removed: the modal is retired (TSS mission row). */
   --text-hero:   clamp(2.5rem, 1.8rem + 3vw, 4.5rem);           /* deck slide titles */
   --text-readout: clamp(2rem, 1.6rem + 2vw, 3.25rem);           /* the trust score numeral itself */
 }
@@ -301,6 +304,9 @@ Seven primitives. Every one is named after **what the operator perceives**, not 
 
 ### 6.2 The 1:20 modal — feels like gravity, not a toast
 
+> **SUPERSEDED (TSS mission row — `docs/plans/tss-mission-row.md`).** The kill-chain modal is retired. A call for fire that depends on a source failing the target selection standards (TSS) shows TSS FAIL inline in its fire-mission row: 2px `--gating-primary` left rule, text chips ("FAIL", "E5"), "Rec. method of control: DO NOT LOAD", branches `[1]`–`[4]`. No modal, scrim, blur, z-100 layer or focus steal; no motion. The text below is kept as the historical spec.
+
+
 The arrival is **deliberately slower than a notification toast** (420ms vs the typical 200ms). The blur on the COP behind the modal pushes the operator's attention forward; the modal itself rises 8px from below with no overshoot. Gravity, not bounce. The `--gating-primary` border glow (`filter: drop-shadow(0 0 24px var(--gating-primary))`) fades in over the same 420ms — the modal arrives with its own light.
 
 The on-screen subtitle "**Kill-chain gated below ROE floor.**" appears on a 100ms delay after the modal frame, in `--text-modal` at `--text-primary` weight, with its own 200ms fade. **The subtitle is the last thing to arrive** — that's the R18 mitigation reading as a *deliberate stamp*, not as fast-flash chrome.
@@ -369,10 +375,10 @@ Trust score updates at ≥1Hz. The icon `opacity` interpolates **between ticks**
 | Event terminal | 10 | sticky bottom |
 | Brand bar | 20 | sticky top |
 | Citation hover card | 50 | follows cursor near `FR-04a` candidates |
-| **Modal scrim (Beat 1:20)** | **90** | knocks back COP at `filter: blur(8px)` |
-| **Modal frame (Beat 1:20)** | **100** | the gating moment — top of the world |
+| ~~Modal scrim (Beat 1:20)~~ | ~~90~~ | superseded — no modal (TSS mission row) |
+| ~~Modal frame (Beat 1:20)~~ | ~~100~~ | superseded — no modal (TSS mission row) |
 
-Modal is the **only** thing that can be at z-100. No exceptions. If anything else needs to top-stack, it's a design bug — the modal is the system speaking.
+~~Modal is the **only** thing that can be at z-100.~~ Superseded: there is no modal; the fire-mission row lives in the side column at the panel's z-level and never top-stacks.
 
 ### 7.3 The multi-window mode (`?layout=ops-center`)
 
@@ -395,15 +401,17 @@ H A M I L T O N
 - All-caps.
 - `Söhne Buch` at 500 weight, **letter-spacing `0.32em`** (very wide). Reads as engraving, not as logo.
 - Render as inline SVG with paths flattened (no font dependency for the mark itself — NFR-01).
-- A 1px hairline rule, 12px below, color `--gating-primary` at 60% opacity, **only** appears when the kill-chain modal is active. The rule is the brand's stage cue: *"Hamilton is on its feet right now."*
+- A 1px hairline rule, 12px below, color `--gating-primary` at 60% opacity, appears once any fire mission has failed TSS this session and stays on (formerly: when the kill-chain modal was active). The rule is the brand's stage cue: *"Hamilton was on its feet."*
 
 ### 8.2 The lockup
 
 ```
                      [hairline rule, conditional]
 H A M I L T O N
-trust gating for the kill chain
+link reliability for fires
 ```
+
+(Tagline was "trust gating for the kill chain"; changed per the TSS terminology sweep — "kill chain" is not an FM 1-02 term.)
 
 - Tagline is `Berkeley Mono` 400 weight, `--text-tertiary`, letter-spacing `0`, sized at 0.42× the wordmark cap-height.
 - Tagline left-aligned to the wordmark's first stem.
@@ -477,25 +485,39 @@ Slide 4 → live demo. The transition is:
 
 ### 10.3 1:05 — the spatial discrimination
 
-- **Enters viewport:** side panel reveals the spatial-classification line: *"Degradation directional, vicinity B's flank corridor. Neighbors A, C unaffected."* A subtle directional vector renders on the map from B's heading toward the suspected jammer location (a thin `--gating-primary` line, dashed, 40% opacity).
+> **Superseded in part by `HS-20` (AoE plan review 2026-10-04, `docs/plans/jammer-aoe.md` §0.3 a / e).** The directional vector "toward the suspected jammer location" presumes a location nobody measured and is removed with the AoE MVP; no map line is drawn at 1:05 (or 1:15, 10.4, 10.7). With the km-scale layout the verbatim line becomes *"Degradation localized at B — no degrading unit within 500 m. A, C healthy."* The 1:15 map graphic is the estimated civil-GNSS area of effect (`FR-06a`). The 10.4 "reposition out of the jammer lobe" becomes B's 1:50 move, which is simulator-driven, not a known lobe.
+
+- **Enters viewport:** side panel reveals the spatial-classification line: *"Degradation localized at B — no degrading unit within 500 m. A, C healthy."* ~~A subtle directional vector renders on the map from B's heading toward the suspected jammer location (a thin `--gating-primary` line, dashed, 40% opacity).~~ Superseded (HS-20): no map line.
 - **Active tokens:** A and C remain `--trust-nominal` (engine 1.00). B holds at ≈0.65 (WATCH). The vector line on the map is `--gating-primary` at 40%.
 - **Motion:** the directional vector renders via `clip-path: inset()` (the line draws itself outward from B's icon over 400ms).
-- **Verbatim text:** *"Degradation directional, vicinity B's flank corridor. Neighbors A, C unaffected."*
+- **Verbatim text:** *"Degradation localized at B — no degrading unit within 500 m. A, C healthy."*
 - **Composition:** the operator's eye is being walked from B's icon → the directional vector → the side panel. The first time the side panel pulls focus.
 
 ### 10.4 1:15 — the candidate reveal (FR-04a)
 
 - **Enters viewport:** side panel reveals top-3 candidate jamming methods, **staggered**:
   - Candidate 1: `ground_based_gps_uhf_barrage (1.00)` → affected: `Excalibur, JDAM-ER, Switchblade 300, GMLRS-U` (60ms in)
-  - Candidate 2: `pulsed_uhf_wide (0.50)` → affected: `FPV C2 link, Switchblade 300` (120ms in)
+  - Candidate 2: `pulsed_uhf_wide (0.67)` → affected: `FPV C2 link, Switchblade 300` (120ms in)
   - Candidate 3: `cellular_uhf_barrage (0.17)` → affected: `ATAK position-share, FPV C2 link` (180ms in)
 - **Active tokens:** the score readout for each candidate uses the gradient — 1.00 reads in `--trust-nominal` (this is *fingerprint match strength*, repurposing the gradient to mean "deterministic overlap"; it is NOT the trust component, which is `1 − match strength`), 0.50 in `--trust-degraded`, 0.17 in `--trust-failed`. Per-candidate citations rendered in `--text-citation`.
 - **Motion:** `fingerprint-candidate-reveal` primitive — left-to-right `clip-path: inset()` reveal, staggered 60ms.
 - **Verbatim text:** the candidate strings above, exactly as they appear in `[[Specs/FRS|FRS]]` §2.4a acceptance.
-- **Engine state:** the jammer reaches full power with the reveal. B's link shows a 6.1s gap and 14% CRC, fingerprint trust falls to 0.00, and B's score drops 0.65 → 0.13. This is its **first crossing below the 0.60 ROE floor**: the halo starts pulsing and the gate arms.
-- **Composition:** **the side panel takes the floor.** The map B-icon continues fading silently in the periphery. The operator's eye is being trained for the modal arrival 5 seconds later.
+- **Engine state:** the jammer reaches full power with the reveal. B's link shows a 6.1s gap and 14% CRC, fingerprint trust falls to 0.00, and B's score drops 0.65 → 0.13. This is its **first score below the 0.60 GPS-guided TSS minimum (C)**: AB1001, the M982 call for fire from OBS B received at 1:12, flips to TSS FAIL in its row (§10.5). Nothing else interrupts.
+- **Composition:** **the side panel takes the floor.** The map B-icon continues fading silently in the periphery. The operator's eye goes to the fire-mission row, where AB1001 now reads TSS FAIL.
 
-### 10.5 **1:20 — THE LOAD-BEARING BEAT**
+### 10.5 **1:20 — THE LOAD-BEARING BEAT** (now: call for fire at B fails TSS in-row)
+
+> **SUPERSEDED (TSS mission row — `docs/plans/tss-mission-row.md`).** The kill-chain modal is retired. A call for fire that depends on a source failing the target selection standards (TSS) shows TSS FAIL inline in its fire-mission row: 2px `--gating-primary` left rule, text chips ("FAIL", "E5"), "Rec. method of control: DO NOT LOAD", branches `[1]`–`[4]`. No modal, scrim, blur, z-100 layer or focus steal; no motion. The text below is kept as the historical spec.
+
+**Current treatment (TSS mission row):**
+
+- **1:12 — enters the queue:** `FM AB1001 | OBS B (FO) | M982 (GPS)` with chip `PASS` and `TSS: PASS — RELIABILITY C3 (min C) · AGE 1s OK`. The queue sits above the trust panel and is absent until the first call for fire (AB1002, M795, at 0:30 — `NOT GATED`).
+- **1:15 — the row, not the screen, changes:** chip `FAIL`; `TSS: FAIL — RELIABILITY E5 (min C) · AGE 1s OK`; `Rec. method of control: DO NOT LOAD (M982)`; 2px `--gating-primary` left rule; branches `[1] Shift → M795 HE, adjust fire` · `[2] Confirm via alt channel` · `[3] AT MY COMMAND — re-rate in 60 s` · `[4] Accept risk… (FSO)`. The brand-bar hairline turns on (any TSS FAIL this session) and stays on.
+- **1:20 — Adam presses `1`:** M795 HE, `NOT GATED`, TSS PASS; the after-action log shows the branch with mission id, TSS result, J, report age, role and DTG.
+- **Stage subtitle (R18):** *"Target selection standard not met — source E5."* Never "HOLD FIRE" / "CEASE FIRE"; CHECK FIRING / CEASE LOADING only as a recommendation on a mission already firing.
+
+**Historical spec (superseded):**
+
 
 - **Enters viewport:** the kill-chain modal.
   - **Frame 1 (0–100ms):** the COP behind blurs to `filter: blur(8px)`. The modal scrim fades in to `opacity: 0.72`.
@@ -517,6 +539,9 @@ Slide 4 → live demo. The transition is:
 
 ### 10.6 1:50 — recovery initiation
 
+> **SUPERSEDED (TSS mission row — `docs/plans/tss-mission-row.md`).** The kill-chain modal is retired. A call for fire that depends on a source failing the target selection standards (TSS) shows TSS FAIL inline in its fire-mission row: 2px `--gating-primary` left rule, text chips ("FAIL", "E5"), "Rec. method of control: DO NOT LOAD", branches `[1]`–`[4]`. No modal, scrim, blur, z-100 layer or focus steal; no motion. The text below is kept as the historical spec.
+
+
 - **Enters viewport:** Officer Adam selects option (b). The modal's option-button (b) gets a `--gating-secondary` (phosphor) focus halo, then the modal exits — `transform: translateY(0 → 8px)`, `opacity: 1 → 0`, `filter: blur(0 → 4px)` over 320ms (faster exit than entry — the system steps back). The COP unblurs.
 - **Exits viewport:** the modal. The hairline rule in the brand bar **stays on** through the rest of the demo (it stays on for any session in which a gating event has fired — *Hamilton was on its feet*).
 - **Active tokens:** B's icon still in `--trust-failed`. The directional vector still rendered. The candidate panel still visible.
@@ -536,6 +561,9 @@ Slide 4 → live demo. The transition is:
 ---
 
 ## 11. One-shot build prompt seed
+
+> **SUPERSEDED (TSS mission row — `docs/plans/tss-mission-row.md`).** The kill-chain modal is retired. A call for fire that depends on a source failing the target selection standards (TSS) shows TSS FAIL inline in its fire-mission row: 2px `--gating-primary` left rule, text chips ("FAIL", "E5"), "Rec. method of control: DO NOT LOAD", branches `[1]`–`[4]`. No modal, scrim, blur, z-100 layer or focus steal; no motion. The text below is kept as the historical spec.
+
 
 > Drop this into a Claude/AI one-shot pipeline alongside the seed docs ([[Specs/URS|URS]], [[Specs/FRS|FRS]], [[Specs/System Design|System Design]], [[Tech Stack]], [[../05 - Build Plan/Demo and Pitch|Demo and Pitch]]). The prompt is self-contained.
 

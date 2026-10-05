@@ -2,12 +2,18 @@
 
 import mqtt, { type MqttClient } from 'mqtt';
 import {
+  EmitterEstimatePayloadSchema,
+  FireMissionSchema,
   FingerprintCandidatesPayloadSchema,
+  TOPIC_FIRE_MISSION_PREFIX,
+  TOPIC_EMITTER_ESTIMATE,
   TOPIC_FINGERPRINT_CANDIDATES,
   TOPIC_NARRATION_PREFIX,
   TOPIC_TRUST_PREFIX,
   TrustScorePayloadSchema,
+  type EmitterEstimatePayload,
   type FingerprintCandidatesPayload,
+  type FireMission,
   type TrustScorePayload,
 } from '@hamilton/contracts';
 import { z } from 'zod';
@@ -24,6 +30,14 @@ export interface MqttBindings {
   onTrust: (p: TrustScorePayload) => void;
   onCandidates: (p: FingerprintCandidatesPayload) => void;
   onNarration: (p: Narration) => void;
+  /** Call for fire on `fires/mission/{id}` (retained). */
+  onMission?: (m: FireMission) => void;
+  /** Empty retained payload on `fires/mission/{id}`: the mission is closed. */
+  onMissionRemoved?: (mission_id: string) => void;
+  /** FR-04b estimate on `integrity/emitter/estimate` (retained, zod-parsed). */
+  onEmitterEstimate?: (p: EmitterEstimatePayload) => void;
+  /** Empty retained payload on `integrity/emitter/estimate`: the estimate is retired. */
+  onEmitterEstimateCleared?: () => void;
   onConnectionChange?: (connected: boolean) => void;
 }
 
@@ -33,6 +47,7 @@ export interface MqttClientHandle {
 
 const TRUST_TOPIC_GLOB = `${TOPIC_TRUST_PREFIX}/+`;
 const NARRATION_TOPIC_GLOB = `${TOPIC_NARRATION_PREFIX}/+`;
+const MISSION_TOPIC_GLOB = `${TOPIC_FIRE_MISSION_PREFIX}/+`;
 
 export function startMqtt(url: string, bindings: MqttBindings): MqttClientHandle {
   const client: MqttClient = mqtt.connect(url, {
@@ -44,13 +59,41 @@ export function startMqtt(url: string, bindings: MqttBindings): MqttClientHandle
 
   client.on('connect', () => {
     bindings.onConnectionChange?.(true);
-    client.subscribe([TRUST_TOPIC_GLOB, TOPIC_FINGERPRINT_CANDIDATES, NARRATION_TOPIC_GLOB]);
+    client.subscribe([TRUST_TOPIC_GLOB, TOPIC_FINGERPRINT_CANDIDATES, NARRATION_TOPIC_GLOB, MISSION_TOPIC_GLOB]);
+    client.subscribe(TOPIC_EMITTER_ESTIMATE, { qos: 1 });
   });
 
   client.on('reconnect', () => bindings.onConnectionChange?.(false));
   client.on('close', () => bindings.onConnectionChange?.(false));
 
   client.on('message', (topic, payload) => {
+    if (topic.startsWith(`${TOPIC_FIRE_MISSION_PREFIX}/`)) {
+      const missionId = topic.slice(TOPIC_FIRE_MISSION_PREFIX.length + 1);
+      if (payload.length === 0) {
+        bindings.onMissionRemoved?.(missionId);
+        return;
+      }
+      try {
+        const parsed = FireMissionSchema.safeParse(JSON.parse(payload.toString()));
+        if (parsed.success) bindings.onMission?.(parsed.data);
+      } catch {
+        /* malformed call for fire — ignore */
+      }
+      return;
+    }
+    if (topic === TOPIC_EMITTER_ESTIMATE) {
+      if (payload.length === 0) {
+        bindings.onEmitterEstimateCleared?.();
+        return;
+      }
+      try {
+        const parsed = EmitterEstimatePayloadSchema.safeParse(JSON.parse(payload.toString()));
+        if (parsed.success) bindings.onEmitterEstimate?.(parsed.data);
+      } catch {
+        /* malformed estimate — ignore (strict schema: K4) */
+      }
+      return;
+    }
     let json: unknown;
     try {
       json = JSON.parse(payload.toString());

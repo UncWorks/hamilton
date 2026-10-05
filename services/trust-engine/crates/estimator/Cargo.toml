@@ -1,0 +1,13 @@
+[package]
+name = "trust-estimator"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Pure, deterministic jammer area-of-effect estimator (FR-04b, jammer-aoe.md §1)"
+
+# NFR-07 / jammer-aoe.md D9: the only runtime dependency is serde.
+[dependencies]
+serde = { workspace = true }
+
+[dev-dependencies]
+serde_json = { workspace = true }

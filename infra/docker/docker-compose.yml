@@ -90,7 +90,14 @@ services:
     environment:
       NEXT_PUBLIC_MQTT_WS_URL: ws://localhost:9001
       NEXT_PUBLIC_RENDERER: ${NEXT_PUBLIC_RENDERER:-maplibre}
-      NEXT_PUBLIC_ROE_FLOOR: ${NEXT_PUBLIC_ROE_FLOOR:-0.6}
+      ENGINE_HTTP_URL: http://trust-engine:8080
+      # offline | online | none. Empty = offline when apps/web/public/tiles is
+      # provisioned (`make fetch-tiles`, before going offline), else none.
+      # online is DEV ONLY (OSM tiles over the network) — not NFR-01.
+      NEXT_PUBLIC_BASEMAP: ${NEXT_PUBLIC_BASEMAP:-}
+      # 1 = presenter Admin menu (Demo simulation view filter). Empty = off:
+      # no trigger, no shortcuts. A dev build also opens it with ?admin=1.
+      NEXT_PUBLIC_ADMIN: ${NEXT_PUBLIC_ADMIN:-}
     ports:
       - "3000:3000"
     volumes:

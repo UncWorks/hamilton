@@ -8,6 +8,7 @@ members = [
     "services/trust-engine/crates/library",
     "services/trust-engine/crates/transport",
     "services/trust-engine/crates/server",
+    "services/trust-engine/crates/estimator",
 ]
 
 [workspace.package]
@@ -33,3 +34,4 @@ trust-aggregator = { path = "services/trust-engine/crates/aggregator" }
 trust-library = { path = "services/trust-engine/crates/library" }
 trust-transport = { path = "services/trust-engine/crates/transport" }
 trust-server = { path = "services/trust-engine/crates/server" }
+trust-estimator = { path = "services/trust-engine/crates/estimator" }

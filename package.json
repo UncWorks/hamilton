@@ -18,7 +18,8 @@
   },
   "pnpm": {
     "overrides": {
-      "@zip.js/zip.js": "2.7.43"
+      "@zip.js/zip.js": "2.7.43",
+      "webpack": "5.99.9"
     }
   }
 }

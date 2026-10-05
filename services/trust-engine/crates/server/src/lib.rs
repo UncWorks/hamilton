@@ -1,5 +1,5 @@
-//! Axum HTTP server — healthcheck + after-action log query + modal-selection
-//! callback (Phase 7 will use the POST endpoint).
+//! Axum HTTP server — healthcheck, after-action log query, and the FDC's
+//! mission-decision log (a copy of each TSS branch choice from the web).
 
 use anyhow::Result;
 use axum::{
@@ -10,7 +10,7 @@ use axum::{
     Json, Router,
 };
 use chrono::Utc;
-use hamilton_contracts::{DetectionEvent, DetectionKind, ModalOption};
+use hamilton_contracts::{BranchOption, DetectionEvent, DetectionKind};
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use tracing::info;
@@ -25,7 +25,7 @@ pub fn router(state: AppState) -> Router {
     Router::new()
         .route("/healthz", get(healthz))
         .route("/api/events", get(list_events))
-        .route("/api/modal/selection", post(modal_selection))
+        .route("/api/missions/decision", post(mission_decision))
         .with_state(state)
 }
 
@@ -66,24 +66,25 @@ async fn list_events(
 }
 
 #[derive(Deserialize, Serialize)]
-pub struct ModalSelectionRequest {
+pub struct MissionDecisionRequest {
+    /// `<mission_id>/<lead source_id>`, e.g. "AB1001/unit_b".
     pub source_id: String,
-    pub option: ModalOption,
+    pub option: BranchOption,
     pub trust_score_at_selection: f64,
 }
 
-async fn modal_selection(
+async fn mission_decision(
     State(state): State<AppState>,
-    Json(req): Json<ModalSelectionRequest>,
+    Json(req): Json<MissionDecisionRequest>,
 ) -> impl IntoResponse {
     let option_label = match req.option {
-        ModalOption::Delay60s => "delay_60s",
-        ModalOption::ShiftNonGps => "shift_non_gps",
-        ModalOption::ConfirmAltChannel => "confirm_alt_channel",
+        BranchOption::Delay60s => "delay_60s",
+        BranchOption::ShiftNonGps => "shift_non_gps",
+        BranchOption::ConfirmAltChannel => "confirm_alt_channel",
     };
     let event = DetectionEvent {
         source_id: req.source_id.clone(),
-        kind: DetectionKind::ModalSelection,
+        kind: DetectionKind::MissionDecision,
         message: format!(
             "operator selected ({}) at score {:.2}",
             option_label, req.trust_score_at_selection
@@ -95,7 +96,7 @@ async fn modal_selection(
         timestamp: Utc::now(),
     };
     if let Err(e) = state.log.append(&event) {
-        tracing::error!(error = %e, "failed to log modal selection");
+        tracing::error!(error = %e, "failed to log mission decision");
         return (
             StatusCode::INTERNAL_SERVER_ERROR,
             Json(serde_json::json!({ "error": "log write failed" })),

@@ -11,3 +11,15 @@ export const narrationTopic = (sourceId: string): string =>
 
 export const telemetryTopic = (sourceId: string): string =>
   `${TOPIC_TELEMETRY_PREFIX}/${sourceId}/raw`;
+
+/** Fire missions (calls for fire), retained: `fires/mission/{mission_id}`. An empty retained payload removes the mission. */
+export const TOPIC_FIRE_MISSION_PREFIX = 'fires/mission' as const;
+
+export const fireMissionTopic = (missionId: string): string =>
+  `${TOPIC_FIRE_MISSION_PREFIX}/${missionId}`;
+
+/**
+ * Jammer area-of-effect estimate (FR-04b, System Design §5.4): retained, QoS 1.
+ * Retire = an empty retained payload on this topic.
+ */
+export const TOPIC_EMITTER_ESTIMATE = 'integrity/emitter/estimate' as const;

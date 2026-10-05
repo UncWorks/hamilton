@@ -5,9 +5,11 @@ export const DetectionKindSchema = z.enum([
   'stability',
   'spatial',
   'fingerprint',
-  'modal_gated',
-  'modal_selection',
+  /** An FDC branch choice on a fire mission (POST /api/missions/decision). */
+  'mission_decision',
   'recovery',
+  /** Jammer AoE estimate opened / updated / stale / retired (HS-24). */
+  'emitter_estimate',
 ]);
 export type DetectionKind = z.infer<typeof DetectionKindSchema>;
 

@@ -371,8 +371,13 @@ mod tests {
     // (spatial::is_degrading), exactly as src/ticker.rs does.
     mod avdiivka {
         use super::super::*;
+        use hamilton_contracts::RxClass;
+        use std::collections::BTreeSet;
         use trust_detectors::{
-            fingerprint::{match_fingerprint, FingerprintEntry, RfFingerprint, TimeDomainPattern},
+            fingerprint::{
+                match_fingerprint_with, Dimension6, FingerprintEntry, RfFingerprint,
+                TimeDomainPattern,
+            },
             spatial::{classify_spatial, is_degrading, NeighborState, Position, SourceLocation},
             stability::{detect_stability, StabilityWindow},
             temporal::{detect_temporal, InterArrival, TemporalBaseline},
@@ -403,33 +408,42 @@ mod tests {
                 gps_l1_overlap: true,
                 gps_l2_overlap: true,
                 time_domain_pattern: TimeDomainPattern::Barrage,
-                effective_range_km: 30.0,
             }
         }
 
-        /// comms-sim SOURCE_POSITIONS (= apps/web SEED_TRACKS): A and C are
-        /// ~245 m north/south of B, inside the 500 m radius.
+        /// Receiver classes observed degraded at the source when the jammer
+        /// RF is seen (FR-04 rev dimension 6). These beats model B's link
+        /// telemetry (cadence, CRC), so the UHF link class: degraded at 1:15
+        /// and at 1:50 (B's GNSS recovers after the move; the link does not).
+        fn observed_classes() -> BTreeSet<RxClass> {
+            [RxClass::UhfComms].into()
+        }
+
+        /// comms-sim `scenarios/avdiivka.py` `UNITS` start positions for A, B
+        /// and C (= apps/web SEED_TRACKS). A is ~7.0 km west of B and C
+        /// ~3.4 km south-west: no neighbour inside the 500 m radius, so a
+        /// lone degrading B is localized (FRS FR-03 note).
         pub fn positions() -> [(&'static str, Position); 3] {
             [
                 (
                     "unit_a",
                     Position {
-                        lat: 48.1422,
-                        lon: 37.745,
+                        lat: 48.14449,
+                        lon: 37.65077,
                     },
                 ),
                 (
                     "unit_b",
                     Position {
-                        lat: 48.140,
+                        lat: 48.14,
                         lon: 37.745,
                     },
                 ),
                 (
                     "unit_c",
                     Position {
-                        lat: 48.1378,
-                        lon: 37.745,
+                        lat: 48.12653,
+                        lon: 37.70462,
                     },
                 ),
             ]
@@ -437,13 +451,21 @@ mod tests {
 
         /// Run one engine tick over A, B, C telemetry. Returns [A, B, C].
         pub fn tick(units: [Tel; 3]) -> [TrustScorePayload; 3] {
+            tick_at(units, positions())
+        }
+
+        /// [`tick`] at explicit positions.
+        pub fn tick_at(
+            units: [Tel; 3],
+            pos: [(&'static str, Position); 3],
+        ) -> [TrustScorePayload; 3] {
             let library = library();
             let jammer = jammer();
+            let classes = observed_classes();
             let baseline = TemporalBaseline {
                 mean_seconds: 1.0,
                 stddev_seconds: 0.05,
             };
-            let pos = positions();
             let readings: Vec<_> = units
                 .iter()
                 .map(|&Tel(ia, crc, _)| {
@@ -479,7 +501,13 @@ mod tests {
                 );
                 let fp = units[i]
                     .2
-                    .then(|| match_fingerprint(&jammer, &library))
+                    .then(|| {
+                        match_fingerprint_with(
+                            &jammer,
+                            Dimension6::ObservedClasses(&classes),
+                            &library,
+                        )
+                    })
                     .flatten();
                 aggregate(
                     id,
@@ -541,19 +569,28 @@ mod tests {
         }
     }
 
-    // Everyone degraded → every unit takes the blanket penalty (0.3).
+    // Everyone degraded within 500 m → every unit takes the blanket penalty
+    // (0.3). The demo layout has km spacing, so FR-03 never sees a neighbour
+    // there (FRS FR-03 note); this test keeps a 245 m N/S cluster around B.
     #[test]
     fn all_degraded_gives_blanket_penalty() {
-        use avdiivka::{tick, Tel};
+        use avdiivka::{tick_at, Tel};
+        use trust_detectors::spatial::Position;
+        let at = |lat| Position { lat, lon: 37.745 };
+        let cluster = [
+            ("unit_a", at(48.1422)),
+            ("unit_b", at(48.140)),
+            ("unit_c", at(48.1378)),
+        ];
         let d = Tel(1.2, 0.08, false);
-        for p in tick([d; 3]) {
+        for p in tick_at([d; 3], cluster) {
             assert!((p.components.spatial - 0.3).abs() < f64::EPSILON);
         }
     }
 
     // Storyboard gate timing (System Design §2, Branding §10): WATCH band
     // (0.60–0.85) from 0:45, first crossing below the ROE floor when the
-    // jammer lands at 1:15 (modal at 1:20), still gated at 1:50, recovered
+    // jammer lands at 1:15 (TSS FAIL in the mission row), still gated at 1:50, recovered
     // (≥ 0.85) at 2:15. A and C stay at full trust throughout.
     #[test]
     fn avdiivka_beats_end_to_end() {

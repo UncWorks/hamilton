@@ -1,3 +1,7 @@
+// ARCHIVED — the Branding §5.2 n-gon geometry and affiliation RGB mirrors. The
+// live renderers draw the decided FM 1-02 / MCRP 5-12A symbol
+// (src/components/symbol) instead; this is kept for the G01 reference stories.
+
 import {
   type Affiliation,
   type SensorType,

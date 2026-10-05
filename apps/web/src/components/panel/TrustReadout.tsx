@@ -4,10 +4,11 @@ import { trustBand } from '@/lib/trust-gradient';
 
 interface TrustReadoutProps {
   score: number;
-  roeFloor: number;
+  /** TSS minimum link reliability for GPS-guided fires, as a score (C → 0.60). */
+  tssMin: number;
 }
 
-export function TrustReadout({ score, roeFloor }: TrustReadoutProps) {
+export function TrustReadout({ score, tssMin }: TrustReadoutProps) {
   const band = trustBand(score);
   const formatted = score.toFixed(2);
   return (
@@ -23,13 +24,13 @@ export function TrustReadout({ score, roeFloor }: TrustReadoutProps) {
       >
         {formatted}
       </div>
-      <RoeFloorIndicator score={score} roeFloor={roeFloor} />
+      <TssMinIndicator score={score} tssMin={tssMin} />
     </div>
   );
 }
 
-function RoeFloorIndicator({ score, roeFloor }: { score: number; roeFloor: number }) {
-  const above = score >= roeFloor;
+function TssMinIndicator({ score, tssMin }: { score: number; tssMin: number }) {
+  const above = score >= tssMin;
   return (
     <div
       style={{
@@ -51,7 +52,7 @@ function RoeFloorIndicator({ score, roeFloor }: { score: number; roeFloor: numbe
         }}
       />
       <span style={{ color: above ? 'var(--text-tertiary)' : 'var(--gating-primary)' }}>
-        ROE FLOOR · {roeFloor.toFixed(2)}
+        TSS MIN · GPS · {tssMin.toFixed(2)}{above ? '' : ' · BELOW'}
       </span>
     </div>
   );

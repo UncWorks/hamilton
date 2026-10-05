@@ -4,24 +4,40 @@
 // Switched via NEXT_PUBLIC_RENDERER=cesium|maplibre.
 //
 // Both spines subscribe to the same Zustand store and the same MQTT topics.
-// The contract boundary is the store, not the renderer.
+// The contract boundary is the store, not the renderer. Both draw the
+// production track symbol (src/components/symbol): Cesium as billboards,
+// deck.gl as a viewport-projected SVG overlay (see each file's header).
 
 import dynamic from 'next/dynamic';
+import type { CandidateSite, Evaluations } from './spine-symbols';
+import type { BasemapMode } from '@/lib/basemap';
+import type { EstimateEntry } from '@/lib/emitter-estimate';
 
 const CesiumSpine = dynamic(
   () => import('./CesiumSpine').then((m) => m.CesiumSpine),
-  { ssr: false, loading: () => <SpineLoader label="cesium" /> },
+  { ssr: false, loading: () => <SpineLoader label="3D map" /> },
 );
 
 const MapSpine = dynamic(
   () => import('./MapSpine').then((m) => m.MapSpine),
-  { ssr: false, loading: () => <SpineLoader label="maplibre" /> },
+  { ssr: false, loading: () => <SpineLoader label="map" /> },
 );
 
 interface SpineProps {
-  jammerLocation?: { lat: number; lon: number; method_id: string };
-  directionalFrom?: { lat: number; lon: number };
-  directionalTo?: { lat: number; lon: number };
+  /**
+   * The FR-04b emitter estimate (integrity/emitter/estimate), drawn by both
+   * spines as an area of effect (FR-06a). Null / absent = nothing drawn. The
+   * jammer's position is never an input (HS-20): no point, ring or bearing.
+   */
+  emitterEstimate?: EstimateEntry | null | undefined;
+  /** Geolocated FR-04a candidate sites, drawn as anticipated (dashed) hostile EW symbols. */
+  candidateSites?: readonly CandidateSite[];
+  /** S2 evaluation inputs (corroboration / J override) per source. */
+  evaluations?: Evaluations;
+  /** Symbol box, px (default 32). */
+  symbolSizePx?: number;
+  /** Basemap override (default NEXT_PUBLIC_BASEMAP — lib/basemap.ts). */
+  basemap?: BasemapMode;
 }
 
 function pickRenderer(): 'cesium' | 'maplibre' {
@@ -34,10 +50,7 @@ export function Spine(props: SpineProps) {
   if (renderer === 'cesium') {
     return <CesiumSpine {...props} />;
   }
-  const mapProps: Pick<SpineProps, 'directionalFrom' | 'directionalTo'> = {};
-  if (props.directionalFrom) mapProps.directionalFrom = props.directionalFrom;
-  if (props.directionalTo) mapProps.directionalTo = props.directionalTo;
-  return <MapSpine {...mapProps} />;
+  return <MapSpine {...props} />;
 }
 
 function SpineLoader({ label }: { label: string }) {
@@ -55,7 +68,7 @@ function SpineLoader({ label }: { label: string }) {
         textTransform: 'uppercase',
       }}
     >
-      loading {label} spine…
+      Loading {label}…
     </div>
   );
 }
