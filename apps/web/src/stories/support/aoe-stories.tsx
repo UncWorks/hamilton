@@ -157,7 +157,7 @@ export const aoePlay = {
 };
 
 // ---------------------------------------------------------------------------
-// Colour vision (converted from Previews/Jammer AoE → Colour vision)
+// Colour vision
 // ---------------------------------------------------------------------------
 
 /** Production palette checks (FR-06a (4)): GNSS hues only, as shipped in tokens.css. */

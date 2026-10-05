@@ -132,7 +132,7 @@ export const BasemapOff: Story = {
 };
 
 // ---------------------------------------------------------------------------
-// Jammer area of effect (FR-06a; converted from Previews/Jammer AoE)
+// Jammer area of effect (FR-06a)
 // ---------------------------------------------------------------------------
 
 const aoeDocs = (story: string) => ({ docs: { story: { inline: false, iframeHeight: 640 }, description: { story } } });
