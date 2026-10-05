@@ -1,38 +1,85 @@
-.PHONY: help demo demo-fallback up up-broker down build verify lint test clean fetch-tiles basemap-style
+.PHONY: help demo demo-fallback up up-broker down logs build verify lint test clean fetch-tiles basemap-style
 
-RENDERER ?= cesium
-NEXT_PUBLIC_RENDERER ?= $(RENDERER)
-export NEXT_PUBLIC_RENDERER
+# --- Demo knobs (make demo VAR=value) -----------------------------------------
+# RENDERER  cesium (default) | maplibre        — make demo-fallback = maplibre
+# ADMIN     1 = presenter Admin menu always on  (?admin=1 works without it)
+# NARRATOR  empty (default, no narrator) | 1 (deterministic; Claude if
+#           ANTHROPIC_API_KEY is set) | ollama (+ ~9 GB image, ~2 GB model)
+# NEXT_PUBLIC_BASEMAP  empty (offline basemap, fetched on first run) | none | online
+RENDERER ?= $(or $(NEXT_PUBLIC_RENDERER),cesium)
+ADMIN ?= $(NEXT_PUBLIC_ADMIN)
+NARRATOR ?=
+NEXT_PUBLIC_BASEMAP ?=
+
+COMPOSE_FILE := infra/docker/docker-compose.yml
+PROFILES := --profile full
+ifneq ($(NARRATOR),)
+PROFILES += --profile narrator
+endif
+ifeq ($(NARRATOR),ollama)
+PROFILES += --profile ollama
+NARRATOR_OLLAMA_URL := http://ollama:11434
+endif
+COMPOSE = NEXT_PUBLIC_RENDERER=$(RENDERER) NEXT_PUBLIC_ADMIN=$(ADMIN) \
+	NEXT_PUBLIC_BASEMAP=$(NEXT_PUBLIC_BASEMAP) NARRATOR_OLLAMA_URL=$(NARRATOR_OLLAMA_URL) \
+	docker compose -f $(COMPOSE_FILE)
+# --profile ollama/narrator too, so `make down` also stops an opt-in narrator.
+ALL_PROFILES := --profile full --profile narrator --profile ollama
+
+# The offline basemap is provisioned on the first run (it is gitignored).
+# tiles.json is written last by scripts/fetch-tiles.sh, so it marks a
+# complete fetch. Skipped for NEXT_PUBLIC_BASEMAP=none|online.
+TILES_SENTINEL := apps/web/public/tiles/raster/tiles.json
+ifeq ($(filter none online,$(NEXT_PUBLIC_BASEMAP)),)
+BASEMAP_DEP := $(TILES_SENTINEL)
+endif
+
+URL_BANNER = printf '\n  Hamilton is up:  http://localhost:3000\n  Presenter menu:  http://localhost:3000/?admin=1\n  Renderer: %s   Stop: make down\n\n' '$(RENDERER)'
 
 help:
 	@echo "Hamilton — make targets"
-	@echo "  make demo           Bring up full stack with primary renderer ($(RENDERER))"
-	@echo "  make demo-fallback  Force MapLibre renderer (Cesium-fail path)"
-	@echo "  make fetch-tiles    Provision the offline basemap in apps/web/public/tiles (online, once)"
+	@echo "  make demo           Build + run the full demo in the foreground (Ctrl-C stops)"
+	@echo "                      broker, trust engine, looping comms-sim, web on :3000"
+	@echo "  make up             Same, detached; returns once everything is healthy"
+	@echo "  make down           Stop and remove the stack"
+	@echo "  make logs           Follow the stack's logs"
+	@echo "  make demo-fallback  make demo with the MapLibre renderer (Cesium-fail path)"
+	@echo "  make up-broker      Start only the broker (mosquitto)"
+	@echo "  make fetch-tiles    (Re)provision the offline basemap in apps/web/public/tiles"
 	@echo "  make basemap-style  Regenerate the committed basemap style layers"
-	@echo "  make up             docker compose up -d (full profile: broker, engine, sim, web)"
-	@echo "  make up-broker      Start only the broker (mosquitto) and ollama"
-	@echo "  make down           docker compose down"
 	@echo "  make build          Build all workspace members"
 	@echo "  make verify         Verify assets + dep budget + phosphor lint + no truth on the bus"
 	@echo "  make lint           Lint all workspaces"
 	@echo "  make test           Run all tests"
 	@echo "  make clean          Remove build artifacts"
+	@echo "Options: RENDERER=cesium|maplibre  ADMIN=1  NARRATOR=1|ollama  NEXT_PUBLIC_BASEMAP=none"
 
-demo:
-	NEXT_PUBLIC_RENDERER=$(RENDERER) docker compose -f infra/docker/docker-compose.yml --profile full up
+$(TILES_SENTINEL):
+	@bash scripts/ensure-tiles.sh
+
+demo: $(BASEMAP_DEP)
+	@echo "[make] building and starting Hamilton (first build: several minutes for the Rust engine)"
+	@# Print the URLs once the web answers (polls while compose runs).
+	@( sleep 5; while kill -0 $$$$ 2>/dev/null; do \
+	     curl -fsS -o /dev/null -m 120 http://localhost:3000/ 2>/dev/null && { $(URL_BANNER); exit 0; }; \
+	     sleep 3; done ) & \
+	$(COMPOSE) $(PROFILES) up --build --remove-orphans
 
 demo-fallback:
 	$(MAKE) demo RENDERER=maplibre
 
-up:
-	docker compose -f infra/docker/docker-compose.yml --profile full up -d
+up: $(BASEMAP_DEP)
+	$(COMPOSE) $(PROFILES) up -d --build --remove-orphans --wait
+	@$(URL_BANNER)
 
 up-broker:
-	docker compose -f infra/docker/docker-compose.yml up -d mosquitto ollama
+	$(COMPOSE) up -d mosquitto
 
 down:
-	docker compose -f infra/docker/docker-compose.yml --profile full down
+	$(COMPOSE) $(ALL_PROFILES) down --remove-orphans
+
+logs:
+	$(COMPOSE) $(ALL_PROFILES) logs -f
 
 build:
 	pnpm -r build

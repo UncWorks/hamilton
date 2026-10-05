@@ -1,5 +1,14 @@
 name: hamilton
 
+# Profiles (the Makefile picks them; see `make help`):
+#   (none)    mosquitto only                          — make up-broker
+#   full      + trust-engine, comms-sim, web          — make demo / make up
+#   narrator  + llm-narrator (deterministic strings,
+#               Claude if ANTHROPIC_API_KEY is set)   — make demo NARRATOR=1
+#   ollama    + ollama, its model pull, and the
+#               narrator's local Llama provider       — make demo NARRATOR=ollama
+# The default demo pulls no model and needs no API key.
+
 services:
   # MQTT broker — the renderer-agnostic spine (System Design §5)
   mosquitto:
@@ -16,23 +25,17 @@ services:
       timeout: 3s
       retries: 3
 
-  # Local LLM fallback (Llama 3.2 3B via Ollama) — NFR-01 offline guarantee
-  ollama:
-    image: ollama/ollama:latest
-    container_name: hamilton-ollama
-    ports:
-      - "11434:11434"
-    volumes:
-      - ollama-models:/root/.ollama
-    # Model is pulled lazily; first run takes a few minutes.
-    # To preload: docker exec hamilton-ollama ollama pull llama3.2:3b
-
-  # Trust engine (Rust + Tokio + Axum)
+  # Trust engine (Rust + Tokio + Axum). No volume: every `make demo` starts
+  # with an empty DuckDB event log.
   trust-engine:
     build:
       context: ../..
       dockerfile: services/trust-engine/Dockerfile
     container_name: hamilton-trust-engine
+    # tini as PID 1 (here and on the other built services): the processes
+    # install no SIGTERM handler, so without it `make down` waits out the
+    # 10 s stop timeout.
+    init: true
     depends_on:
       mosquitto:
         condition: service_healthy
@@ -40,12 +43,25 @@ services:
       MQTT_BROKER_URL: mqtt://mosquitto:1883
       TRUST_ENGINE_HTTP_PORT: 8080
       TRUST_ENGINE_SPATIAL_RADIUS_M: ${TRUST_ENGINE_SPATIAL_RADIUS_M:-500}
-      RUST_LOG: hamilton=info,trust_engine=debug
+      RUST_LOG: ${RUST_LOG:-trust_engine=info,trust_transport=info,trust_server=info}
     ports:
       - "8080:8080"
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8080/healthz"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
     profiles: ["full"]
 
-  # Comms simulator (Python — Avdiivka scenario)
+  # Comms simulator (Python — Avdiivka scenario), looped for the demo.
+  # One run is COMMS_SIM_DURATION scenario-seconds (default 300): the jammer
+  # is on 0:45–2:15, so the engine's AoE estimate opens (~1:15), goes stale
+  # (2:25) and retires (4:15, 120 s after the evidence stops) inside the run.
+  # Then a fresh process starts the scenario again from 0:00: it clears its
+  # retained calls for fire before t = 0, and the engine has no open episode
+  # left, so the next run opens a new estimate. At COMMS_SIM_SPEED > 1 the
+  # retire (wall-clock 120 s) can outlast a run; the next run then updates
+  # the same estimate instead of opening a new one.
   comms-sim:
     build:
       context: ../..
@@ -54,19 +70,75 @@ services:
     depends_on:
       mosquitto:
         condition: service_healthy
+      # Start the scenario only once the engine is listening, so it sees 0:00.
+      trust-engine:
+        condition: service_healthy
+    init: true
+    entrypoint:
+      - sh
+      - -c
+      - |
+        while :; do
+          comms-sim --duration "$${COMMS_SIM_DURATION}" --truth-out /tmp/truth.json || sleep 3
+          echo "[comms-sim] run finished; restarting the scenario from 0:00"
+        done
     environment:
       MQTT_BROKER_URL: mqtt://mosquitto:1883
       COMMS_SIM_SCENARIO: ${COMMS_SIM_SCENARIO:-avdiivka}
       COMMS_SIM_SPEED: ${COMMS_SIM_SPEED:-1}
       COMMS_SIM_SEED: ${COMMS_SIM_SEED:-42}
+      COMMS_SIM_DURATION: ${COMMS_SIM_DURATION:-300}
     profiles: ["full"]
 
-  # LLM narrator (Node — function-calling abstraction)
+  # Next.js dev server (dev build: ?admin=1 opens the presenter Admin menu)
+  web:
+    build:
+      context: ../..
+      dockerfile: apps/web/Dockerfile.dev
+    container_name: hamilton-web
+    init: true
+    depends_on:
+      mosquitto:
+        condition: service_healthy
+      trust-engine:
+        condition: service_healthy
+    environment:
+      # The browser connects to the broker on the host port; the CSP follows it.
+      NEXT_PUBLIC_MQTT_WS_URL: ws://localhost:9001
+      # cesium | maplibre (make demo RENDERER=…, make demo-fallback).
+      NEXT_PUBLIC_RENDERER: ${NEXT_PUBLIC_RENDERER:-cesium}
+      # Server side of the same-origin /engine/api proxy.
+      ENGINE_HTTP_URL: http://trust-engine:8080
+      # offline | online | none. Empty = offline when apps/web/public/tiles is
+      # provisioned (make demo does it on the first run), else none.
+      # online is DEV ONLY (OSM tiles over the network) — not NFR-01.
+      NEXT_PUBLIC_BASEMAP: ${NEXT_PUBLIC_BASEMAP:-}
+      # 1 = presenter Admin menu always available (make demo ADMIN=1). Empty =
+      # off unless the URL has ?admin=1 (works here: this is a dev build).
+      NEXT_PUBLIC_ADMIN: ${NEXT_PUBLIC_ADMIN:-}
+    ports:
+      - "3000:3000"
+    volumes:
+      # The gitignored offline basemap, provisioned on the host.
+      - ../../apps/web/public/tiles:/app/apps/web/public/tiles:ro
+    healthcheck:
+      # The first request also compiles the page, so the stack is warm once healthy.
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/').then(r=>process.exit(r.ok?0:1),()=>process.exit(1))"]
+      interval: 10s
+      timeout: 120s
+      start_period: 300s
+      retries: 3
+    profiles: ["full"]
+
+  # LLM narrator (Node — function-calling abstraction). Opt-in: the COP does
+  # not render narration today. Without a key or Ollama it runs the
+  # deterministic provider only.
   llm-narrator:
     build:
       context: ../..
       dockerfile: services/llm-narrator/Dockerfile
     container_name: hamilton-llm-narrator
+    init: true
     depends_on:
       mosquitto:
         condition: service_healthy
@@ -74,38 +146,33 @@ services:
       MQTT_BROKER_URL: mqtt://mosquitto:1883
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
       ANTHROPIC_MODEL: ${ANTHROPIC_MODEL:-claude-3-5-sonnet-latest}
-      OLLAMA_URL: http://ollama:11434
+      # Set by `make … NARRATOR=ollama`; empty = no local Llama provider.
+      OLLAMA_URL: ${NARRATOR_OLLAMA_URL:-}
       OLLAMA_MODEL: ${OLLAMA_MODEL:-llama3.2:3b}
-    profiles: ["full"]
+    profiles: ["narrator", "ollama"]
 
-  # Next.js dev server
-  web:
-    build:
-      context: ../..
-      dockerfile: apps/web/Dockerfile.dev
-    container_name: hamilton-web
-    depends_on:
-      mosquitto:
-        condition: service_healthy
-    environment:
-      NEXT_PUBLIC_MQTT_WS_URL: ws://localhost:9001
-      NEXT_PUBLIC_RENDERER: ${NEXT_PUBLIC_RENDERER:-maplibre}
-      ENGINE_HTTP_URL: http://trust-engine:8080
-      # offline | online | none. Empty = offline when apps/web/public/tiles is
-      # provisioned (`make fetch-tiles`, before going offline), else none.
-      # online is DEV ONLY (OSM tiles over the network) — not NFR-01.
-      NEXT_PUBLIC_BASEMAP: ${NEXT_PUBLIC_BASEMAP:-}
-      # 1 = presenter Admin menu (Demo simulation view filter). Empty = off:
-      # no trigger, no shortcuts. A dev build also opens it with ?admin=1.
-      NEXT_PUBLIC_ADMIN: ${NEXT_PUBLIC_ADMIN:-}
+  # Local LLM fallback (Llama 3.2 3B via Ollama) — opt-in: the image is ~9 GB
+  # and the model ~2 GB.
+  ollama:
+    image: ollama/ollama:latest
+    container_name: hamilton-ollama
     ports:
-      - "3000:3000"
+      - "11434:11434"
     volumes:
-      - ../../apps/web:/app/apps/web
-      - ../../packages:/app/packages
-      - /app/apps/web/node_modules
-      - /app/apps/web/.next
-    profiles: ["full"]
+      - ollama-models:/root/.ollama
+    profiles: ["ollama"]
+
+  # One-shot model pull into the ollama-models volume (a no-op once present).
+  ollama-pull:
+    image: ollama/ollama:latest
+    container_name: hamilton-ollama-pull
+    depends_on:
+      - ollama
+    environment:
+      OLLAMA_HOST: http://ollama:11434
+    entrypoint: ["ollama", "pull", "${OLLAMA_MODEL:-llama3.2:3b}"]
+    restart: on-failure:5
+    profiles: ["ollama"]
 
 volumes:
   ollama-models:
