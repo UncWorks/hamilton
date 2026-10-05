@@ -3,6 +3,16 @@
 Field names and types are the contract. Renaming a field here without
 updating Rust will produce silent deserialization failures on the engine
 (the Rust side has #[serde(deny_unknown_fields)]).
+
+Telemetry v2 (docs/plans/jammer-aoe.md §3.1, plan row C4, trimmed MVP):
+`schema: "telemetry/2"`, `rx_class`, `gnss_fix`. `RfObservation` carries no
+`effective_range_km` (FR-04 rev: the sim never sends it).
+
+TEMPORARY (pending the CP1 contract freeze): this shape follows the plan's
+§3.1 sketch. Until CP1 merges into feat/aoe-mvp the engine still requires
+`effective_range_km` and rejects the three v2 fields, so this branch must not
+merge before CP1. Re-align with `packages/contracts/src/telemetry.ts` and
+`fixtures/aoe/telemetry-v2.sample.json` after the freeze.
 """
 
 from __future__ import annotations
@@ -11,6 +21,10 @@ from dataclasses import dataclass
 from typing import Literal
 
 TimeDomainPattern = Literal["continuous", "pulsed", "barrage", "swept"]
+RxClass = Literal["gnss_civil", "gnss_mil", "gnss_mil_crpa", "uhf_comms", "fpv_link"]
+GnssFix = Literal["3d", "2d", "none"]
+
+TELEMETRY_SCHEMA = "telemetry/2"
 
 
 @dataclass(frozen=True)
@@ -20,7 +34,6 @@ class RfObservation:
     gps_l1_overlap: bool
     gps_l2_overlap: bool
     time_domain_pattern: TimeDomainPattern
-    effective_range_km: float
 
     def to_wire(self) -> dict:
         return {
@@ -29,7 +42,6 @@ class RfObservation:
             "gps_l1_overlap": self.gps_l1_overlap,
             "gps_l2_overlap": self.gps_l2_overlap,
             "time_domain_pattern": self.time_domain_pattern,
-            "effective_range_km": self.effective_range_km,
         }
 
 
@@ -37,7 +49,8 @@ class RfObservation:
 class TelemetryPayload:
     """`lat`/`lon` (WGS-84 decimal degrees) are required by the engine's
     spatial discriminator (FR-03). There is no self-reported `degrading`
-    flag: the engine measures degradation itself."""
+    flag: the engine measures degradation itself. `gnss_fix` is the
+    receiver's own fix state (GNSS-class evidence, K2)."""
 
     source_id: str
     lat: float
@@ -45,10 +58,13 @@ class TelemetryPayload:
     inter_arrival_seconds: float
     crc_error_rate: float
     duplicate_rate: float
+    rx_class: RxClass | None = None
+    gnss_fix: GnssFix | None = None
     rf: RfObservation | None = None
 
     def to_wire(self) -> dict:
         body: dict = {
+            "schema": TELEMETRY_SCHEMA,
             "source_id": self.source_id,
             "lat": self.lat,
             "lon": self.lon,
@@ -56,6 +72,10 @@ class TelemetryPayload:
             "crc_error_rate": self.crc_error_rate,
             "duplicate_rate": self.duplicate_rate,
         }
+        if self.rx_class is not None:
+            body["rx_class"] = self.rx_class
+        if self.gnss_fix is not None:
+            body["gnss_fix"] = self.gnss_fix
         if self.rf is not None:
             body["rf"] = self.rf.to_wire()
         return body
