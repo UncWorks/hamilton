@@ -1,7 +1,8 @@
 // At-a-glance symbol metrics: silhouette similarity, colour science and a
-// seeded RNG for the odd-one-out search task. Used by the At-a-Glance bench
-// (Decisions/Evidence, Archive/At-a-Glance Variants) — story tooling, not
-// imported by the app. SIDC assembly lives in track-sidc.ts.
+// seeded RNG for the odd-one-out search task. Written for the At-a-Glance
+// bench behind Decisions/Track Symbology (its results are recorded there);
+// the colour science is still used by the AoE colour-vision stories. Story
+// tooling, not imported by the app. SIDC assembly lives in track-sidc.ts.
 //
 // Deliberately dependency-free (no '@/…' imports, no DOM) so it runs under
 // `node --test` with native type stripping. Rasterisation happens in the

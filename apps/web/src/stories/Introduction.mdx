@@ -22,22 +22,22 @@ Both scripts build `@hamilton/contracts` first (the web app imports its `dist/`)
 
 - **Foundations** — Colors, Trust Bands, Typography, Iconography, Spacing, Motion. Values are read live from
   `tokens.css` / `typography.css`, so they cannot drift from code.
-- **Branding Audit** — the inconsistency list (file:line) and the uncwork → Hamilton component map. Start here.
-- **Decisions** — design decisions with their rationale and evidence:
-  - **Track Symbology** shows the decided track symbol (FM 1-02 / MCRP 5-12A filled frames, side gauge + J, J split,
-    2525E / 2525C / CoT codes, declutter stack). The production code is in `src/components/symbol`, and both live
-    COP renderers (COP/CesiumSpine billboards, COP/MapSpine SVG overlay) draw it — no circles, halo or pulse remain.
-  - **Evidence/At-a-Glance** keeps the measurements behind it auditable.
-- **Brand / Panel / Fires / Terminal / Toggle / COP** — one story file per component, co-located as
+- **Branding Audit** — the open branding inconsistencies, a short record of the resolved ones, and the uncwork →
+  Hamilton component map. Start here.
+- **Decisions** — design decisions with their rationale and evidence. **Track Symbology** shows the decided track
+  symbol (FM 1-02 / MCRP 5-12A filled frames, side gauge + J, J split, 2525E / 2525C / CoT codes, declutter stack) and
+  records the bench measurements and the rejected options behind it. The production code is in
+  `src/components/symbol`, and both live COP renderers (COP/CesiumSpine billboards, COP/MapSpine SVG overlay) draw it:
+  no circles, halo or pulse.
+- **Brand / Panel / Fires / Terminal / Toggle / COP / Admin** — one story file per component, co-located as
   `*.stories.tsx` next to the component.
-- **Pages/COP** — the assembled single-screen COP, including a live replay of the 0:45 → 1:20 crescendo.
-- **Archive** — superseded explorations, kept for the record: Track Symbology options A/B/C/B′, Halo Options and the
-  At-a-Glance variants V0–V4 (the retired halo helpers live in `src/stories/archive/halo.ts`).
+- **Pages/COP** — the assembled single-screen COP, including a live replay of the 0:45 → 1:20 crescendo and the
+  jammer area-of-effect estimate (an area only; the jammer's position is never shown).
 
 ## How stories get data (no broker, no engine)
 
-- **Fixtures**: `src/stories/fixtures/avdiivka.ts` — units A/B/C, trust bands, the three FR-04a candidates (and mock
-  candidate sites), terminal lines; `src/stories/fixtures/missions.ts` — the calls for fire AB1001 / AB1002; `src/stories/fixtures/dense-tracks.ts` — the declutter set. Every payload is parsed through the real `@hamilton/contracts` zod schemas.
+- **Fixtures**: `src/stories/fixtures/avdiivka.ts` — the engine beats for units A/B/C, the 8-unit AoE layout and the
+  frozen emitter estimates, trust bands, the three fingerprint candidates, terminal lines; `src/stories/fixtures/missions.ts` — the calls for fire AB1001 / AB1002; `src/stories/fixtures/dense-tracks.ts` — the declutter set. Every payload is parsed through the real `@hamilton/contracts` zod schemas.
 - **Store**: a global `beforeEach` resets the Zustand store and applies `parameters.hamilton` (a partial state).
   Args-driven stories use `<StoreSeed>`. Docs pages render each story in its own iframe because the store is a
   module singleton.

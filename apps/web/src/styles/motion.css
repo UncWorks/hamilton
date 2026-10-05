@@ -1,10 +1,7 @@
 /* Motion primitives — Branding §6.1.
  * Compositor-friendly only: transform, opacity, clip-path, filter.
  * Reduced-motion fallback for every primitive.
- *
- * The gating-modal-arrival choreography and .motion-cop-blur are removed: the
- * kill-chain modal is superseded by the non-modal TSS mission row, which uses no
- * motion at all (docs/plans/tss-mission-row.md).
+ * The TSS fire-mission row uses no motion (docs/plans/tss-mission-row.md).
  */
 
 @keyframes recovery-pulse {
@@ -21,64 +18,6 @@
 @keyframes hairline-rule-extend {
   0% { transform: scaleX(0); }
   100% { transform: scaleX(1); }
-}
-
-/* ARCHIVE ONLY — track halos (Branding §5.2), retired from the live COP by
- * Decisions/Track Symbology decision 2. Used by Archive stories via
- * src/stories/archive/halo.ts. Geometry comes from that module
- * (haloOuterRadiusPx / haloPeriodMs); these keyframes only scale + fade.
- *
- * Every halo element MUST carry `.halo` (transform-box: fill-box +
- * transform-origin: center). Without it an SVG element's transform-origin
- * resolves against the SVG *viewport* (transform-box: view-box), not the
- * circle — so `scale()` drifted the halo toward the top-left on every pulse.
- *
- * Inputs (custom properties on the element):
- *   --halo-period  ms, haloPeriodMs(score)
- *   --halo-from    start scale, (icon radius + 35% of halo extent) / outer radius
- */
-@keyframes halo-pulse {                 /* Option 1 — LIVE (spec-faithful) */
-  0%, 100% { opacity: 0.35; transform: scale(var(--halo-from, 0.8)); }
-  50% { opacity: 1; transform: scale(1); }
-}
-
-@keyframes halo-ping {                  /* Option 2 — sonar ping (exploration) */
-  0% { opacity: 0.9; transform: scale(var(--halo-from, 0.6)); }
-  100% { opacity: 0; transform: scale(1); }
-}
-
-@keyframes halo-breathe {               /* Option 4 — breathing glow (exploration) */
-  0%, 100% { opacity: 0.25; }
-  50% { opacity: 0.85; }
-}
-
-.halo {
-  transform-box: fill-box;
-  transform-origin: center;
-  animation-duration: var(--halo-period, 1200ms);
-  animation-iteration-count: infinite;
-}
-
-.halo--pulse {
-  animation-name: halo-pulse;
-  animation-timing-function: var(--ease-in-out-smooth);
-}
-
-.halo--ping {
-  animation-name: halo-ping;
-  animation-timing-function: cubic-bezier(0.22, 0.61, 0.36, 1);
-}
-
-.halo--breathe {
-  animation-name: halo-breathe;
-  animation-timing-function: var(--ease-in-out-smooth);
-}
-
-/* Static ring: reduced motion (forced via class or OS setting). */
-.halo--static {
-  animation: none;
-  transform: none;
-  opacity: 0.75;
 }
 
 .motion-candidate-reveal {
@@ -102,11 +41,4 @@
     animation-timing-function: linear;
   }
 
-
-  /* Halos: no pulse — a static ring at the full spec radius (§6.4). */
-  .halo {
-    animation: none;
-    transform: none;
-    opacity: 0.75;
-  }
 }

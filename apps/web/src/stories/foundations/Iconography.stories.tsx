@@ -16,7 +16,7 @@ type Story = StoryObj<typeof meta>;
 
 /**
  * The decided track symbol (Decisions/Track Symbology) — what CesiumSpine and MapSpine draw. FM 1-02 / MCRP 5-12A
- * frame + function icon; the contract sensor type picks the function. Replaces the §5.2 n-gons (archived, G01).
+ * frame + function icon; the contract sensor type picks the function. Replaces the rejected §5.2 n-gons (Decisions/Track Symbology).
  */
 export const TrackSymbology: Story = {
   render: () => (
@@ -31,13 +31,13 @@ export const TrackSymbology: Story = {
             </div>
           ))}
           <div style={{ display: 'grid', justifyItems: 'center', gap: 'var(--space-1)' }}>
-            <TrackSymbol track={{ affiliation: 'enemy', fn: 'ew-jamming', designation: 'J1' }} sizePx={32} margin={4} />
-            <code style={{ ...mono, color: 'var(--text-primary)' }}>jammer fix</code>
+            <TrackSymbol track={{ affiliation: 'enemy', fn: 'ew-jamming', designation: 'HE1' }} sizePx={32} margin={4} />
+            <code style={{ ...mono, color: 'var(--text-primary)' }}>hostile EW</code>
             <code style={{ ...mono, color: 'var(--text-tertiary)' }}>{SYMBOL_FUNCTIONS['ew-jamming'].name}</code>
           </div>
           <div style={{ display: 'grid', justifyItems: 'center', gap: 'var(--space-1)' }}>
-            <TrackSymbol track={{ affiliation: 'enemy', fn: 'ew-jamming', status: 'anticipated', designation: 'C1' }} sizePx={32} margin={4} />
-            <code style={{ ...mono, color: 'var(--text-primary)' }}>candidate site</code>
+            <TrackSymbol track={{ affiliation: 'enemy', fn: 'ew-jamming', status: 'anticipated', designation: 'HE2' }} sizePx={32} margin={4} />
+            <code style={{ ...mono, color: 'var(--text-primary)' }}>anticipated</code>
             <code style={{ ...mono, color: 'var(--text-tertiary)' }}>status 1 (anticipated) — dashed</code>
           </div>
         </div>
@@ -57,8 +57,8 @@ export const TrackSymbology: Story = {
 };
 
 /**
- * Trust cue below the GPS-guided TSS minimum: the side gauge drains and J appears at rest. The pulsing halo this story used to show is
- * retired (Decisions/Track Symbology, decision 2) and lives only in Archive/Halo Options.
+ * Trust cue below the GPS-guided TSS minimum: the side gauge drains and J appears at rest. There is no halo or pulse
+ * (Decisions/Track Symbology, decision 2).
  */
 export const TrustCue: Story = {
   render: () => (

@@ -1,7 +1,6 @@
-// PREVIEW TOKENS — Previews/Jammer AoE only (docs/plans/jammer-aoe.md, open
-// decision "palette"). Not in src/styles/tokens.css on purpose: the palette is
-// a proposal the user has not accepted. If accepted, these become
-// --aoe-* tokens in tokens.css (plan row apps/web/src/styles/tokens.css).
+// AoE palette checks for the colour-vision stories (COP/CesiumSpine and
+// COP/MapSpine › AoE colour vision). AOE_OKLCH mirrors the --aoe-* tokens in
+// src/styles/tokens.css (docs/plans/jammer-aoe.md, decision "palette").
 //
 // Rules (design §3.2):
 // - Never the trust amber / red: those mean "track trust" and "gating".
@@ -40,10 +39,7 @@ export function oklchToRgb(l: number, c: number, hDeg: number): Rgb {
   }) as Rgb;
 }
 
-export const hex = (c: Rgb) => `#${c.map((v) => v.toString(16).padStart(2, '0')).join('')}`;
-export const rgba = (c: Rgb, a: number) => `rgba(${c[0]}, ${c[1]}, ${c[2]}, ${a})`;
-
-/** Proposed AoE palette (OKLCH source values in comments). */
+/** AoE palette (OKLCH source values in comments). */
 export const AOE_OKLCH = {
   /** Civil GNSS denial — violet. */
   gnssCivil: [0.78, 0.13, 315],
@@ -60,9 +56,6 @@ export type AoeHue = keyof typeof AOE_OKLCH;
 export const AOE_RGB: Record<AoeHue, Rgb> = Object.fromEntries(
   Object.entries(AOE_OKLCH).map(([k, v]) => [k, oklchToRgb(v[0], v[1], v[2])]),
 ) as Record<AoeHue, Rgb>;
-
-/** Fill opacity of the 90% contour (design §3.2: 18%). */
-export const AOE_FILL_ALPHA = 0.18;
 
 /**
  * Existing tokens the AoE must stay distinguishable from (tokens.css values).
@@ -128,14 +121,4 @@ export function paletteChecks(): { pairs: PaletteCheck[]; contrast: { hue: AoeHu
     return { hue, ratio, pass: ratio >= EDGE_CONTRAST_MIN };
   });
   return { pairs, contrast };
-}
-
-/** CSS custom properties for the preview frame (scoped: set on the story's root element only). */
-export function aoeCssVars(): Record<string, string> {
-  return {
-    '--aoe-gnss-civil': hex(AOE_RGB.gnssCivil),
-    '--aoe-gnss-mil': hex(AOE_RGB.gnssMil),
-    '--aoe-uhf': hex(AOE_RGB.uhfComms),
-    '--aoe-fpv': hex(AOE_RGB.fpvLink),
-  };
 }

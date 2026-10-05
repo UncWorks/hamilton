@@ -1,42 +1,25 @@
 import { Meta } from '@storybook/blocks';
-import { FINDINGS, FindingsTable, UNCWORK_MAP, UncworkTable } from './support/audit-data';
+import { FINDINGS, FindingsTable, RESOLVED, ResolvedTable, UNCWORK_MAP, UncworkTable } from './support/audit-data';
 
 <Meta title="Branding Audit" />
 
 # Branding audit
 
-Every component in `apps/web` compared against **docs/Branding and Frontend Design.md** (the spec). This page is the
-working list for unifying look-and-feel. Live components are untouched unless a finding says FIXED. The stories render
-them exactly as they ship. Findings marked **RESOLVED BY DECISION** have a decided design (Decisions/Track Symbology)
-that the renderers have not adopted yet. Line numbers point at the tree as of the commit that added Storybook.
+Every component in `apps/web` compared against **docs/Branding and Frontend Design.md** (the spec). This page lists
+what is **still open**; everything the audit raised that has since been fixed, decided or made moot is summarised under
+[Resolved](#resolved). The stories render components exactly as they ship.
 
-{FINDINGS.length} findings: {FINDINGS.filter((f) => f.severity === 'high').length} high,
+{FINDINGS.length} open findings: {FINDINGS.filter((f) => f.severity === 'high').length} high,
 {' '}{FINDINGS.filter((f) => f.severity === 'med').length} medium,
-{' '}{FINDINGS.filter((f) => f.severity === 'low').length} low.
-
-**Fixtures assume PR #1 (fix/fingerprint-trust-inversion) is merged:** `components.fingerprint` is read directly as
-trust (1 − match strength), candidates are the engine's 1.00 / 0.50 / 0.17 for the Avdiivka jammer, and the old
-`1 − overlap` story workaround is gone (F01). Scores and components are the PR #1 engine's per-beat output
-(6733817): A and C hold 1.00, B is WATCH 0.70 → 0.65 from 0:45 to 1:05 and first drops below the GPS-guided TSS
-minimum (C, 0.60) at 1:15 (0.13) (F02). **The kill-chain modal is gone (T01):** the call for fire AB1001 arrives at
-~1:12 and shows TSS FAIL in its mission row at 1:15 — the modal findings A07, A08, A09 and A16 are superseded. Open UX
-item: the directional vector appears at 1:15, not at 1:05 as §10.3 says.
+{' '}{FINDINGS.filter((f) => f.severity === 'low').length} low. {RESOLVED.length} resolved groups.
 
 ## How to use this page
 
-- **Foundations/Colors → Renderer Mirrors / Hard-coded Literals** shows the color drift side by side with Δ values.
+- **Foundations/Colors → Hard-coded Literals** shows the one colour literal left in component code.
 - **Foundations/Trust Bands** shows score → band → rating name, J and the side-gauge symbol the renderers draw.
 - **Foundations/Typography → Families** live-checks whether the self-hosted fonts loaded (they don't — A01).
 - **Decisions/Track Symbology** records the symbology decisions (base symbol, trust cue, J split, standards, radar
-  glyph, declutter) and shows the production symbol in `src/components/symbol`. It resolves G01, S01–S06 and S10 by
-  decision, and supersedes the halo (A15, S05). Both live renderers now draw it (CesiumSpine billboards, MapSpine SVG
-  overlay) with no circle, halo or pulse — A02, A15, S01–S03, S05, S06 and G01 are fixed there; S04 (bearing-line styling)
-  stays open. S07–S09 hold in the decided symbol.
-- **Decisions/Evidence/At-a-Glance** holds the measurements behind the decision (T1–T8, the radar T7 sweep, MCRP vs
-  2525E reference).
-- **COP/TrackSymbol (overlay)** is the retired §5.2 n-gon icon, kept as the G01 reference. No renderer draws it any
-  more.
-- **Archive** keeps the superseded explorations (Track Symbology A/B/C/B′, Halo Options, At-a-Glance variants V0–V4).
+  glyph, declutter), the bench evidence and the rejected options. Both live renderers draw the decided symbol.
 
 ## High severity — the load-bearing look
 
@@ -50,14 +33,18 @@ item: the directional vector appears at 1:15, not at 1:05 as §10.3 says.
 
 <FindingsTable severity="low" />
 
+## Resolved
+
+<ResolvedTable />
+
 ## What is already consistent
 
-- All panel / mission-row / terminal / brand-bar colors go through `var(--…)` tokens — the hard-coded literals are
-  confined to the two WebGL renderers (which can't read CSS) and `app/layout.tsx` `themeColor`.
+- All panel / mission-row / terminal / brand-bar colors go through `var(--…)` tokens — the only hard-coded colour
+  literal is the Cesium globe colour (WebGL can't read CSS) and `app/layout.tsx` `themeColor`.
 - Phosphor literal discipline holds (`scripts/lint-phosphor.sh` passes): the OKLCH phosphor value only appears in
   `tokens.css` and `trust-gradient.ts`.
 - `.trust-readout` tabular numerics are applied to every score numeral (TrustReadout, CandidateCards).
-- Surface tiers are used as specified: base → panel → elevated (the modal-scrim tier is unused since T01).
+- Surface tiers are used as specified: base → panel → elevated.
 
 ## Components without a story of their own
 
@@ -66,9 +53,14 @@ item: the directional vector appears at 1:15, not at 1:05 as §10.3 says.
   the Cesium story loader.
 - **`CandidateCard`, `CitationHover`** (private in `CandidateCards.tsx`) — not exported; covered by
   Panel/CandidateCards (all branches, including the empty filler and no-munitions states).
+- **`AoeCardBlock`** (`panel/AoeCardBlock.tsx`) — rendered by CandidateCards; covered by the AoE stories in
+  COP/CesiumSpine, COP/MapSpine and Pages/COP.
 - **`TraceBullets`** (private in `TrustPanel.tsx`) — covered by Panel/TrustPanel (0–3 bullets via Playground).
 - **`TssMinIndicator`** (private in `TrustReadout.tsx`) — covered by Panel/TrustReadout (above / on / below the TSS minimum).
 - **`RiskForm`, `Branch`, `Chip`** (private in `MissionRow.tsx`) — covered by Fires/Mission Row.
+- **`AdminPanel`** (`admin/AdminPanel.tsx`) — opened by Admin/AdminMenu › Open.
+- **`SpineOverlay`, `AoeKey`, `BasemapAttribution`** (`cop/`) — drawn by the spines; covered by COP/CesiumSpine and
+  COP/MapSpine.
 - **`SpineLoader`** (private in `Spine.tsx`) — only visible while the dynamic chunk loads; flashes in COP/Spine.
 - **`SpineWithProps`** (private in `app/page.tsx`) — page-local adapter; covered by Pages/COP.
 - **WebGL renderers** (`CesiumSpine`, `MapSpine`) — storied and render offline, but need a WebGL-capable browser;
@@ -86,7 +78,7 @@ Hamilton's OKLCH tokens, not copied.
 
 ## Dependency impact (NFR-07)
 
-Storybook adds **five devDependencies** to `apps/web` (`storybook`, `@storybook/nextjs`, `@storybook/react`,
-`@storybook/addon-essentials`, `@storybook/blocks`, all pinned `8.6.18`). **Zero runtime dependencies** — nothing is
-imported from app code, and `next build` output is unchanged. `scripts/count-deps.sh` counts dev + runtime deps
-together, so its ceiling number rises by 5; the ≤25 *runtime* budget is unaffected.
+Storybook adds **six devDependencies** to `apps/web` (`storybook`, `@storybook/nextjs`, `@storybook/react`,
+`@storybook/addon-essentials`, `@storybook/blocks`, `@storybook/test`, all pinned `8.6.18`). **Zero runtime
+dependencies** — nothing is imported from app code, and `next build` output is unchanged. `scripts/count-deps.sh`
+counts dev + runtime deps together; the ≤25 *runtime* budget is unaffected.
