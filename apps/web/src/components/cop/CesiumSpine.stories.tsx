@@ -52,10 +52,10 @@ const meta = {
           'link-trust side gauge and J right of the frame. No circular halo, no pulse. Each symbol is a Cesium ' +
           '**billboard**: `trackSymbolSvg` rasterised at the device pixel ratio, anchored on the frame centre and ' +
           'cached by key (band / gauge step, STALE, J, selection, hover) — a tick that keeps the key only moves the ' +
-          'entity. The jammer is the hostile **EW jamming** symbol J1 with the FR-04a method as its H field; ' +
-          '`candidateSites` draw as anticipated (dashed) EW symbols. Hover or Tab to a symbol for the rating ' +
+          'entity. The jammer\'s position is never presumed (HS-20): no jammer symbol, ring or bearing line; the ' +
+          'emitter estimate is drawn as an area of effect (FR-06a, `emitterEstimate`). Hover or Tab to a symbol for the rating ' +
           'breakdown (`RatingExplanation`); Escape closes; click / Enter selects.\n\n' +
-          '**Camera fit** (`lib/camera-fit.ts`): frames every track plus the jammer / candidate NAI at the ' +
+          '**Camera fit** (`lib/camera-fit.ts`): frames every track (not the AoE estimate) at the ' +
           'fixed −55° pitch (bounding circle → HeadingPitchRange, min range 1.5 km). It re-fits only when a new ' +
           'point appears or one leaves the frame, and never after you pan or zoom; **Fit to tracks** (button or ' +
           '`F`) re-frames and resumes auto-fit.\n\n' +

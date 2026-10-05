@@ -15,8 +15,8 @@ import {
   missionsRecord,
 } from '@/stories/fixtures/missions';
 
-// Fires/Mission Row — the non-modal TSS fire-mission row that replaces the
-// retired kill-chain modal (docs/plans/tss-mission-row.md). Every story seeds
+// Fires/Mission Row — the non-modal TSS fire-mission row
+// (docs/plans/tss-mission-row.md). Every story seeds
 // the real store; MissionQueue evaluates TSS at 1 Hz exactly as in the app, and
 // a TrustHeartbeat re-stamps tracks like the engine's 1 Hz trust payloads.
 

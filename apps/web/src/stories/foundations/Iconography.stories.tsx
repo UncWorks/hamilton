@@ -31,13 +31,13 @@ export const TrackSymbology: Story = {
             </div>
           ))}
           <div style={{ display: 'grid', justifyItems: 'center', gap: 'var(--space-1)' }}>
-            <TrackSymbol track={{ affiliation: 'enemy', fn: 'ew-jamming', designation: 'J1' }} sizePx={32} margin={4} />
-            <code style={{ ...mono, color: 'var(--text-primary)' }}>jammer fix</code>
+            <TrackSymbol track={{ affiliation: 'enemy', fn: 'ew-jamming', designation: 'HE1' }} sizePx={32} margin={4} />
+            <code style={{ ...mono, color: 'var(--text-primary)' }}>hostile EW</code>
             <code style={{ ...mono, color: 'var(--text-tertiary)' }}>{SYMBOL_FUNCTIONS['ew-jamming'].name}</code>
           </div>
           <div style={{ display: 'grid', justifyItems: 'center', gap: 'var(--space-1)' }}>
-            <TrackSymbol track={{ affiliation: 'enemy', fn: 'ew-jamming', status: 'anticipated', designation: 'C1' }} sizePx={32} margin={4} />
-            <code style={{ ...mono, color: 'var(--text-primary)' }}>candidate site</code>
+            <TrackSymbol track={{ affiliation: 'enemy', fn: 'ew-jamming', status: 'anticipated', designation: 'HE2' }} sizePx={32} margin={4} />
+            <code style={{ ...mono, color: 'var(--text-primary)' }}>anticipated</code>
             <code style={{ ...mono, color: 'var(--text-tertiary)' }}>status 1 (anticipated) — dashed</code>
           </div>
         </div>

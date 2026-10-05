@@ -88,7 +88,6 @@ const Z = [
   { layer: 'Brand bar', spec: 20, impl: '20 (BrandBar.tsx:17)' },
   { layer: 'Side panel / terminal', spec: 10, impl: 'none (grid flow)' },
   { layer: 'Citation hover card', spec: 50, impl: 'not implemented (native title tooltip)' },
-  { layer: 'Modal scrim / frame', spec: 90, impl: 'none — modal retired (TSS mission row, no z-layer)' },
 ];
 
 /** §7.2 z-index discipline vs. implementation. */
