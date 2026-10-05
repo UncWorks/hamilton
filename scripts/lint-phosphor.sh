@@ -4,7 +4,7 @@
 #
 # Phosphor green is oklch(85% 0.18 145). It may appear ONLY in:
 #   - --trust-nominal (gradient endpoint)
-#   - --gating-secondary (focus state on modal options)
+#   - --gating-secondary (focus state on TSS branch buttons and toggles)
 #   - the gradient interpolation function in the trust-decay code path
 #
 # Any other use is a design bug.

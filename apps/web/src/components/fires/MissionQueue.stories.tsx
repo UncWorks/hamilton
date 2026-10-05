@@ -52,7 +52,7 @@ const meta = {
           'report age = time since the source\'s last good update, accuracy = "n/a — no TLE source". Gated rows get a 2px ' +
           '`--gating-primary` left rule and a text chip ("FAIL", "E5") — never colour alone. Branches are buttons and keys ' +
           '`1`–`4` on a focused row. No modal, no scrim, no blur, no focus moves; the chip is `aria-live="polite"` only for the ' +
-          'selected mission. Every branch is logged (terminal below: web FDC journal + the engine copy via `/api/modal/selection`). ' +
+          'selected mission. Every branch is logged (terminal below: web FDC journal + the engine copy via `/api/missions/decision`). ' +
           'The decision-point / FFIR tie-in (Alternative C) is not implemented, so the row carries no DP / FFIR tag.',
       },
     },

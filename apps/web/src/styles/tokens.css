@@ -10,7 +10,7 @@
   --surface-base: oklch(14% 0.01 250);
   --surface-panel: oklch(18% 0.012 250);
   --surface-elevated: oklch(22% 0.014 250);
-  --surface-modal-scrim: oklch(8% 0.005 250 / 0.72); /* no modal since the TSS row; kept as the tooltip shadow tint */
+  --surface-popover-shadow: oklch(8% 0.005 250 / 0.72); /* shadow tint under tooltips and popovers */
 
   /* §3.2 Text emphasis */
   --text-primary: oklch(96% 0.005 90);
@@ -87,7 +87,6 @@
   --text-micro: clamp(0.6875rem, 0.65rem + 0.15vw, 0.75rem);
   --text-body: clamp(0.8125rem, 0.78rem + 0.2vw, 0.9375rem);
   --text-panel: clamp(0.9375rem, 0.88rem + 0.3vw, 1.0625rem);
-  --text-modal: clamp(1.5rem, 1.2rem + 1.2vw, 2.25rem); /* unused: modal retired */
   --text-hero: clamp(2.5rem, 1.8rem + 3vw, 4.5rem);
   --text-readout: clamp(2rem, 1.6rem + 2vw, 3.25rem);
 
@@ -97,7 +96,6 @@
   --ease-out-back-subtle: cubic-bezier(0.34, 1.56, 0.64, 1);
 
   /* Durations */
-  --duration-modal-arrival: 420ms; /* unused: modal retired */
   --duration-trust-decay: 800ms;
   --duration-recovery-pulse: 600ms;
   --duration-candidate-reveal: 280ms;

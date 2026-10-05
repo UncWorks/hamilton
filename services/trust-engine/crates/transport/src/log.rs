@@ -1,7 +1,7 @@
 //! After-action log persisted to DuckDB.
 //!
 //! Append-only `events` table — one row per detection event + one row per
-//! modal selection. Streamed to the COP event terminal in Phase 9.
+//! FDC mission decision. Streamed to the COP event terminal in Phase 9.
 //!
 //! `emitter_estimates` (HS-24, FR-04b (9)): one row per AoE estimate state
 //! change (open / update / stale / retire) with the published payload and

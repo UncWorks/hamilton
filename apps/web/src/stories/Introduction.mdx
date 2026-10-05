@@ -41,7 +41,7 @@ Both scripts build `@hamilton/contracts` first (the web app imports its `dist/`)
 - **Store**: a global `beforeEach` resets the Zustand store and applies `parameters.hamilton` (a partial state).
   Args-driven stories use `<StoreSeed>`. Docs pages render each story in its own iframe because the store is a
   module singleton.
-- **Engine HTTP** (`/api/events`, `/api/modal/selection`): `window.fetch` is intercepted per story via
+- **Engine HTTP** (`/api/events`, `/api/missions/decision`): `window.fetch` is intercepted per story via
   `parameters.engineApi` (`events`, `stream`, `unreachable`).
 - **MQTT**: `src/lib/mqtt-client.ts` is swapped by a webpack alias for `.storybook/mocks/mqtt-client.ts`, which
   replays a scripted timeline (`parameters.mqtt.script`: `silent` | `crescendo` | `unreachable`).

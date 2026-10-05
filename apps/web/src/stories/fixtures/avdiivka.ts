@@ -415,8 +415,8 @@ const RAW_EVENTS: DetectionEvent[] = [
   { source_id: 'unit_b', kind: 'temporal_anomaly', message: 'cadence 1.17s → 6.1s', timestamp: clockIso(75) },
   { source_id: 'unit_b', kind: 'stability', message: 'CRC 6% → 14%', timestamp: clockIso(75) },
   { source_id: 'unit_b', kind: 'fingerprint', message: 'ground_based_gps_uhf_barrage 1.00 · pulsed_uhf_wide 0.67 · cellular_uhf_barrage 0.17', timestamp: clockIso(75) },
-  // Engine copy of the FDC's branch [1] on AB1001 (POST /api/modal/selection; mission id rides in source_id).
-  { source_id: 'AB1001/unit_b', kind: 'modal_selection', message: `operator selected (shift_non_gps) at score ${f2(bAt(80).score)}`, timestamp: clockIso(82) },
+  // Engine copy of the FDC's branch [1] on AB1001 (POST /api/missions/decision; mission id rides in source_id).
+  { source_id: 'AB1001/unit_b', kind: 'mission_decision', message: `operator selected (shift_non_gps) at score ${f2(bAt(80).score)}`, timestamp: clockIso(82) },
   { source_id: 'unit_b', kind: 'recovery', message: `trust ${f2(bAt(110).score)} → ${f2(bAt(135).score)} · cadence 1.0s`, timestamp: clockIso(135) },
 ];
 

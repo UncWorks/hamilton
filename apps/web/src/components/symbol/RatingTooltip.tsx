@@ -275,7 +275,7 @@ export const tooltipSurface: CSSProperties = {
   padding: 'var(--space-3)',
   background: 'var(--surface-elevated)',
   border: '1px solid var(--surface-panel)',
-  boxShadow: '0 8px 24px var(--surface-modal-scrim)',
+  boxShadow: '0 8px 24px var(--surface-popover-shadow)',
   textAlign: 'left',
 };
 

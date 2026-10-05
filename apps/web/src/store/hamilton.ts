@@ -228,7 +228,7 @@ function evaluateOne(ms: MissionState, tracks: Record<string, TrackState>, table
 
 /**
  * Persist a branch choice in the engine's after-action log. The engine's
- * existing POST /api/modal/selection takes {source_id, option, score} and
+ * POST /api/missions/decision takes {source_id, option, score} and
  * ignores extra fields, so the mission id rides in source_id
  * ("AB1001/unit_b"). Accept-risk has no engine option and stays web-side.
  * The full record (TSS result, J, report age, role/initials, DTG) is the web
@@ -238,7 +238,7 @@ function postToEngine(entry: DecisionLogEntry, ms: MissionState): void {
   const option = entry.branch ? ENGINE_OPTION[entry.branch] : undefined;
   if (!option || typeof fetch === 'undefined') return;
   const lead = ms.tss?.lead;
-  void fetch(engineUrl('modal/selection'), {
+  void fetch(engineUrl('missions/decision'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({

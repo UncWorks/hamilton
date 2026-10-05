@@ -19,7 +19,7 @@ const meta = {
         component:
           'After-action log (Branding §7.2, 160px sticky bottom). Polls `GET :8080/api/events` every 1s — here the ' +
           'engine API is mocked via `parameters.engineApi`. Hover pauses tail-following (header flips to ' +
-          '`--gating-primary`). Kind colors: tss / branch / re-rate (FDC journal) and the engine modal_* kinds (shown as tss_fail / branch) → gating, fingerprint → trust-degraded, recovery → ' +
+          '`--gating-primary`). Kind colors: tss / branch / re-rate (FDC journal) and the engine mission_decision kind (shown as branch) → gating, fingerprint → trust-degraded, recovery → ' +
           'trust-nominal, everything else → text-secondary.',
       },
     },
@@ -54,8 +54,7 @@ const ALL_KINDS: DetectionEvent[] = (
     'stability',
     'spatial',
     'fingerprint',
-    'modal_gated',
-    'modal_selection',
+    'mission_decision',
     'recovery',
   ] as const
 )

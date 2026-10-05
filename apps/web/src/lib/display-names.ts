@@ -119,13 +119,12 @@ export const ENGINE_KIND_LABEL: Readonly<Record<string, string>> = {
   stability: 'link errors',
   spatial: 'neighbours',
   fingerprint: 'jammer match',
-  modal_gated: 'TSS fail',
-  modal_selection: 'branch',
+  mission_decision: 'branch',
   recovery: 'recovery',
   emitter_estimate: 'est. GPS denial',
 };
 
-/** Engine branch options (POST /api/modal/selection) in FDC words. */
+/** Engine branch options (POST /api/missions/decision) in FDC words. */
 const ENGINE_OPTION_LABEL: Readonly<Record<string, string>> = {
   delay_60s: 'AT MY COMMAND (60 s re-rate)',
   shift_non_gps: 'shift to a non-GPS round',

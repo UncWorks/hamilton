@@ -45,7 +45,7 @@ export function StoreSeed({ seed, children }: { seed: HamiltonSeed; children: Re
 }
 
 // ---------------------------------------------------------------------------
-// Engine HTTP API (/api/events, /api/modal/selection) — fetch interception
+// Engine HTTP API (/api/events, /api/missions/decision) — fetch interception
 // ---------------------------------------------------------------------------
 
 export interface EngineApiMock {
@@ -66,7 +66,7 @@ export interface EngineApiMock {
 const realFetch: typeof fetch | undefined =
   typeof window !== 'undefined' ? window.fetch.bind(window) : undefined;
 
-/** Bodies POSTed to the engine's /api/modal/selection (branch log copies). */
+/** Bodies POSTed to the engine's /api/missions/decision (branch log copies). */
 export const engineSelections: unknown[] = [];
 
 export function installEngineApi(mock: EngineApiMock = {}): void {
@@ -89,11 +89,11 @@ export function installEngineApi(mock: EngineApiMock = {}): void {
         headers: { 'Content-Type': 'application/json' },
       });
     }
-    if (url.includes('/api/modal/selection')) {
+    if (url.includes('/api/missions/decision')) {
       const body = typeof init?.body === 'string' ? JSON.parse(init.body) : init?.body;
       engineSelections.push(body);
       // eslint-disable-next-line no-console
-      console.info('[storybook] POST /api/modal/selection', body);
+      console.info('[storybook] POST /api/missions/decision', body);
       return new Response('{}', { status: 200 });
     }
     return realFetch(input, init);

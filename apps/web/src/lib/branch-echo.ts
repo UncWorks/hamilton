@@ -7,10 +7,10 @@
 //
 // Dependency-free (type-only imports) so it runs under `node --test`.
 
-import type { DetectionEvent, ModalOption } from '@hamilton/contracts';
+import type { BranchOption, DetectionEvent } from '@hamilton/contracts';
 
 /** Engine option for a branch; accept_risk has none and stays web-side. */
-export const ENGINE_OPTION: Readonly<Partial<Record<string, ModalOption>>> = {
+export const ENGINE_OPTION: Readonly<Partial<Record<string, BranchOption>>> = {
   shift_munition: 'shift_non_gps',
   confirm_alt: 'confirm_alt_channel',
   at_my_command: 'delay_60s',
@@ -39,7 +39,7 @@ export function journalEchoes(events: readonly DetectionEvent[], journal: readon
     let best = -1;
     let bestDt = Infinity;
     events.forEach((e, i) => {
-      if (hidden.has(i) || e.kind !== 'modal_selection' || optionOf(e) !== option) return;
+      if (hidden.has(i) || e.kind !== 'mission_decision' || optionOf(e) !== option) return;
       if (e.source_id.split('/')[0] !== j.mission_id) return;
       const dt = Math.abs(Date.parse(e.timestamp) - tj);
       if (dt <= ECHO_WINDOW_MS && dt < bestDt) {

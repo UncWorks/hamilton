@@ -1,12 +1,12 @@
 // Same-origin proxy to the trust engine's HTTP API (/api/events,
-// /api/modal/selection). The engine (axum) sends no CORS headers, so the
+// /api/missions/decision). The engine (axum) sends no CORS headers, so the
 // browser cannot call http://localhost:8080 directly from :3000; this keeps
 // the after-action log and branch logging working without an engine change.
 
 import type { NextRequest } from 'next/server';
 
 const ENGINE = process.env.ENGINE_HTTP_URL ?? 'http://localhost:8080';
-const ALLOWED = new Set(['events', 'modal/selection']);
+const ALLOWED = new Set(['events', 'missions/decision']);
 
 export const dynamic = 'force-dynamic';
 

@@ -15,7 +15,6 @@ const SCALE_ROLE: Record<string, string> = {
   '--text-micro': 'citation, timestamp, eyebrows',
   '--text-body': 'trust-trace bullets, body',
   '--text-panel': 'side-panel headers',
-  '--text-modal': 'unused since the modal was retired (TSS mission row)',
   '--text-hero': 'deck slide titles (unused in app)',
   '--text-readout': 'the trust score numeral',
 };

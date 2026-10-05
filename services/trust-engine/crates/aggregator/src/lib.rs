@@ -590,7 +590,7 @@ mod tests {
 
     // Storyboard gate timing (System Design §2, Branding §10): WATCH band
     // (0.60–0.85) from 0:45, first crossing below the ROE floor when the
-    // jammer lands at 1:15 (modal at 1:20), still gated at 1:50, recovered
+    // jammer lands at 1:15 (TSS FAIL in the mission row), still gated at 1:50, recovered
     // (≥ 0.85) at 2:15. A and C stay at full trust throughout.
     #[test]
     fn avdiivka_beats_end_to_end() {

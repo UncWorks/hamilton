@@ -99,19 +99,22 @@ pub enum DetectionKind {
     Stability,
     Spatial,
     Fingerprint,
-    ModalGated,
-    ModalSelection,
+    /// An FDC branch choice on a fire mission (`POST /api/missions/decision`).
+    /// Logs written before the rename stored it as `modal_selection`.
+    #[serde(alias = "modal_selection")]
+    MissionDecision,
     Recovery,
     /// Jammer AoE estimate opened / updated / stale / retired (HS-24).
     EmitterEstimate,
 }
 
-/// Three concrete options shown in the kill-chain modal at Beat 1:20
-/// (URS UR-07). Validated as an enum to reject garbage strings at the
+/// The FDC branches the engine logs (`POST /api/missions/decision`): [1]
+/// shift to a non-GPS round, [2] confirm via an alternate channel, [3] AT MY
+/// COMMAND re-rate. Validated as an enum to reject garbage strings at the
 /// request boundary.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
-pub enum ModalOption {
+pub enum BranchOption {
     Delay60s,
     ShiftNonGps,
     ConfirmAltChannel,
@@ -504,6 +507,18 @@ mod tests {
             serde_json::to_string(&DetectionKind::EmitterEstimate).unwrap(),
             "\"emitter_estimate\""
         );
+    }
+
+    #[test]
+    fn mission_decision_wire_name_reads_pre_rename_logs() {
+        assert_eq!(
+            serde_json::to_string(&DetectionKind::MissionDecision).unwrap(),
+            "\"mission_decision\""
+        );
+        // After-action logs written before the rename hold `modal_selection`.
+        let old: DetectionKind = serde_json::from_str("\"modal_selection\"").unwrap();
+        assert_eq!(old, DetectionKind::MissionDecision);
+        assert!(serde_json::from_str::<DetectionKind>("\"modal_gated\"").is_err());
     }
 }
 

@@ -3,6 +3,6 @@
  * Goes through the same-origin proxy app/engine/api/[...path]/route.ts
  * because the engine sends no CORS headers.
  */
-export function engineUrl(path: 'events' | 'modal/selection', query = ''): string {
+export function engineUrl(path: 'events' | 'missions/decision', query = ''): string {
   return `/engine/api/${path}${query}`;
 }

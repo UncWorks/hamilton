@@ -7,7 +7,7 @@ import { journalEchoes } from './branch-echo.ts';
 
 const ev = (over: Partial<DetectionEvent> = {}): DetectionEvent => ({
   source_id: 'AB1001/unit_b',
-  kind: 'modal_selection',
+  kind: 'mission_decision',
   message: 'operator selected (shift_non_gps) at score 0.13',
   values: { option: 'shift_non_gps', score: 0.13 },
   timestamp: '2026-10-05T04:18:06.400Z',

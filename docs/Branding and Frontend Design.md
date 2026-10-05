@@ -115,7 +115,7 @@ OKLCH is non-negotiable — it is the only color space that gives the trust-scor
 | `--surface-base` | `oklch(14% 0.01 250)` | Page / map dead-space; near-black with a 1% blue undertone so it doesn't look like flat `#000` |
 | `--surface-panel` | `oklch(18% 0.012 250)` | Side panel, event terminal background |
 | `--surface-elevated` | `oklch(22% 0.014 250)` | Modal, hover cards, citation surfaces |
-| `--surface-modal-scrim` | `oklch(8% 0.005 250 / 0.72)` | Beat 1:20 modal scrim — knocks the COP back without erasing it (R16 — operator must still see context) |
+| `--surface-popover-shadow` | `oklch(8% 0.005 250 / 0.72)` | Shadow tint under tooltips and popovers (rating tooltip, stack list, Admin panel). Was `--surface-modal-scrim`, the Beat 1:20 modal scrim, retired with the modal |
 
 Three depth tiers minimum. Layering is how the *gating* moment reads as gravity rather than as a toast.
 
@@ -212,7 +212,7 @@ Two families. **No third font.** No serif "for headlines." The serif impulse is 
   --text-micro:  clamp(0.6875rem, 0.65rem + 0.15vw, 0.75rem);   /* citation, timestamp */
   --text-body:   clamp(0.8125rem, 0.78rem + 0.2vw, 0.9375rem);  /* trust-trace bullets */
   --text-panel:  clamp(0.9375rem, 0.88rem + 0.3vw, 1.0625rem);  /* side panel headers */
-  --text-modal:  clamp(1.5rem, 1.2rem + 1.2vw, 2.25rem);        /* "Kill-chain gated below ROE floor" */
+  /* --text-modal ("Kill-chain gated below ROE floor") removed: the modal is retired (TSS mission row). */
   --text-hero:   clamp(2.5rem, 1.8rem + 3vw, 4.5rem);           /* deck slide titles */
   --text-readout: clamp(2rem, 1.6rem + 2vw, 3.25rem);           /* the trust score numeral itself */
 }
