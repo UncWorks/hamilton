@@ -1,0 +1,9179 @@
+{
+ "_generated": "scripts/aoe-preview/gen_fixtures.py --contract-out \u2014 do not edit by hand. Test-only golden inputs for the estimator (E11 golden.rs). The engine binary never reads this file.",
+ "b_moved": {
+  "enu_km": [
+   -5.0,
+   0.0
+  ],
+  "key": "B@moved",
+  "lat": 48.14,
+  "lon": 37.67769,
+  "rx_class": "gnss_civil",
+  "source_id": "unit_b"
+ },
+ "demo": [
+  {
+   "degraded_by_class": {
+    "gnss_civil": [
+     "unit_b",
+     "unit_d",
+     "unit_e",
+     "unit_h"
+    ],
+    "gnss_mil": []
+   },
+   "evidence": [
+    {
+     "enu_km": [
+      0.0,
+      0.0
+     ],
+     "js_db": 41.592,
+     "key": "B",
+     "lat": 48.14,
+     "lon": 37.745,
+     "rx_class": "gnss_civil",
+     "shadow_db": 0.005,
+     "source_id": "unit_b",
+     "state": "degraded"
+    },
+    {
+     "enu_km": [
+      0.5,
+      4.0
+     ],
+     "js_db": 42.902,
+     "key": "D",
+     "lat": 48.17593,
+     "lon": 37.75173,
+     "rx_class": "gnss_civil",
+     "shadow_db": 1.195,
+     "source_id": "unit_d",
+     "state": "degraded"
+    },
+    {
+     "enu_km": [
+      0.3,
+      -4.0
+     ],
+     "js_db": 38.896,
+     "key": "E",
+     "lat": 48.10407,
+     "lon": 37.74904,
+     "rx_class": "gnss_civil",
+     "shadow_db": -1.097,
+     "source_id": "unit_e",
+     "state": "degraded"
+    },
+    {
+     "enu_km": [
+      -3.0,
+      -1.5
+     ],
+     "js_db": 33.012,
+     "key": "C",
+     "lat": 48.12653,
+     "lon": 37.70462,
+     "rx_class": "gnss_civil",
+     "shadow_db": -3.562,
+     "source_id": "unit_c",
+     "state": "healthy"
+    },
+    {
+     "enu_km": [
+      -7.0,
+      0.5
+     ],
+     "js_db": 30.266,
+     "key": "A",
+     "lat": 48.14449,
+     "lon": 37.65077,
+     "rx_class": "gnss_mil",
+     "shadow_db": -1.819,
+     "source_id": "unit_a",
+     "state": "healthy"
+    },
+    {
+     "enu_km": [
+      -6.0,
+      -5.0
+     ],
+     "js_db": 27.999,
+     "key": "F",
+     "lat": 48.09508,
+     "lon": 37.66423,
+     "rx_class": "gnss_mil",
+     "shadow_db": -3.967,
+     "source_id": "unit_f",
+     "state": "healthy"
+    },
+    {
+     "enu_km": [
+      -9.0,
+      3.0
+     ],
+     "js_db": 30.245,
+     "key": "G",
+     "lat": 48.16695,
+     "lon": 37.62385,
+     "rx_class": "gnss_civil",
+     "shadow_db": 0.241,
+     "source_id": "unit_g",
+     "state": "healthy"
+    },
+    {
+     "enu_km": [
+      -1.5,
+      6.0
+     ],
+     "js_db": 42.866,
+     "key": "H",
+     "lat": 48.1939,
+     "lon": 37.72481,
+     "rx_class": "gnss_civil",
+     "shadow_db": 5.361,
+     "source_id": "unit_h",
+     "state": "degraded"
+    }
+   ],
+   "healthy_by_class": {
+    "gnss_civil": [
+     "unit_c",
+     "unit_g"
+    ],
+    "gnss_mil": [
+     "unit_a",
+     "unit_f"
+    ]
+   },
+   "id": "demo_b115",
+   "preview_reference": {
+    "any_healthy_civil": true,
+    "area90_km2": 905.8,
+    "truth_in_region90": true
+   },
+   "seed": 7
+  },
+  {
+   "degraded_by_class": {
+    "gnss_civil": [
+     "unit_b",
+     "unit_d",
+     "unit_e",
+     "unit_h"
+    ],
+    "gnss_mil": []
+   },
+   "evidence": [
+    {
+     "enu_km": [
+      0.0,
+      0.0
+     ],
+     "js_db": 41.592,
+     "key": "B",
+     "lat": 48.14,
+     "lon": 37.745,
+     "rx_class": "gnss_civil",
+     "shadow_db": 0.005,
+     "source_id": "unit_b",
+     "state": "degraded"
+    },
+    {
+     "enu_km": [
+      0.5,
+      4.0
+     ],
+     "js_db": 42.902,
+     "key": "D",
+     "lat": 48.17593,
+     "lon": 37.75173,
+     "rx_class": "gnss_civil",
+     "shadow_db": 1.195,
+     "source_id": "unit_d",
+     "state": "degraded"
+    },
+    {
+     "enu_km": [
+      0.3,
+      -4.0
+     ],
+     "js_db": 38.896,
+     "key": "E",
+     "lat": 48.10407,
+     "lon": 37.74904,
+     "rx_class": "gnss_civil",
+     "shadow_db": -1.097,
+     "source_id": "unit_e",
+     "state": "degraded"
+    },
+    {
+     "enu_km": [
+      -3.0,
+      -1.5
+     ],
+     "js_db": 33.012,
+     "key": "C",
+     "lat": 48.12653,
+     "lon": 37.70462,
+     "rx_class": "gnss_civil",
+     "shadow_db": -3.562,
+     "source_id": "unit_c",
+     "state": "healthy"
+    },
+    {
+     "enu_km": [
+      -7.0,
+      0.5
+     ],
+     "js_db": 30.266,
+     "key": "A",
+     "lat": 48.14449,
+     "lon": 37.65077,
+     "rx_class": "gnss_mil",
+     "shadow_db": -1.819,
+     "source_id": "unit_a",
+     "state": "healthy"
+    },
+    {
+     "enu_km": [
+      -6.0,
+      -5.0
+     ],
+     "js_db": 27.999,
+     "key": "F",
+     "lat": 48.09508,
+     "lon": 37.66423,
+     "rx_class": "gnss_mil",
+     "shadow_db": -3.967,
+     "source_id": "unit_f",
+     "state": "healthy"
+    },
+    {
+     "enu_km": [
+      -9.0,
+      3.0
+     ],
+     "js_db": 30.245,
+     "key": "G",
+     "lat": 48.16695,
+     "lon": 37.62385,
+     "rx_class": "gnss_civil",
+     "shadow_db": 0.241,
+     "source_id": "unit_g",
+     "state": "healthy"
+    },
+    {
+     "enu_km": [
+      -1.5,
+      6.0
+     ],
+     "js_db": 42.866,
+     "key": "H",
+     "lat": 48.1939,
+     "lon": 37.72481,
+     "rx_class": "gnss_civil",
+     "shadow_db": 5.361,
+     "source_id": "unit_h",
+     "state": "degraded"
+    },
+    {
+     "enu_km": [
+      -5.0,
+      0.0
+     ],
+     "js_db": 34.301,
+     "key": "B@moved",
+     "lat": 48.14,
+     "lon": 37.67769,
+     "rx_class": "gnss_civil",
+     "shadow_db": 0.005,
+     "source_id": "unit_b",
+     "state": "healthy"
+    }
+   ],
+   "healthy_by_class": {
+    "gnss_civil": [
+     "unit_b",
+     "unit_c",
+     "unit_g"
+    ],
+    "gnss_mil": [
+     "unit_a",
+     "unit_f"
+    ]
+   },
+   "id": "demo_b150",
+   "preview_reference": {
+    "any_healthy_civil": true,
+    "area90_km2": 809.2,
+    "truth_in_region90": true
+   },
+   "seed": 7
+  }
+ ],
+ "demo_truth": {
+  "back_db": -20.0,
+  "eirp_w": 300.0,
+  "enu_km": [
+   9.5,
+   1.0
+  ],
+  "erp_dbm": 54.7712,
+  "lat": 48.14898,
+  "lon": 37.87289,
+  "mast_m": 10.0,
+  "sector_az_deg": 270.0,
+  "sector_width_deg": 125.0,
+  "shadow_seed": 7
+ },
+ "demo_truth_cell": {
+  "ix": 138,
+  "iy": 124,
+  "x_km": 9.5,
+  "y_km": 1.0
+ },
+ "model": {
+  "grid": {
+   "note": "the preview grid; the engine grid extent is its own (units +/- R_max), same 250 m step",
+   "nx": 341,
+   "ny": 241,
+   "res_km": 0.25,
+   "x_km": [
+    -25.0,
+    60.0
+   ],
+   "y_km": [
+    -30.0,
+    30.0
+   ]
+  },
+  "hypotheses": {
+   "erp_dbm": [
+    54.8,
+    57.4,
+    60.0
+   ],
+   "mast_m": [
+    10.0,
+    30.0,
+    60.0
+   ]
+  },
+  "likelihood": "binary probit: P(degraded | cell, hyp) = clip(Phi((J/S - T_class) / sigma_db), 1e-6, 1 - 1e-6)",
+  "link": {
+   "f_mhz": 1575.42,
+   "g_r_jam_dbi": -5.0,
+   "h_rx_m": 2.0,
+   "s_dbm": -125.0
+  },
+  "order": [
+   "B",
+   "D",
+   "E",
+   "C",
+   "A",
+   "F",
+   "G",
+   "H"
+  ],
+  "origin": {
+   "km_per_deg_lat": 111.32,
+   "km_per_deg_lon": 74.285257031,
+   "lat": 48.14,
+   "lon": 37.745,
+   "projection": "equirectangular at the origin: lat = lat0 + y/km_per_deg_lat, lon = lon0 + x/km_per_deg_lon"
+  },
+  "prior": {
+   "enemy_side": 1.0,
+   "flot_x_km": 1.0,
+   "friendly_side": 0.02,
+   "standoff": {
+    "band_km_behind_flot": [
+     2.0,
+     25.0
+    ],
+    "enabled": true,
+    "outside_band_weight": 0.1
+   }
+  },
+  "region90": "HPD: smallest cell set holding 90% of the emitter-location marginal",
+  "shadow": "per unit, drawn in ORDER from numpy default_rng(seed).normal(0, 4.0) (sim truth only)",
+  "sigma_db": 6.0,
+  "thresholds_db": {
+   "gnss_civil": 36.0,
+   "gnss_mil": 41.0
+  }
+ },
+ "sweeps": [
+  {
+   "assertion": {
+    "kind": "containment_min",
+    "min_contained": 15,
+    "of": 20
+   },
+   "id": "demo_truth_seed_sweep",
+   "preview_reference_contained": 17,
+   "runs": [
+    {
+     "degraded_by_class": {
+      "gnss_civil": [
+       "unit_b",
+       "unit_c",
+       "unit_d",
+       "unit_e",
+       "unit_h"
+      ],
+      "gnss_mil": []
+     },
+     "evidence": [
+      {
+       "enu_km": [
+        0.0,
+        0.0
+       ],
+       "js_db": 42.09,
+       "key": "B",
+       "lat": 48.14,
+       "lon": 37.745,
+       "rx_class": "gnss_civil",
+       "shadow_db": 0.503,
+       "source_id": "unit_b",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        0.5,
+        4.0
+       ],
+       "js_db": 41.179,
+       "key": "D",
+       "lat": 48.17593,
+       "lon": 37.75173,
+       "rx_class": "gnss_civil",
+       "shadow_db": -0.528,
+       "source_id": "unit_d",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        0.3,
+        -4.0
+       ],
+       "js_db": 42.554,
+       "key": "E",
+       "lat": 48.10407,
+       "lon": 37.74904,
+       "rx_class": "gnss_civil",
+       "shadow_db": 2.562,
+       "source_id": "unit_e",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        -3.0,
+        -1.5
+       ],
+       "js_db": 36.994,
+       "key": "C",
+       "lat": 48.12653,
+       "lon": 37.70462,
+       "rx_class": "gnss_civil",
+       "shadow_db": 0.42,
+       "source_id": "unit_c",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        -7.0,
+        0.5
+       ],
+       "js_db": 29.942,
+       "key": "A",
+       "lat": 48.14449,
+       "lon": 37.65077,
+       "rx_class": "gnss_mil",
+       "shadow_db": -2.143,
+       "source_id": "unit_a",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -6.0,
+        -5.0
+       ],
+       "js_db": 33.412,
+       "key": "F",
+       "lat": 48.09508,
+       "lon": 37.66423,
+       "rx_class": "gnss_mil",
+       "shadow_db": 1.446,
+       "source_id": "unit_f",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -9.0,
+        3.0
+       ],
+       "js_db": 35.22,
+       "key": "G",
+       "lat": 48.16695,
+       "lon": 37.62385,
+       "rx_class": "gnss_civil",
+       "shadow_db": 5.216,
+       "source_id": "unit_g",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -1.5,
+        6.0
+       ],
+       "js_db": 41.293,
+       "key": "H",
+       "lat": 48.1939,
+       "lon": 37.72481,
+       "rx_class": "gnss_civil",
+       "shadow_db": 3.788,
+       "source_id": "unit_h",
+       "state": "degraded"
+      }
+     ],
+     "healthy_by_class": {
+      "gnss_civil": [
+       "unit_g"
+      ],
+      "gnss_mil": [
+       "unit_a",
+       "unit_f"
+      ]
+     },
+     "id": "demo_truth_seed_sweep_s0",
+     "preview_reference": {
+      "any_healthy_civil": true,
+      "area90_km2": 985.0,
+      "truth_in_region90": true
+     },
+     "seed": 0
+    },
+    {
+     "degraded_by_class": {
+      "gnss_civil": [
+       "unit_b",
+       "unit_d",
+       "unit_e",
+       "unit_h"
+      ],
+      "gnss_mil": []
+     },
+     "evidence": [
+      {
+       "enu_km": [
+        0.0,
+        0.0
+       ],
+       "js_db": 42.969,
+       "key": "B",
+       "lat": 48.14,
+       "lon": 37.745,
+       "rx_class": "gnss_civil",
+       "shadow_db": 1.382,
+       "source_id": "unit_b",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        0.5,
+        4.0
+       ],
+       "js_db": 44.993,
+       "key": "D",
+       "lat": 48.17593,
+       "lon": 37.75173,
+       "rx_class": "gnss_civil",
+       "shadow_db": 3.286,
+       "source_id": "unit_d",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        0.3,
+        -4.0
+       ],
+       "js_db": 41.314,
+       "key": "E",
+       "lat": 48.10407,
+       "lon": 37.74904,
+       "rx_class": "gnss_civil",
+       "shadow_db": 1.322,
+       "source_id": "unit_e",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        -3.0,
+        -1.5
+       ],
+       "js_db": 31.362,
+       "key": "C",
+       "lat": 48.12653,
+       "lon": 37.70462,
+       "rx_class": "gnss_civil",
+       "shadow_db": -5.213,
+       "source_id": "unit_c",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -7.0,
+        0.5
+       ],
+       "js_db": 35.706,
+       "key": "A",
+       "lat": 48.14449,
+       "lon": 37.65077,
+       "rx_class": "gnss_mil",
+       "shadow_db": 3.621,
+       "source_id": "unit_a",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -6.0,
+        -5.0
+       ],
+       "js_db": 33.751,
+       "key": "F",
+       "lat": 48.09508,
+       "lon": 37.66423,
+       "rx_class": "gnss_mil",
+       "shadow_db": 1.785,
+       "source_id": "unit_f",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -9.0,
+        3.0
+       ],
+       "js_db": 27.856,
+       "key": "G",
+       "lat": 48.16695,
+       "lon": 37.62385,
+       "rx_class": "gnss_civil",
+       "shadow_db": -2.148,
+       "source_id": "unit_g",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -1.5,
+        6.0
+       ],
+       "js_db": 39.829,
+       "key": "H",
+       "lat": 48.1939,
+       "lon": 37.72481,
+       "rx_class": "gnss_civil",
+       "shadow_db": 2.324,
+       "source_id": "unit_h",
+       "state": "degraded"
+      }
+     ],
+     "healthy_by_class": {
+      "gnss_civil": [
+       "unit_c",
+       "unit_g"
+      ],
+      "gnss_mil": [
+       "unit_a",
+       "unit_f"
+      ]
+     },
+     "id": "demo_truth_seed_sweep_s1",
+     "preview_reference": {
+      "any_healthy_civil": true,
+      "area90_km2": 905.8,
+      "truth_in_region90": true
+     },
+     "seed": 1
+    },
+    {
+     "degraded_by_class": {
+      "gnss_civil": [
+       "unit_b",
+       "unit_d",
+       "unit_e",
+       "unit_h"
+      ],
+      "gnss_mil": []
+     },
+     "evidence": [
+      {
+       "enu_km": [
+        0.0,
+        0.0
+       ],
+       "js_db": 42.343,
+       "key": "B",
+       "lat": 48.14,
+       "lon": 37.745,
+       "rx_class": "gnss_civil",
+       "shadow_db": 0.756,
+       "source_id": "unit_b",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        0.5,
+        4.0
+       ],
+       "js_db": 39.616,
+       "key": "D",
+       "lat": 48.17593,
+       "lon": 37.75173,
+       "rx_class": "gnss_civil",
+       "shadow_db": -2.091,
+       "source_id": "unit_d",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        0.3,
+        -4.0
+       ],
+       "js_db": 38.34,
+       "key": "E",
+       "lat": 48.10407,
+       "lon": 37.74904,
+       "rx_class": "gnss_civil",
+       "shadow_db": -1.652,
+       "source_id": "unit_e",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        -3.0,
+        -1.5
+       ],
+       "js_db": 26.809,
+       "key": "C",
+       "lat": 48.12653,
+       "lon": 37.70462,
+       "rx_class": "gnss_civil",
+       "shadow_db": -9.766,
+       "source_id": "unit_c",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -7.0,
+        0.5
+       ],
+       "js_db": 39.283,
+       "key": "A",
+       "lat": 48.14449,
+       "lon": 37.65077,
+       "rx_class": "gnss_mil",
+       "shadow_db": 7.199,
+       "source_id": "unit_a",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -6.0,
+        -5.0
+       ],
+       "js_db": 36.542,
+       "key": "F",
+       "lat": 48.09508,
+       "lon": 37.66423,
+       "rx_class": "gnss_mil",
+       "shadow_db": 4.577,
+       "source_id": "unit_f",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -9.0,
+        3.0
+       ],
+       "js_db": 28.702,
+       "key": "G",
+       "lat": 48.16695,
+       "lon": 37.62385,
+       "rx_class": "gnss_civil",
+       "shadow_db": -1.302,
+       "source_id": "unit_g",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -1.5,
+        6.0
+       ],
+       "js_db": 40.6,
+       "key": "H",
+       "lat": 48.1939,
+       "lon": 37.72481,
+       "rx_class": "gnss_civil",
+       "shadow_db": 3.095,
+       "source_id": "unit_h",
+       "state": "degraded"
+      }
+     ],
+     "healthy_by_class": {
+      "gnss_civil": [
+       "unit_c",
+       "unit_g"
+      ],
+      "gnss_mil": [
+       "unit_a",
+       "unit_f"
+      ]
+     },
+     "id": "demo_truth_seed_sweep_s2",
+     "preview_reference": {
+      "any_healthy_civil": true,
+      "area90_km2": 905.8,
+      "truth_in_region90": true
+     },
+     "seed": 2
+    },
+    {
+     "degraded_by_class": {
+      "gnss_civil": [
+       "unit_b",
+       "unit_e",
+       "unit_h"
+      ],
+      "gnss_mil": []
+     },
+     "evidence": [
+      {
+       "enu_km": [
+        0.0,
+        0.0
+       ],
+       "js_db": 49.751,
+       "key": "B",
+       "lat": 48.14,
+       "lon": 37.745,
+       "rx_class": "gnss_civil",
+       "shadow_db": 8.164,
+       "source_id": "unit_b",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        0.5,
+        4.0
+       ],
+       "js_db": 31.484,
+       "key": "D",
+       "lat": 48.17593,
+       "lon": 37.75173,
+       "rx_class": "gnss_civil",
+       "shadow_db": -10.223,
+       "source_id": "unit_d",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        0.3,
+        -4.0
+       ],
+       "js_db": 41.665,
+       "key": "E",
+       "lat": 48.10407,
+       "lon": 37.74904,
+       "rx_class": "gnss_civil",
+       "shadow_db": 1.672,
+       "source_id": "unit_e",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        -3.0,
+        -1.5
+       ],
+       "js_db": 34.304,
+       "key": "C",
+       "lat": 48.12653,
+       "lon": 37.70462,
+       "rx_class": "gnss_civil",
+       "shadow_db": -2.271,
+       "source_id": "unit_c",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -7.0,
+        0.5
+       ],
+       "js_db": 30.274,
+       "key": "A",
+       "lat": 48.14449,
+       "lon": 37.65077,
+       "rx_class": "gnss_mil",
+       "shadow_db": -1.811,
+       "source_id": "unit_a",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -6.0,
+        -5.0
+       ],
+       "js_db": 31.103,
+       "key": "F",
+       "lat": 48.09508,
+       "lon": 37.66423,
+       "rx_class": "gnss_mil",
+       "shadow_db": -0.862,
+       "source_id": "unit_f",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -9.0,
+        3.0
+       ],
+       "js_db": 21.924,
+       "key": "G",
+       "lat": 48.16695,
+       "lon": 37.62385,
+       "rx_class": "gnss_civil",
+       "shadow_db": -8.08,
+       "source_id": "unit_g",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -1.5,
+        6.0
+       ],
+       "js_db": 36.577,
+       "key": "H",
+       "lat": 48.1939,
+       "lon": 37.72481,
+       "rx_class": "gnss_civil",
+       "shadow_db": -0.928,
+       "source_id": "unit_h",
+       "state": "degraded"
+      }
+     ],
+     "healthy_by_class": {
+      "gnss_civil": [
+       "unit_c",
+       "unit_d",
+       "unit_g"
+      ],
+      "gnss_mil": [
+       "unit_a",
+       "unit_f"
+      ]
+     },
+     "id": "demo_truth_seed_sweep_s3",
+     "preview_reference": {
+      "any_healthy_civil": true,
+      "area90_km2": 886.2,
+      "truth_in_region90": true
+     },
+     "seed": 3
+    },
+    {
+     "degraded_by_class": {
+      "gnss_civil": [
+       "unit_b",
+       "unit_c",
+       "unit_d",
+       "unit_e",
+       "unit_h"
+      ],
+      "gnss_mil": []
+     },
+     "evidence": [
+      {
+       "enu_km": [
+        0.0,
+        0.0
+       ],
+       "js_db": 38.98,
+       "key": "B",
+       "lat": 48.14,
+       "lon": 37.745,
+       "rx_class": "gnss_civil",
+       "shadow_db": -2.607,
+       "source_id": "unit_b",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        0.5,
+        4.0
+       ],
+       "js_db": 41.008,
+       "key": "D",
+       "lat": 48.17593,
+       "lon": 37.75173,
+       "rx_class": "gnss_civil",
+       "shadow_db": -0.699,
+       "source_id": "unit_d",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        0.3,
+        -4.0
+       ],
+       "js_db": 46.647,
+       "key": "E",
+       "lat": 48.10407,
+       "lon": 37.74904,
+       "rx_class": "gnss_civil",
+       "shadow_db": 6.655,
+       "source_id": "unit_e",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        -3.0,
+        -1.5
+       ],
+       "js_db": 39.211,
+       "key": "C",
+       "lat": 48.12653,
+       "lon": 37.70462,
+       "rx_class": "gnss_civil",
+       "shadow_db": 2.637,
+       "source_id": "unit_c",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        -7.0,
+        0.5
+       ],
+       "js_db": 25.519,
+       "key": "A",
+       "lat": 48.14449,
+       "lon": 37.65077,
+       "rx_class": "gnss_mil",
+       "shadow_db": -6.566,
+       "source_id": "unit_a",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -6.0,
+        -5.0
+       ],
+       "js_db": 31.945,
+       "key": "F",
+       "lat": 48.09508,
+       "lon": 37.66423,
+       "rx_class": "gnss_mil",
+       "shadow_db": -0.021,
+       "source_id": "unit_f",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -9.0,
+        3.0
+       ],
+       "js_db": 27.51,
+       "key": "G",
+       "lat": 48.16695,
+       "lon": 37.62385,
+       "rx_class": "gnss_civil",
+       "shadow_db": -2.494,
+       "source_id": "unit_g",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -1.5,
+        6.0
+       ],
+       "js_db": 38.099,
+       "key": "H",
+       "lat": 48.1939,
+       "lon": 37.72481,
+       "rx_class": "gnss_civil",
+       "shadow_db": 0.595,
+       "source_id": "unit_h",
+       "state": "degraded"
+      }
+     ],
+     "healthy_by_class": {
+      "gnss_civil": [
+       "unit_g"
+      ],
+      "gnss_mil": [
+       "unit_a",
+       "unit_f"
+      ]
+     },
+     "id": "demo_truth_seed_sweep_s4",
+     "preview_reference": {
+      "any_healthy_civil": true,
+      "area90_km2": 985.0,
+      "truth_in_region90": true
+     },
+     "seed": 4
+    },
+    {
+     "degraded_by_class": {
+      "gnss_civil": [
+       "unit_b",
+       "unit_c",
+       "unit_d",
+       "unit_e"
+      ],
+      "gnss_mil": []
+     },
+     "evidence": [
+      {
+       "enu_km": [
+        0.0,
+        0.0
+       ],
+       "js_db": 38.379,
+       "key": "B",
+       "lat": 48.14,
+       "lon": 37.745,
+       "rx_class": "gnss_civil",
+       "shadow_db": -3.208,
+       "source_id": "unit_b",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        0.5,
+        4.0
+       ],
+       "js_db": 36.41,
+       "key": "D",
+       "lat": 48.17593,
+       "lon": 37.75173,
+       "rx_class": "gnss_civil",
+       "shadow_db": -5.297,
+       "source_id": "unit_d",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        0.3,
+        -4.0
+       ],
+       "js_db": 38.999,
+       "key": "E",
+       "lat": 48.10407,
+       "lon": 37.74904,
+       "rx_class": "gnss_civil",
+       "shadow_db": -0.993,
+       "source_id": "unit_e",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        -3.0,
+        -1.5
+       ],
+       "js_db": 38.257,
+       "key": "C",
+       "lat": 48.12653,
+       "lon": 37.70462,
+       "rx_class": "gnss_civil",
+       "shadow_db": 1.682,
+       "source_id": "unit_c",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        -7.0,
+        0.5
+       ],
+       "js_db": 36.629,
+       "key": "A",
+       "lat": 48.14449,
+       "lon": 37.65077,
+       "rx_class": "gnss_mil",
+       "shadow_db": 4.544,
+       "source_id": "unit_a",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -6.0,
+        -5.0
+       ],
+       "js_db": 32.405,
+       "key": "F",
+       "lat": 48.09508,
+       "lon": 37.66423,
+       "rx_class": "gnss_mil",
+       "shadow_db": 0.439,
+       "source_id": "unit_f",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -9.0,
+        3.0
+       ],
+       "js_db": 27.793,
+       "key": "G",
+       "lat": 48.16695,
+       "lon": 37.62385,
+       "rx_class": "gnss_civil",
+       "shadow_db": -2.211,
+       "source_id": "unit_g",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -1.5,
+        6.0
+       ],
+       "js_db": 34.366,
+       "key": "H",
+       "lat": 48.1939,
+       "lon": 37.72481,
+       "rx_class": "gnss_civil",
+       "shadow_db": -3.139,
+       "source_id": "unit_h",
+       "state": "healthy"
+      }
+     ],
+     "healthy_by_class": {
+      "gnss_civil": [
+       "unit_g",
+       "unit_h"
+      ],
+      "gnss_mil": [
+       "unit_a",
+       "unit_f"
+      ]
+     },
+     "id": "demo_truth_seed_sweep_s5",
+     "preview_reference": {
+      "any_healthy_civil": true,
+      "area90_km2": 849.1,
+      "truth_in_region90": true
+     },
+     "seed": 5
+    },
+    {
+     "degraded_by_class": {
+      "gnss_civil": [
+       "unit_b",
+       "unit_c",
+       "unit_d",
+       "unit_h"
+      ],
+      "gnss_mil": []
+     },
+     "evidence": [
+      {
+       "enu_km": [
+        0.0,
+        0.0
+       ],
+       "js_db": 45.8,
+       "key": "B",
+       "lat": 48.14,
+       "lon": 37.745,
+       "rx_class": "gnss_civil",
+       "shadow_db": 4.212,
+       "source_id": "unit_b",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        0.5,
+        4.0
+       ],
+       "js_db": 48.813,
+       "key": "D",
+       "lat": 48.17593,
+       "lon": 37.75173,
+       "rx_class": "gnss_civil",
+       "shadow_db": 7.106,
+       "source_id": "unit_d",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        0.3,
+        -4.0
+       ],
+       "js_db": 29.779,
+       "key": "E",
+       "lat": 48.10407,
+       "lon": 37.74904,
+       "rx_class": "gnss_civil",
+       "shadow_db": -10.213,
+       "source_id": "unit_e",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -3.0,
+        -1.5
+       ],
+       "js_db": 36.023,
+       "key": "C",
+       "lat": 48.12653,
+       "lon": 37.70462,
+       "rx_class": "gnss_civil",
+       "shadow_db": -0.552,
+       "source_id": "unit_c",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        -7.0,
+        0.5
+       ],
+       "js_db": 36.139,
+       "key": "A",
+       "lat": 48.14449,
+       "lon": 37.65077,
+       "rx_class": "gnss_mil",
+       "shadow_db": 4.055,
+       "source_id": "unit_a",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -6.0,
+        -5.0
+       ],
+       "js_db": 37.374,
+       "key": "F",
+       "lat": 48.09508,
+       "lon": 37.66423,
+       "rx_class": "gnss_mil",
+       "shadow_db": 5.409,
+       "source_id": "unit_f",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -9.0,
+        3.0
+       ],
+       "js_db": 32.619,
+       "key": "G",
+       "lat": 48.16695,
+       "lon": 37.62385,
+       "rx_class": "gnss_civil",
+       "shadow_db": 2.615,
+       "source_id": "unit_g",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -1.5,
+        6.0
+       ],
+       "js_db": 43.493,
+       "key": "H",
+       "lat": 48.1939,
+       "lon": 37.72481,
+       "rx_class": "gnss_civil",
+       "shadow_db": 5.988,
+       "source_id": "unit_h",
+       "state": "degraded"
+      }
+     ],
+     "healthy_by_class": {
+      "gnss_civil": [
+       "unit_e",
+       "unit_g"
+      ],
+      "gnss_mil": [
+       "unit_a",
+       "unit_f"
+      ]
+     },
+     "id": "demo_truth_seed_sweep_s6",
+     "preview_reference": {
+      "any_healthy_civil": true,
+      "area90_km2": 798.6,
+      "truth_in_region90": true
+     },
+     "seed": 6
+    },
+    {
+     "degraded_by_class": {
+      "gnss_civil": [
+       "unit_b",
+       "unit_d",
+       "unit_e",
+       "unit_h"
+      ],
+      "gnss_mil": []
+     },
+     "evidence": [
+      {
+       "enu_km": [
+        0.0,
+        0.0
+       ],
+       "js_db": 41.592,
+       "key": "B",
+       "lat": 48.14,
+       "lon": 37.745,
+       "rx_class": "gnss_civil",
+       "shadow_db": 0.005,
+       "source_id": "unit_b",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        0.5,
+        4.0
+       ],
+       "js_db": 42.902,
+       "key": "D",
+       "lat": 48.17593,
+       "lon": 37.75173,
+       "rx_class": "gnss_civil",
+       "shadow_db": 1.195,
+       "source_id": "unit_d",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        0.3,
+        -4.0
+       ],
+       "js_db": 38.896,
+       "key": "E",
+       "lat": 48.10407,
+       "lon": 37.74904,
+       "rx_class": "gnss_civil",
+       "shadow_db": -1.097,
+       "source_id": "unit_e",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        -3.0,
+        -1.5
+       ],
+       "js_db": 33.012,
+       "key": "C",
+       "lat": 48.12653,
+       "lon": 37.70462,
+       "rx_class": "gnss_civil",
+       "shadow_db": -3.562,
+       "source_id": "unit_c",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -7.0,
+        0.5
+       ],
+       "js_db": 30.266,
+       "key": "A",
+       "lat": 48.14449,
+       "lon": 37.65077,
+       "rx_class": "gnss_mil",
+       "shadow_db": -1.819,
+       "source_id": "unit_a",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -6.0,
+        -5.0
+       ],
+       "js_db": 27.999,
+       "key": "F",
+       "lat": 48.09508,
+       "lon": 37.66423,
+       "rx_class": "gnss_mil",
+       "shadow_db": -3.967,
+       "source_id": "unit_f",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -9.0,
+        3.0
+       ],
+       "js_db": 30.245,
+       "key": "G",
+       "lat": 48.16695,
+       "lon": 37.62385,
+       "rx_class": "gnss_civil",
+       "shadow_db": 0.241,
+       "source_id": "unit_g",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -1.5,
+        6.0
+       ],
+       "js_db": 42.866,
+       "key": "H",
+       "lat": 48.1939,
+       "lon": 37.72481,
+       "rx_class": "gnss_civil",
+       "shadow_db": 5.361,
+       "source_id": "unit_h",
+       "state": "degraded"
+      }
+     ],
+     "healthy_by_class": {
+      "gnss_civil": [
+       "unit_c",
+       "unit_g"
+      ],
+      "gnss_mil": [
+       "unit_a",
+       "unit_f"
+      ]
+     },
+     "id": "demo_truth_seed_sweep_s7",
+     "preview_reference": {
+      "any_healthy_civil": true,
+      "area90_km2": 905.8,
+      "truth_in_region90": true
+     },
+     "seed": 7
+    },
+    {
+     "degraded_by_class": {
+      "gnss_civil": [
+       "unit_d",
+       "unit_h"
+      ],
+      "gnss_mil": []
+     },
+     "evidence": [
+      {
+       "enu_km": [
+        0.0,
+        0.0
+       ],
+       "js_db": 34.634,
+       "key": "B",
+       "lat": 48.14,
+       "lon": 37.745,
+       "rx_class": "gnss_civil",
+       "shadow_db": -6.953,
+       "source_id": "unit_b",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        0.5,
+        4.0
+       ],
+       "js_db": 36.36,
+       "key": "D",
+       "lat": 48.17593,
+       "lon": 37.75173,
+       "rx_class": "gnss_civil",
+       "shadow_db": -5.347,
+       "source_id": "unit_d",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        0.3,
+        -4.0
+       ],
+       "js_db": 34.548,
+       "key": "E",
+       "lat": 48.10407,
+       "lon": 37.74904,
+       "rx_class": "gnss_civil",
+       "shadow_db": -5.444,
+       "source_id": "unit_e",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -3.0,
+        -1.5
+       ],
+       "js_db": 35.168,
+       "key": "C",
+       "lat": 48.12653,
+       "lon": 37.70462,
+       "rx_class": "gnss_civil",
+       "shadow_db": -1.406,
+       "source_id": "unit_c",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -7.0,
+        0.5
+       ],
+       "js_db": 22.834,
+       "key": "A",
+       "lat": 48.14449,
+       "lon": 37.65077,
+       "rx_class": "gnss_mil",
+       "shadow_db": -9.25,
+       "source_id": "unit_a",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -6.0,
+        -5.0
+       ],
+       "js_db": 31.21,
+       "key": "F",
+       "lat": 48.09508,
+       "lon": 37.66423,
+       "rx_class": "gnss_mil",
+       "shadow_db": -0.756,
+       "source_id": "unit_f",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -9.0,
+        3.0
+       ],
+       "js_db": 26.175,
+       "key": "G",
+       "lat": 48.16695,
+       "lon": 37.62385,
+       "rx_class": "gnss_civil",
+       "shadow_db": -3.829,
+       "source_id": "unit_g",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -1.5,
+        6.0
+       ],
+       "js_db": 41.079,
+       "key": "H",
+       "lat": 48.1939,
+       "lon": 37.72481,
+       "rx_class": "gnss_civil",
+       "shadow_db": 3.574,
+       "source_id": "unit_h",
+       "state": "degraded"
+      }
+     ],
+     "healthy_by_class": {
+      "gnss_civil": [
+       "unit_b",
+       "unit_c",
+       "unit_e",
+       "unit_g"
+      ],
+      "gnss_mil": [
+       "unit_a",
+       "unit_f"
+      ]
+     },
+     "id": "demo_truth_seed_sweep_s8",
+     "preview_reference": {
+      "any_healthy_civil": true,
+      "area90_km2": 477.1,
+      "truth_in_region90": false
+     },
+     "seed": 8
+    },
+    {
+     "degraded_by_class": {
+      "gnss_civil": [
+       "unit_b",
+       "unit_c",
+       "unit_d",
+       "unit_h"
+      ],
+      "gnss_mil": []
+     },
+     "evidence": [
+      {
+       "enu_km": [
+        0.0,
+        0.0
+       ],
+       "js_db": 38.376,
+       "key": "B",
+       "lat": 48.14,
+       "lon": 37.745,
+       "rx_class": "gnss_civil",
+       "shadow_db": -3.211,
+       "source_id": "unit_b",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        0.5,
+        4.0
+       ],
+       "js_db": 42.678,
+       "key": "D",
+       "lat": 48.17593,
+       "lon": 37.75173,
+       "rx_class": "gnss_civil",
+       "shadow_db": 0.971,
+       "source_id": "unit_d",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        0.3,
+        -4.0
+       ],
+       "js_db": 33.367,
+       "key": "E",
+       "lat": 48.10407,
+       "lon": 37.74904,
+       "rx_class": "gnss_civil",
+       "shadow_db": -6.625,
+       "source_id": "unit_e",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -3.0,
+        -1.5
+       ],
+       "js_db": 39.199,
+       "key": "C",
+       "lat": 48.12653,
+       "lon": 37.70462,
+       "rx_class": "gnss_civil",
+       "shadow_db": 2.624,
+       "source_id": "unit_c",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        -7.0,
+        0.5
+       ],
+       "js_db": 36.658,
+       "key": "A",
+       "lat": 48.14449,
+       "lon": 37.65077,
+       "rx_class": "gnss_mil",
+       "shadow_db": 4.574,
+       "source_id": "unit_a",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -6.0,
+        -5.0
+       ],
+       "js_db": 30.155,
+       "key": "F",
+       "lat": 48.09508,
+       "lon": 37.66423,
+       "rx_class": "gnss_mil",
+       "shadow_db": -1.81,
+       "source_id": "unit_f",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -9.0,
+        3.0
+       ],
+       "js_db": 31.726,
+       "key": "G",
+       "lat": 48.16695,
+       "lon": 37.62385,
+       "rx_class": "gnss_civil",
+       "shadow_db": 1.722,
+       "source_id": "unit_g",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -1.5,
+        6.0
+       ],
+       "js_db": 38.508,
+       "key": "H",
+       "lat": 48.1939,
+       "lon": 37.72481,
+       "rx_class": "gnss_civil",
+       "shadow_db": 1.004,
+       "source_id": "unit_h",
+       "state": "degraded"
+      }
+     ],
+     "healthy_by_class": {
+      "gnss_civil": [
+       "unit_e",
+       "unit_g"
+      ],
+      "gnss_mil": [
+       "unit_a",
+       "unit_f"
+      ]
+     },
+     "id": "demo_truth_seed_sweep_s9",
+     "preview_reference": {
+      "any_healthy_civil": true,
+      "area90_km2": 798.6,
+      "truth_in_region90": true
+     },
+     "seed": 9
+    },
+    {
+     "degraded_by_class": {
+      "gnss_civil": [
+       "unit_b",
+       "unit_c",
+       "unit_d",
+       "unit_e",
+       "unit_h"
+      ],
+      "gnss_mil": []
+     },
+     "evidence": [
+      {
+       "enu_km": [
+        0.0,
+        0.0
+       ],
+       "js_db": 37.174,
+       "key": "B",
+       "lat": 48.14,
+       "lon": 37.745,
+       "rx_class": "gnss_civil",
+       "shadow_db": -4.413,
+       "source_id": "unit_b",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        0.5,
+        4.0
+       ],
+       "js_db": 38.807,
+       "key": "D",
+       "lat": 48.17593,
+       "lon": 37.75173,
+       "rx_class": "gnss_civil",
+       "shadow_db": -2.9,
+       "source_id": "unit_d",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        0.3,
+        -4.0
+       ],
+       "js_db": 36.865,
+       "key": "E",
+       "lat": 48.10407,
+       "lon": 37.74904,
+       "rx_class": "gnss_civil",
+       "shadow_db": -3.127,
+       "source_id": "unit_e",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        -3.0,
+        -1.5
+       ],
+       "js_db": 37.643,
+       "key": "C",
+       "lat": 48.12653,
+       "lon": 37.70462,
+       "rx_class": "gnss_civil",
+       "shadow_db": 1.068,
+       "source_id": "unit_c",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        -7.0,
+        0.5
+       ],
+       "js_db": 31.09,
+       "key": "A",
+       "lat": 48.14449,
+       "lon": 37.65077,
+       "rx_class": "gnss_mil",
+       "shadow_db": -0.994,
+       "source_id": "unit_a",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -6.0,
+        -5.0
+       ],
+       "js_db": 32.472,
+       "key": "F",
+       "lat": 48.09508,
+       "lon": 37.66423,
+       "rx_class": "gnss_mil",
+       "shadow_db": 0.506,
+       "source_id": "unit_f",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -9.0,
+        3.0
+       ],
+       "js_db": 33.376,
+       "key": "G",
+       "lat": 48.16695,
+       "lon": 37.62385,
+       "rx_class": "gnss_civil",
+       "shadow_db": 3.372,
+       "source_id": "unit_g",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -1.5,
+        6.0
+       ],
+       "js_db": 40.937,
+       "key": "H",
+       "lat": 48.1939,
+       "lon": 37.72481,
+       "rx_class": "gnss_civil",
+       "shadow_db": 3.432,
+       "source_id": "unit_h",
+       "state": "degraded"
+      }
+     ],
+     "healthy_by_class": {
+      "gnss_civil": [
+       "unit_g"
+      ],
+      "gnss_mil": [
+       "unit_a",
+       "unit_f"
+      ]
+     },
+     "id": "demo_truth_seed_sweep_s10",
+     "preview_reference": {
+      "any_healthy_civil": true,
+      "area90_km2": 985.0,
+      "truth_in_region90": true
+     },
+     "seed": 10
+    },
+    {
+     "degraded_by_class": {
+      "gnss_civil": [
+       "unit_b",
+       "unit_d",
+       "unit_e",
+       "unit_h"
+      ],
+      "gnss_mil": []
+     },
+     "evidence": [
+      {
+       "enu_km": [
+        0.0,
+        0.0
+       ],
+       "js_db": 41.724,
+       "key": "B",
+       "lat": 48.14,
+       "lon": 37.745,
+       "rx_class": "gnss_civil",
+       "shadow_db": 0.137,
+       "source_id": "unit_b",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        0.5,
+        4.0
+       ],
+       "js_db": 47.146,
+       "key": "D",
+       "lat": 48.17593,
+       "lon": 37.75173,
+       "rx_class": "gnss_civil",
+       "shadow_db": 5.439,
+       "source_id": "unit_d",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        0.3,
+        -4.0
+       ],
+       "js_db": 44.891,
+       "key": "E",
+       "lat": 48.10407,
+       "lon": 37.74904,
+       "rx_class": "gnss_civil",
+       "shadow_db": 4.899,
+       "source_id": "unit_e",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        -3.0,
+        -1.5
+       ],
+       "js_db": 34.534,
+       "key": "C",
+       "lat": 48.12653,
+       "lon": 37.70462,
+       "rx_class": "gnss_civil",
+       "shadow_db": -2.041,
+       "source_id": "unit_c",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -7.0,
+        0.5
+       ],
+       "js_db": 30.893,
+       "key": "A",
+       "lat": 48.14449,
+       "lon": 37.65077,
+       "rx_class": "gnss_mil",
+       "shadow_db": -1.192,
+       "source_id": "unit_a",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -6.0,
+        -5.0
+       ],
+       "js_db": 29.856,
+       "key": "F",
+       "lat": 48.09508,
+       "lon": 37.66423,
+       "rx_class": "gnss_mil",
+       "shadow_db": -2.11,
+       "source_id": "unit_f",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -9.0,
+        3.0
+       ],
+       "js_db": 32.283,
+       "key": "G",
+       "lat": 48.16695,
+       "lon": 37.62385,
+       "rx_class": "gnss_civil",
+       "shadow_db": 2.279,
+       "source_id": "unit_g",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -1.5,
+        6.0
+       ],
+       "js_db": 37.28,
+       "key": "H",
+       "lat": 48.1939,
+       "lon": 37.72481,
+       "rx_class": "gnss_civil",
+       "shadow_db": -0.224,
+       "source_id": "unit_h",
+       "state": "degraded"
+      }
+     ],
+     "healthy_by_class": {
+      "gnss_civil": [
+       "unit_c",
+       "unit_g"
+      ],
+      "gnss_mil": [
+       "unit_a",
+       "unit_f"
+      ]
+     },
+     "id": "demo_truth_seed_sweep_s11",
+     "preview_reference": {
+      "any_healthy_civil": true,
+      "area90_km2": 905.8,
+      "truth_in_region90": true
+     },
+     "seed": 11
+    },
+    {
+     "degraded_by_class": {
+      "gnss_civil": [
+       "unit_b",
+       "unit_c",
+       "unit_d",
+       "unit_e"
+      ],
+      "gnss_mil": []
+     },
+     "evidence": [
+      {
+       "enu_km": [
+        0.0,
+        0.0
+       ],
+       "js_db": 41.56,
+       "key": "B",
+       "lat": 48.14,
+       "lon": 37.745,
+       "rx_class": "gnss_civil",
+       "shadow_db": -0.027,
+       "source_id": "unit_b",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        0.5,
+        4.0
+       ],
+       "js_db": 45.892,
+       "key": "D",
+       "lat": 48.17593,
+       "lon": 37.75173,
+       "rx_class": "gnss_civil",
+       "shadow_db": 4.185,
+       "source_id": "unit_d",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        0.3,
+        -4.0
+       ],
+       "js_db": 42.959,
+       "key": "E",
+       "lat": 48.10407,
+       "lon": 37.74904,
+       "rx_class": "gnss_civil",
+       "shadow_db": 2.966,
+       "source_id": "unit_e",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        -3.0,
+        -1.5
+       ],
+       "js_db": 39.471,
+       "key": "C",
+       "lat": 48.12653,
+       "lon": 37.70462,
+       "rx_class": "gnss_civil",
+       "shadow_db": 2.896,
+       "source_id": "unit_c",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        -7.0,
+        0.5
+       ],
+       "js_db": 38.56,
+       "key": "A",
+       "lat": 48.14449,
+       "lon": 37.65077,
+       "rx_class": "gnss_mil",
+       "shadow_db": 6.475,
+       "source_id": "unit_a",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -6.0,
+        -5.0
+       ],
+       "js_db": 27.144,
+       "key": "F",
+       "lat": 48.09508,
+       "lon": 37.66423,
+       "rx_class": "gnss_mil",
+       "shadow_db": -4.822,
+       "source_id": "unit_f",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -9.0,
+        3.0
+       ],
+       "js_db": 27.496,
+       "key": "G",
+       "lat": 48.16695,
+       "lon": 37.62385,
+       "rx_class": "gnss_civil",
+       "shadow_db": -2.508,
+       "source_id": "unit_g",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -1.5,
+        6.0
+       ],
+       "js_db": 32.222,
+       "key": "H",
+       "lat": 48.1939,
+       "lon": 37.72481,
+       "rx_class": "gnss_civil",
+       "shadow_db": -5.283,
+       "source_id": "unit_h",
+       "state": "healthy"
+      }
+     ],
+     "healthy_by_class": {
+      "gnss_civil": [
+       "unit_g",
+       "unit_h"
+      ],
+      "gnss_mil": [
+       "unit_a",
+       "unit_f"
+      ]
+     },
+     "id": "demo_truth_seed_sweep_s12",
+     "preview_reference": {
+      "any_healthy_civil": true,
+      "area90_km2": 849.1,
+      "truth_in_region90": true
+     },
+     "seed": 12
+    },
+    {
+     "degraded_by_class": {
+      "gnss_civil": [
+       "unit_b",
+       "unit_c",
+       "unit_e",
+       "unit_g",
+       "unit_h"
+      ],
+      "gnss_mil": []
+     },
+     "evidence": [
+      {
+       "enu_km": [
+        0.0,
+        0.0
+       ],
+       "js_db": 48.894,
+       "key": "B",
+       "lat": 48.14,
+       "lon": 37.745,
+       "rx_class": "gnss_civil",
+       "shadow_db": 7.307,
+       "source_id": "unit_b",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        0.5,
+        4.0
+       ],
+       "js_db": 29.394,
+       "key": "D",
+       "lat": 48.17593,
+       "lon": 37.75173,
+       "rx_class": "gnss_civil",
+       "shadow_db": -12.313,
+       "source_id": "unit_d",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        0.3,
+        -4.0
+       ],
+       "js_db": 43.825,
+       "key": "E",
+       "lat": 48.10407,
+       "lon": 37.74904,
+       "rx_class": "gnss_civil",
+       "shadow_db": 3.832,
+       "source_id": "unit_e",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        -3.0,
+        -1.5
+       ],
+       "js_db": 36.853,
+       "key": "C",
+       "lat": 48.12653,
+       "lon": 37.70462,
+       "rx_class": "gnss_civil",
+       "shadow_db": 0.279,
+       "source_id": "unit_c",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        -7.0,
+        0.5
+       ],
+       "js_db": 37.357,
+       "key": "A",
+       "lat": 48.14449,
+       "lon": 37.65077,
+       "rx_class": "gnss_mil",
+       "shadow_db": 5.273,
+       "source_id": "unit_a",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -6.0,
+        -5.0
+       ],
+       "js_db": 33.508,
+       "key": "F",
+       "lat": 48.09508,
+       "lon": 37.66423,
+       "rx_class": "gnss_mil",
+       "shadow_db": 1.543,
+       "source_id": "unit_f",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -9.0,
+        3.0
+       ],
+       "js_db": 37.313,
+       "key": "G",
+       "lat": 48.16695,
+       "lon": 37.62385,
+       "rx_class": "gnss_civil",
+       "shadow_db": 7.309,
+       "source_id": "unit_g",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        -1.5,
+        6.0
+       ],
+       "js_db": 37.632,
+       "key": "H",
+       "lat": 48.1939,
+       "lon": 37.72481,
+       "rx_class": "gnss_civil",
+       "shadow_db": 0.127,
+       "source_id": "unit_h",
+       "state": "degraded"
+      }
+     ],
+     "healthy_by_class": {
+      "gnss_civil": [
+       "unit_d"
+      ],
+      "gnss_mil": [
+       "unit_a",
+       "unit_f"
+      ]
+     },
+     "id": "demo_truth_seed_sweep_s13",
+     "preview_reference": {
+      "any_healthy_civil": true,
+      "area90_km2": 932.9,
+      "truth_in_region90": false
+     },
+     "seed": 13
+    },
+    {
+     "degraded_by_class": {
+      "gnss_civil": [
+       "unit_b",
+       "unit_d",
+       "unit_h"
+      ],
+      "gnss_mil": []
+     },
+     "evidence": [
+      {
+       "enu_km": [
+        0.0,
+        0.0
+       ],
+       "js_db": 44.369,
+       "key": "B",
+       "lat": 48.14,
+       "lon": 37.745,
+       "rx_class": "gnss_civil",
+       "shadow_db": 2.782,
+       "source_id": "unit_b",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        0.5,
+        4.0
+       ],
+       "js_db": 37.789,
+       "key": "D",
+       "lat": 48.17593,
+       "lon": 37.75173,
+       "rx_class": "gnss_civil",
+       "shadow_db": -3.918,
+       "source_id": "unit_d",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        0.3,
+        -4.0
+       ],
+       "js_db": 33.698,
+       "key": "E",
+       "lat": 48.10407,
+       "lon": 37.74904,
+       "rx_class": "gnss_civil",
+       "shadow_db": -6.294,
+       "source_id": "unit_e",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -3.0,
+        -1.5
+       ],
+       "js_db": 24.875,
+       "key": "C",
+       "lat": 48.12653,
+       "lon": 37.70462,
+       "rx_class": "gnss_civil",
+       "shadow_db": -11.7,
+       "source_id": "unit_c",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -7.0,
+        0.5
+       ],
+       "js_db": 30.672,
+       "key": "A",
+       "lat": 48.14449,
+       "lon": 37.65077,
+       "rx_class": "gnss_mil",
+       "shadow_db": -1.413,
+       "source_id": "unit_a",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -6.0,
+        -5.0
+       ],
+       "js_db": 36.956,
+       "key": "F",
+       "lat": 48.09508,
+       "lon": 37.66423,
+       "rx_class": "gnss_mil",
+       "shadow_db": 4.99,
+       "source_id": "unit_f",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -9.0,
+        3.0
+       ],
+       "js_db": 30.136,
+       "key": "G",
+       "lat": 48.16695,
+       "lon": 37.62385,
+       "rx_class": "gnss_civil",
+       "shadow_db": 0.132,
+       "source_id": "unit_g",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -1.5,
+        6.0
+       ],
+       "js_db": 39.552,
+       "key": "H",
+       "lat": 48.1939,
+       "lon": 37.72481,
+       "rx_class": "gnss_civil",
+       "shadow_db": 2.047,
+       "source_id": "unit_h",
+       "state": "degraded"
+      }
+     ],
+     "healthy_by_class": {
+      "gnss_civil": [
+       "unit_c",
+       "unit_e",
+       "unit_g"
+      ],
+      "gnss_mil": [
+       "unit_a",
+       "unit_f"
+      ]
+     },
+     "id": "demo_truth_seed_sweep_s14",
+     "preview_reference": {
+      "any_healthy_civil": true,
+      "area90_km2": 608.4,
+      "truth_in_region90": false
+     },
+     "seed": 14
+    },
+    {
+     "degraded_by_class": {
+      "gnss_civil": [
+       "unit_d",
+       "unit_e",
+       "unit_h"
+      ],
+      "gnss_mil": []
+     },
+     "evidence": [
+      {
+       "enu_km": [
+        0.0,
+        0.0
+       ],
+       "js_db": 35.864,
+       "key": "B",
+       "lat": 48.14,
+       "lon": 37.745,
+       "rx_class": "gnss_civil",
+       "shadow_db": -5.723,
+       "source_id": "unit_b",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        0.5,
+        4.0
+       ],
+       "js_db": 37.961,
+       "key": "D",
+       "lat": 48.17593,
+       "lon": 37.75173,
+       "rx_class": "gnss_civil",
+       "shadow_db": -3.746,
+       "source_id": "unit_d",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        0.3,
+        -4.0
+       ],
+       "js_db": 41.568,
+       "key": "E",
+       "lat": 48.10407,
+       "lon": 37.74904,
+       "rx_class": "gnss_civil",
+       "shadow_db": 1.576,
+       "source_id": "unit_e",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        -3.0,
+        -1.5
+       ],
+       "js_db": 34.478,
+       "key": "C",
+       "lat": 48.12653,
+       "lon": 37.70462,
+       "rx_class": "gnss_civil",
+       "shadow_db": -2.096,
+       "source_id": "unit_c",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -7.0,
+        0.5
+       ],
+       "js_db": 34.187,
+       "key": "A",
+       "lat": 48.14449,
+       "lon": 37.65077,
+       "rx_class": "gnss_mil",
+       "shadow_db": 2.102,
+       "source_id": "unit_a",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -6.0,
+        -5.0
+       ],
+       "js_db": 35.195,
+       "key": "F",
+       "lat": 48.09508,
+       "lon": 37.66423,
+       "rx_class": "gnss_mil",
+       "shadow_db": 3.229,
+       "source_id": "unit_f",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -9.0,
+        3.0
+       ],
+       "js_db": 24.23,
+       "key": "G",
+       "lat": 48.16695,
+       "lon": 37.62385,
+       "rx_class": "gnss_civil",
+       "shadow_db": -5.774,
+       "source_id": "unit_g",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -1.5,
+        6.0
+       ],
+       "js_db": 41.573,
+       "key": "H",
+       "lat": 48.1939,
+       "lon": 37.72481,
+       "rx_class": "gnss_civil",
+       "shadow_db": 4.068,
+       "source_id": "unit_h",
+       "state": "degraded"
+      }
+     ],
+     "healthy_by_class": {
+      "gnss_civil": [
+       "unit_b",
+       "unit_c",
+       "unit_g"
+      ],
+      "gnss_mil": [
+       "unit_a",
+       "unit_f"
+      ]
+     },
+     "id": "demo_truth_seed_sweep_s15",
+     "preview_reference": {
+      "any_healthy_civil": true,
+      "area90_km2": 820.2,
+      "truth_in_region90": true
+     },
+     "seed": 15
+    },
+    {
+     "degraded_by_class": {
+      "gnss_civil": [
+       "unit_b",
+       "unit_c",
+       "unit_d",
+       "unit_e",
+       "unit_h"
+      ],
+      "gnss_mil": []
+     },
+     "evidence": [
+      {
+       "enu_km": [
+        0.0,
+        0.0
+       ],
+       "js_db": 39.208,
+       "key": "B",
+       "lat": 48.14,
+       "lon": 37.745,
+       "rx_class": "gnss_civil",
+       "shadow_db": -2.379,
+       "source_id": "unit_b",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        0.5,
+        4.0
+       ],
+       "js_db": 44.23,
+       "key": "D",
+       "lat": 48.17593,
+       "lon": 37.75173,
+       "rx_class": "gnss_civil",
+       "shadow_db": 2.523,
+       "source_id": "unit_d",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        0.3,
+        -4.0
+       ],
+       "js_db": 44.15,
+       "key": "E",
+       "lat": 48.10407,
+       "lon": 37.74904,
+       "rx_class": "gnss_civil",
+       "shadow_db": 4.157,
+       "source_id": "unit_e",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        -3.0,
+        -1.5
+       ],
+       "js_db": 40.698,
+       "key": "C",
+       "lat": 48.12653,
+       "lon": 37.70462,
+       "rx_class": "gnss_civil",
+       "shadow_db": 4.124,
+       "source_id": "unit_c",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        -7.0,
+        0.5
+       ],
+       "js_db": 39.356,
+       "key": "A",
+       "lat": 48.14449,
+       "lon": 37.65077,
+       "rx_class": "gnss_mil",
+       "shadow_db": 7.271,
+       "source_id": "unit_a",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -6.0,
+        -5.0
+       ],
+       "js_db": 30.425,
+       "key": "F",
+       "lat": 48.09508,
+       "lon": 37.66423,
+       "rx_class": "gnss_mil",
+       "shadow_db": -1.541,
+       "source_id": "unit_f",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -9.0,
+        3.0
+       ],
+       "js_db": 32.181,
+       "key": "G",
+       "lat": 48.16695,
+       "lon": 37.62385,
+       "rx_class": "gnss_civil",
+       "shadow_db": 2.177,
+       "source_id": "unit_g",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -1.5,
+        6.0
+       ],
+       "js_db": 36.04,
+       "key": "H",
+       "lat": 48.1939,
+       "lon": 37.72481,
+       "rx_class": "gnss_civil",
+       "shadow_db": -1.465,
+       "source_id": "unit_h",
+       "state": "degraded"
+      }
+     ],
+     "healthy_by_class": {
+      "gnss_civil": [
+       "unit_g"
+      ],
+      "gnss_mil": [
+       "unit_a",
+       "unit_f"
+      ]
+     },
+     "id": "demo_truth_seed_sweep_s16",
+     "preview_reference": {
+      "any_healthy_civil": true,
+      "area90_km2": 985.0,
+      "truth_in_region90": true
+     },
+     "seed": 16
+    },
+    {
+     "degraded_by_class": {
+      "gnss_civil": [
+       "unit_b",
+       "unit_d",
+       "unit_e"
+      ],
+      "gnss_mil": []
+     },
+     "evidence": [
+      {
+       "enu_km": [
+        0.0,
+        0.0
+       ],
+       "js_db": 45.992,
+       "key": "B",
+       "lat": 48.14,
+       "lon": 37.745,
+       "rx_class": "gnss_civil",
+       "shadow_db": 4.405,
+       "source_id": "unit_b",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        0.5,
+        4.0
+       ],
+       "js_db": 43.061,
+       "key": "D",
+       "lat": 48.17593,
+       "lon": 37.75173,
+       "rx_class": "gnss_civil",
+       "shadow_db": 1.354,
+       "source_id": "unit_d",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        0.3,
+        -4.0
+       ],
+       "js_db": 37.833,
+       "key": "E",
+       "lat": 48.10407,
+       "lon": 37.74904,
+       "rx_class": "gnss_civil",
+       "shadow_db": -2.16,
+       "source_id": "unit_e",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        -3.0,
+        -1.5
+       ],
+       "js_db": 31.534,
+       "key": "C",
+       "lat": 48.12653,
+       "lon": 37.70462,
+       "rx_class": "gnss_civil",
+       "shadow_db": -5.041,
+       "source_id": "unit_c",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -7.0,
+        0.5
+       ],
+       "js_db": 24.506,
+       "key": "A",
+       "lat": 48.14449,
+       "lon": 37.65077,
+       "rx_class": "gnss_mil",
+       "shadow_db": -7.578,
+       "source_id": "unit_a",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -6.0,
+        -5.0
+       ],
+       "js_db": 32.04,
+       "key": "F",
+       "lat": 48.09508,
+       "lon": 37.66423,
+       "rx_class": "gnss_mil",
+       "shadow_db": 0.075,
+       "source_id": "unit_f",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -9.0,
+        3.0
+       ],
+       "js_db": 26.762,
+       "key": "G",
+       "lat": 48.16695,
+       "lon": 37.62385,
+       "rx_class": "gnss_civil",
+       "shadow_db": -3.242,
+       "source_id": "unit_g",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -1.5,
+        6.0
+       ],
+       "js_db": 34.016,
+       "key": "H",
+       "lat": 48.1939,
+       "lon": 37.72481,
+       "rx_class": "gnss_civil",
+       "shadow_db": -3.489,
+       "source_id": "unit_h",
+       "state": "healthy"
+      }
+     ],
+     "healthy_by_class": {
+      "gnss_civil": [
+       "unit_c",
+       "unit_g",
+       "unit_h"
+      ],
+      "gnss_mil": [
+       "unit_a",
+       "unit_f"
+      ]
+     },
+     "id": "demo_truth_seed_sweep_s17",
+     "preview_reference": {
+      "any_healthy_civil": true,
+      "area90_km2": 858.4,
+      "truth_in_region90": true
+     },
+     "seed": 17
+    },
+    {
+     "degraded_by_class": {
+      "gnss_civil": [
+       "unit_b",
+       "unit_d",
+       "unit_e",
+       "unit_h"
+      ],
+      "gnss_mil": []
+     },
+     "evidence": [
+      {
+       "enu_km": [
+        0.0,
+        0.0
+       ],
+       "js_db": 39.858,
+       "key": "B",
+       "lat": 48.14,
+       "lon": 37.745,
+       "rx_class": "gnss_civil",
+       "shadow_db": -1.729,
+       "source_id": "unit_b",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        0.5,
+        4.0
+       ],
+       "js_db": 37.187,
+       "key": "D",
+       "lat": 48.17593,
+       "lon": 37.75173,
+       "rx_class": "gnss_civil",
+       "shadow_db": -4.52,
+       "source_id": "unit_d",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        0.3,
+        -4.0
+       ],
+       "js_db": 42.688,
+       "key": "E",
+       "lat": 48.10407,
+       "lon": 37.74904,
+       "rx_class": "gnss_civil",
+       "shadow_db": 2.695,
+       "source_id": "unit_e",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        -3.0,
+        -1.5
+       ],
+       "js_db": 32.143,
+       "key": "C",
+       "lat": 48.12653,
+       "lon": 37.70462,
+       "rx_class": "gnss_civil",
+       "shadow_db": -4.431,
+       "source_id": "unit_c",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -7.0,
+        0.5
+       ],
+       "js_db": 40.14,
+       "key": "A",
+       "lat": 48.14449,
+       "lon": 37.65077,
+       "rx_class": "gnss_mil",
+       "shadow_db": 8.056,
+       "source_id": "unit_a",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -6.0,
+        -5.0
+       ],
+       "js_db": 35.662,
+       "key": "F",
+       "lat": 48.09508,
+       "lon": 37.66423,
+       "rx_class": "gnss_mil",
+       "shadow_db": 3.696,
+       "source_id": "unit_f",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -9.0,
+        3.0
+       ],
+       "js_db": 28.567,
+       "key": "G",
+       "lat": 48.16695,
+       "lon": 37.62385,
+       "rx_class": "gnss_civil",
+       "shadow_db": -1.437,
+       "source_id": "unit_g",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -1.5,
+        6.0
+       ],
+       "js_db": 39.787,
+       "key": "H",
+       "lat": 48.1939,
+       "lon": 37.72481,
+       "rx_class": "gnss_civil",
+       "shadow_db": 2.282,
+       "source_id": "unit_h",
+       "state": "degraded"
+      }
+     ],
+     "healthy_by_class": {
+      "gnss_civil": [
+       "unit_c",
+       "unit_g"
+      ],
+      "gnss_mil": [
+       "unit_a",
+       "unit_f"
+      ]
+     },
+     "id": "demo_truth_seed_sweep_s18",
+     "preview_reference": {
+      "any_healthy_civil": true,
+      "area90_km2": 905.8,
+      "truth_in_region90": true
+     },
+     "seed": 18
+    },
+    {
+     "degraded_by_class": {
+      "gnss_civil": [
+       "unit_b",
+       "unit_d",
+       "unit_e"
+      ],
+      "gnss_mil": []
+     },
+     "evidence": [
+      {
+       "enu_km": [
+        0.0,
+        0.0
+       ],
+       "js_db": 40.107,
+       "key": "B",
+       "lat": 48.14,
+       "lon": 37.745,
+       "rx_class": "gnss_civil",
+       "shadow_db": -1.48,
+       "source_id": "unit_b",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        0.5,
+        4.0
+       ],
+       "js_db": 45.683,
+       "key": "D",
+       "lat": 48.17593,
+       "lon": 37.75173,
+       "rx_class": "gnss_civil",
+       "shadow_db": 3.976,
+       "source_id": "unit_d",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        0.3,
+        -4.0
+       ],
+       "js_db": 41.656,
+       "key": "E",
+       "lat": 48.10407,
+       "lon": 37.74904,
+       "rx_class": "gnss_civil",
+       "shadow_db": 1.663,
+       "source_id": "unit_e",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        -3.0,
+        -1.5
+       ],
+       "js_db": 34.102,
+       "key": "C",
+       "lat": 48.12653,
+       "lon": 37.70462,
+       "rx_class": "gnss_civil",
+       "shadow_db": -2.473,
+       "source_id": "unit_c",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -7.0,
+        0.5
+       ],
+       "js_db": 34.773,
+       "key": "A",
+       "lat": 48.14449,
+       "lon": 37.65077,
+       "rx_class": "gnss_mil",
+       "shadow_db": 2.689,
+       "source_id": "unit_a",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -6.0,
+        -5.0
+       ],
+       "js_db": 26.166,
+       "key": "F",
+       "lat": 48.09508,
+       "lon": 37.66423,
+       "rx_class": "gnss_mil",
+       "shadow_db": -5.8,
+       "source_id": "unit_f",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -9.0,
+        3.0
+       ],
+       "js_db": 32.378,
+       "key": "G",
+       "lat": 48.16695,
+       "lon": 37.62385,
+       "rx_class": "gnss_civil",
+       "shadow_db": 2.374,
+       "source_id": "unit_g",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -1.5,
+        6.0
+       ],
+       "js_db": 35.257,
+       "key": "H",
+       "lat": 48.1939,
+       "lon": 37.72481,
+       "rx_class": "gnss_civil",
+       "shadow_db": -2.247,
+       "source_id": "unit_h",
+       "state": "healthy"
+      }
+     ],
+     "healthy_by_class": {
+      "gnss_civil": [
+       "unit_c",
+       "unit_g",
+       "unit_h"
+      ],
+      "gnss_mil": [
+       "unit_a",
+       "unit_f"
+      ]
+     },
+     "id": "demo_truth_seed_sweep_s19",
+     "preview_reference": {
+      "any_healthy_civil": true,
+      "area90_km2": 858.4,
+      "truth_in_region90": true
+     },
+     "seed": 19
+    }
+   ],
+   "seeds": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18,
+    19
+   ],
+   "truth": {
+    "back_db": -20.0,
+    "eirp_w": 300.0,
+    "enu_km": [
+     9.5,
+     1.0
+    ],
+    "erp_dbm": 54.7712,
+    "lat": 48.14898,
+    "lon": 37.87289,
+    "mast_m": 10.0,
+    "sector_az_deg": 270.0,
+    "sector_width_deg": 125.0,
+    "shadow_seed": null
+   },
+   "truth_cell": {
+    "ix": 138,
+    "iy": 124,
+    "x_km": 9.5,
+    "y_km": 1.0
+   }
+  },
+  {
+   "assertion": {
+    "kind": "containment_min",
+    "min_contained": 15,
+    "of": 20
+   },
+   "id": "off_node_seed_sweep",
+   "preview_reference_contained": 20,
+   "runs": [
+    {
+     "degraded_by_class": {
+      "gnss_civil": [
+       "unit_b",
+       "unit_c",
+       "unit_d",
+       "unit_e",
+       "unit_g",
+       "unit_h"
+      ],
+      "gnss_mil": []
+     },
+     "evidence": [
+      {
+       "enu_km": [
+        0.0,
+        0.0
+       ],
+       "js_db": 49.313,
+       "key": "B",
+       "lat": 48.14,
+       "lon": 37.745,
+       "rx_class": "gnss_civil",
+       "shadow_db": 0.503,
+       "source_id": "unit_b",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        0.5,
+        4.0
+       ],
+       "js_db": 48.508,
+       "key": "D",
+       "lat": 48.17593,
+       "lon": 37.75173,
+       "rx_class": "gnss_civil",
+       "shadow_db": -0.528,
+       "source_id": "unit_d",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        0.3,
+        -4.0
+       ],
+       "js_db": 49.746,
+       "key": "E",
+       "lat": 48.10407,
+       "lon": 37.74904,
+       "rx_class": "gnss_civil",
+       "shadow_db": 2.562,
+       "source_id": "unit_e",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        -3.0,
+        -1.5
+       ],
+       "js_db": 44.268,
+       "key": "C",
+       "lat": 48.12653,
+       "lon": 37.70462,
+       "rx_class": "gnss_civil",
+       "shadow_db": 0.42,
+       "source_id": "unit_c",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        -7.0,
+        0.5
+       ],
+       "js_db": 37.283,
+       "key": "A",
+       "lat": 48.14449,
+       "lon": 37.65077,
+       "rx_class": "gnss_mil",
+       "shadow_db": -2.143,
+       "source_id": "unit_a",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -6.0,
+        -5.0
+       ],
+       "js_db": 40.719,
+       "key": "F",
+       "lat": 48.09508,
+       "lon": 37.66423,
+       "rx_class": "gnss_mil",
+       "shadow_db": 1.446,
+       "source_id": "unit_f",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -9.0,
+        3.0
+       ],
+       "js_db": 42.594,
+       "key": "G",
+       "lat": 48.16695,
+       "lon": 37.62385,
+       "rx_class": "gnss_civil",
+       "shadow_db": 5.216,
+       "source_id": "unit_g",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        -1.5,
+        6.0
+       ],
+       "js_db": 48.681,
+       "key": "H",
+       "lat": 48.1939,
+       "lon": 37.72481,
+       "rx_class": "gnss_civil",
+       "shadow_db": 3.788,
+       "source_id": "unit_h",
+       "state": "degraded"
+      }
+     ],
+     "healthy_by_class": {
+      "gnss_civil": [],
+      "gnss_mil": [
+       "unit_a",
+       "unit_f"
+      ]
+     },
+     "id": "off_node_seed_sweep_s0",
+     "preview_reference": {
+      "any_healthy_civil": false,
+      "area90_km2": 938.9,
+      "truth_in_region90": true
+     },
+     "seed": 0
+    },
+    {
+     "degraded_by_class": {
+      "gnss_civil": [
+       "unit_b",
+       "unit_c",
+       "unit_d",
+       "unit_e",
+       "unit_h"
+      ],
+      "gnss_mil": [
+       "unit_a",
+       "unit_f"
+      ]
+     },
+     "evidence": [
+      {
+       "enu_km": [
+        0.0,
+        0.0
+       ],
+       "js_db": 50.192,
+       "key": "B",
+       "lat": 48.14,
+       "lon": 37.745,
+       "rx_class": "gnss_civil",
+       "shadow_db": 1.382,
+       "source_id": "unit_b",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        0.5,
+        4.0
+       ],
+       "js_db": 52.323,
+       "key": "D",
+       "lat": 48.17593,
+       "lon": 37.75173,
+       "rx_class": "gnss_civil",
+       "shadow_db": 3.286,
+       "source_id": "unit_d",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        0.3,
+        -4.0
+       ],
+       "js_db": 48.506,
+       "key": "E",
+       "lat": 48.10407,
+       "lon": 37.74904,
+       "rx_class": "gnss_civil",
+       "shadow_db": 1.322,
+       "source_id": "unit_e",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        -3.0,
+        -1.5
+       ],
+       "js_db": 38.636,
+       "key": "C",
+       "lat": 48.12653,
+       "lon": 37.70462,
+       "rx_class": "gnss_civil",
+       "shadow_db": -5.213,
+       "source_id": "unit_c",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        -7.0,
+        0.5
+       ],
+       "js_db": 43.047,
+       "key": "A",
+       "lat": 48.14449,
+       "lon": 37.65077,
+       "rx_class": "gnss_mil",
+       "shadow_db": 3.621,
+       "source_id": "unit_a",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        -6.0,
+        -5.0
+       ],
+       "js_db": 41.058,
+       "key": "F",
+       "lat": 48.09508,
+       "lon": 37.66423,
+       "rx_class": "gnss_mil",
+       "shadow_db": 1.785,
+       "source_id": "unit_f",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        -9.0,
+        3.0
+       ],
+       "js_db": 35.23,
+       "key": "G",
+       "lat": 48.16695,
+       "lon": 37.62385,
+       "rx_class": "gnss_civil",
+       "shadow_db": -2.148,
+       "source_id": "unit_g",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -1.5,
+        6.0
+       ],
+       "js_db": 47.217,
+       "key": "H",
+       "lat": 48.1939,
+       "lon": 37.72481,
+       "rx_class": "gnss_civil",
+       "shadow_db": 2.324,
+       "source_id": "unit_h",
+       "state": "degraded"
+      }
+     ],
+     "healthy_by_class": {
+      "gnss_civil": [
+       "unit_g"
+      ],
+      "gnss_mil": []
+     },
+     "id": "off_node_seed_sweep_s1",
+     "preview_reference": {
+      "any_healthy_civil": true,
+      "area90_km2": 890.4,
+      "truth_in_region90": true
+     },
+     "seed": 1
+    },
+    {
+     "degraded_by_class": {
+      "gnss_civil": [
+       "unit_b",
+       "unit_d",
+       "unit_e",
+       "unit_g",
+       "unit_h"
+      ],
+      "gnss_mil": [
+       "unit_a",
+       "unit_f"
+      ]
+     },
+     "evidence": [
+      {
+       "enu_km": [
+        0.0,
+        0.0
+       ],
+       "js_db": 49.566,
+       "key": "B",
+       "lat": 48.14,
+       "lon": 37.745,
+       "rx_class": "gnss_civil",
+       "shadow_db": 0.756,
+       "source_id": "unit_b",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        0.5,
+        4.0
+       ],
+       "js_db": 46.945,
+       "key": "D",
+       "lat": 48.17593,
+       "lon": 37.75173,
+       "rx_class": "gnss_civil",
+       "shadow_db": -2.091,
+       "source_id": "unit_d",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        0.3,
+        -4.0
+       ],
+       "js_db": 45.532,
+       "key": "E",
+       "lat": 48.10407,
+       "lon": 37.74904,
+       "rx_class": "gnss_civil",
+       "shadow_db": -1.652,
+       "source_id": "unit_e",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        -3.0,
+        -1.5
+       ],
+       "js_db": 34.083,
+       "key": "C",
+       "lat": 48.12653,
+       "lon": 37.70462,
+       "rx_class": "gnss_civil",
+       "shadow_db": -9.766,
+       "source_id": "unit_c",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -7.0,
+        0.5
+       ],
+       "js_db": 46.624,
+       "key": "A",
+       "lat": 48.14449,
+       "lon": 37.65077,
+       "rx_class": "gnss_mil",
+       "shadow_db": 7.199,
+       "source_id": "unit_a",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        -6.0,
+        -5.0
+       ],
+       "js_db": 43.849,
+       "key": "F",
+       "lat": 48.09508,
+       "lon": 37.66423,
+       "rx_class": "gnss_mil",
+       "shadow_db": 4.577,
+       "source_id": "unit_f",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        -9.0,
+        3.0
+       ],
+       "js_db": 36.076,
+       "key": "G",
+       "lat": 48.16695,
+       "lon": 37.62385,
+       "rx_class": "gnss_civil",
+       "shadow_db": -1.302,
+       "source_id": "unit_g",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        -1.5,
+        6.0
+       ],
+       "js_db": 47.988,
+       "key": "H",
+       "lat": 48.1939,
+       "lon": 37.72481,
+       "rx_class": "gnss_civil",
+       "shadow_db": 3.095,
+       "source_id": "unit_h",
+       "state": "degraded"
+      }
+     ],
+     "healthy_by_class": {
+      "gnss_civil": [
+       "unit_c"
+      ],
+      "gnss_mil": []
+     },
+     "id": "off_node_seed_sweep_s2",
+     "preview_reference": {
+      "any_healthy_civil": true,
+      "area90_km2": 1009.3,
+      "truth_in_region90": true
+     },
+     "seed": 2
+    },
+    {
+     "degraded_by_class": {
+      "gnss_civil": [
+       "unit_b",
+       "unit_c",
+       "unit_d",
+       "unit_e",
+       "unit_h"
+      ],
+      "gnss_mil": []
+     },
+     "evidence": [
+      {
+       "enu_km": [
+        0.0,
+        0.0
+       ],
+       "js_db": 56.974,
+       "key": "B",
+       "lat": 48.14,
+       "lon": 37.745,
+       "rx_class": "gnss_civil",
+       "shadow_db": 8.164,
+       "source_id": "unit_b",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        0.5,
+        4.0
+       ],
+       "js_db": 38.814,
+       "key": "D",
+       "lat": 48.17593,
+       "lon": 37.75173,
+       "rx_class": "gnss_civil",
+       "shadow_db": -10.223,
+       "source_id": "unit_d",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        0.3,
+        -4.0
+       ],
+       "js_db": 48.856,
+       "key": "E",
+       "lat": 48.10407,
+       "lon": 37.74904,
+       "rx_class": "gnss_civil",
+       "shadow_db": 1.672,
+       "source_id": "unit_e",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        -3.0,
+        -1.5
+       ],
+       "js_db": 41.578,
+       "key": "C",
+       "lat": 48.12653,
+       "lon": 37.70462,
+       "rx_class": "gnss_civil",
+       "shadow_db": -2.271,
+       "source_id": "unit_c",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        -7.0,
+        0.5
+       ],
+       "js_db": 37.615,
+       "key": "A",
+       "lat": 48.14449,
+       "lon": 37.65077,
+       "rx_class": "gnss_mil",
+       "shadow_db": -1.811,
+       "source_id": "unit_a",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -6.0,
+        -5.0
+       ],
+       "js_db": 38.41,
+       "key": "F",
+       "lat": 48.09508,
+       "lon": 37.66423,
+       "rx_class": "gnss_mil",
+       "shadow_db": -0.862,
+       "source_id": "unit_f",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -9.0,
+        3.0
+       ],
+       "js_db": 29.298,
+       "key": "G",
+       "lat": 48.16695,
+       "lon": 37.62385,
+       "rx_class": "gnss_civil",
+       "shadow_db": -8.08,
+       "source_id": "unit_g",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -1.5,
+        6.0
+       ],
+       "js_db": 43.965,
+       "key": "H",
+       "lat": 48.1939,
+       "lon": 37.72481,
+       "rx_class": "gnss_civil",
+       "shadow_db": -0.928,
+       "source_id": "unit_h",
+       "state": "degraded"
+      }
+     ],
+     "healthy_by_class": {
+      "gnss_civil": [
+       "unit_g"
+      ],
+      "gnss_mil": [
+       "unit_a",
+       "unit_f"
+      ]
+     },
+     "id": "off_node_seed_sweep_s3",
+     "preview_reference": {
+      "any_healthy_civil": true,
+      "area90_km2": 985.0,
+      "truth_in_region90": true
+     },
+     "seed": 3
+    },
+    {
+     "degraded_by_class": {
+      "gnss_civil": [
+       "unit_b",
+       "unit_c",
+       "unit_d",
+       "unit_e",
+       "unit_h"
+      ],
+      "gnss_mil": []
+     },
+     "evidence": [
+      {
+       "enu_km": [
+        0.0,
+        0.0
+       ],
+       "js_db": 46.203,
+       "key": "B",
+       "lat": 48.14,
+       "lon": 37.745,
+       "rx_class": "gnss_civil",
+       "shadow_db": -2.607,
+       "source_id": "unit_b",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        0.5,
+        4.0
+       ],
+       "js_db": 48.338,
+       "key": "D",
+       "lat": 48.17593,
+       "lon": 37.75173,
+       "rx_class": "gnss_civil",
+       "shadow_db": -0.699,
+       "source_id": "unit_d",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        0.3,
+        -4.0
+       ],
+       "js_db": 53.839,
+       "key": "E",
+       "lat": 48.10407,
+       "lon": 37.74904,
+       "rx_class": "gnss_civil",
+       "shadow_db": 6.655,
+       "source_id": "unit_e",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        -3.0,
+        -1.5
+       ],
+       "js_db": 46.485,
+       "key": "C",
+       "lat": 48.12653,
+       "lon": 37.70462,
+       "rx_class": "gnss_civil",
+       "shadow_db": 2.637,
+       "source_id": "unit_c",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        -7.0,
+        0.5
+       ],
+       "js_db": 32.86,
+       "key": "A",
+       "lat": 48.14449,
+       "lon": 37.65077,
+       "rx_class": "gnss_mil",
+       "shadow_db": -6.566,
+       "source_id": "unit_a",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -6.0,
+        -5.0
+       ],
+       "js_db": 39.252,
+       "key": "F",
+       "lat": 48.09508,
+       "lon": 37.66423,
+       "rx_class": "gnss_mil",
+       "shadow_db": -0.021,
+       "source_id": "unit_f",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -9.0,
+        3.0
+       ],
+       "js_db": 34.884,
+       "key": "G",
+       "lat": 48.16695,
+       "lon": 37.62385,
+       "rx_class": "gnss_civil",
+       "shadow_db": -2.494,
+       "source_id": "unit_g",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -1.5,
+        6.0
+       ],
+       "js_db": 45.487,
+       "key": "H",
+       "lat": 48.1939,
+       "lon": 37.72481,
+       "rx_class": "gnss_civil",
+       "shadow_db": 0.595,
+       "source_id": "unit_h",
+       "state": "degraded"
+      }
+     ],
+     "healthy_by_class": {
+      "gnss_civil": [
+       "unit_g"
+      ],
+      "gnss_mil": [
+       "unit_a",
+       "unit_f"
+      ]
+     },
+     "id": "off_node_seed_sweep_s4",
+     "preview_reference": {
+      "any_healthy_civil": true,
+      "area90_km2": 985.0,
+      "truth_in_region90": true
+     },
+     "seed": 4
+    },
+    {
+     "degraded_by_class": {
+      "gnss_civil": [
+       "unit_b",
+       "unit_c",
+       "unit_d",
+       "unit_e",
+       "unit_h"
+      ],
+      "gnss_mil": [
+       "unit_a"
+      ]
+     },
+     "evidence": [
+      {
+       "enu_km": [
+        0.0,
+        0.0
+       ],
+       "js_db": 45.602,
+       "key": "B",
+       "lat": 48.14,
+       "lon": 37.745,
+       "rx_class": "gnss_civil",
+       "shadow_db": -3.208,
+       "source_id": "unit_b",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        0.5,
+        4.0
+       ],
+       "js_db": 43.739,
+       "key": "D",
+       "lat": 48.17593,
+       "lon": 37.75173,
+       "rx_class": "gnss_civil",
+       "shadow_db": -5.297,
+       "source_id": "unit_d",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        0.3,
+        -4.0
+       ],
+       "js_db": 46.191,
+       "key": "E",
+       "lat": 48.10407,
+       "lon": 37.74904,
+       "rx_class": "gnss_civil",
+       "shadow_db": -0.993,
+       "source_id": "unit_e",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        -3.0,
+        -1.5
+       ],
+       "js_db": 45.531,
+       "key": "C",
+       "lat": 48.12653,
+       "lon": 37.70462,
+       "rx_class": "gnss_civil",
+       "shadow_db": 1.682,
+       "source_id": "unit_c",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        -7.0,
+        0.5
+       ],
+       "js_db": 43.97,
+       "key": "A",
+       "lat": 48.14449,
+       "lon": 37.65077,
+       "rx_class": "gnss_mil",
+       "shadow_db": 4.544,
+       "source_id": "unit_a",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        -6.0,
+        -5.0
+       ],
+       "js_db": 39.711,
+       "key": "F",
+       "lat": 48.09508,
+       "lon": 37.66423,
+       "rx_class": "gnss_mil",
+       "shadow_db": 0.439,
+       "source_id": "unit_f",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -9.0,
+        3.0
+       ],
+       "js_db": 35.168,
+       "key": "G",
+       "lat": 48.16695,
+       "lon": 37.62385,
+       "rx_class": "gnss_civil",
+       "shadow_db": -2.211,
+       "source_id": "unit_g",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -1.5,
+        6.0
+       ],
+       "js_db": 41.753,
+       "key": "H",
+       "lat": 48.1939,
+       "lon": 37.72481,
+       "rx_class": "gnss_civil",
+       "shadow_db": -3.139,
+       "source_id": "unit_h",
+       "state": "degraded"
+      }
+     ],
+     "healthy_by_class": {
+      "gnss_civil": [
+       "unit_g"
+      ],
+      "gnss_mil": [
+       "unit_f"
+      ]
+     },
+     "id": "off_node_seed_sweep_s5",
+     "preview_reference": {
+      "any_healthy_civil": true,
+      "area90_km2": 1008.8,
+      "truth_in_region90": true
+     },
+     "seed": 5
+    },
+    {
+     "degraded_by_class": {
+      "gnss_civil": [
+       "unit_b",
+       "unit_c",
+       "unit_d",
+       "unit_e",
+       "unit_g",
+       "unit_h"
+      ],
+      "gnss_mil": [
+       "unit_a",
+       "unit_f"
+      ]
+     },
+     "evidence": [
+      {
+       "enu_km": [
+        0.0,
+        0.0
+       ],
+       "js_db": 53.022,
+       "key": "B",
+       "lat": 48.14,
+       "lon": 37.745,
+       "rx_class": "gnss_civil",
+       "shadow_db": 4.212,
+       "source_id": "unit_b",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        0.5,
+        4.0
+       ],
+       "js_db": 56.142,
+       "key": "D",
+       "lat": 48.17593,
+       "lon": 37.75173,
+       "rx_class": "gnss_civil",
+       "shadow_db": 7.106,
+       "source_id": "unit_d",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        0.3,
+        -4.0
+       ],
+       "js_db": 36.971,
+       "key": "E",
+       "lat": 48.10407,
+       "lon": 37.74904,
+       "rx_class": "gnss_civil",
+       "shadow_db": -10.213,
+       "source_id": "unit_e",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        -3.0,
+        -1.5
+       ],
+       "js_db": 43.297,
+       "key": "C",
+       "lat": 48.12653,
+       "lon": 37.70462,
+       "rx_class": "gnss_civil",
+       "shadow_db": -0.552,
+       "source_id": "unit_c",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        -7.0,
+        0.5
+       ],
+       "js_db": 43.48,
+       "key": "A",
+       "lat": 48.14449,
+       "lon": 37.65077,
+       "rx_class": "gnss_mil",
+       "shadow_db": 4.055,
+       "source_id": "unit_a",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        -6.0,
+        -5.0
+       ],
+       "js_db": 44.681,
+       "key": "F",
+       "lat": 48.09508,
+       "lon": 37.66423,
+       "rx_class": "gnss_mil",
+       "shadow_db": 5.409,
+       "source_id": "unit_f",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        -9.0,
+        3.0
+       ],
+       "js_db": 39.993,
+       "key": "G",
+       "lat": 48.16695,
+       "lon": 37.62385,
+       "rx_class": "gnss_civil",
+       "shadow_db": 2.615,
+       "source_id": "unit_g",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        -1.5,
+        6.0
+       ],
+       "js_db": 50.881,
+       "key": "H",
+       "lat": 48.1939,
+       "lon": 37.72481,
+       "rx_class": "gnss_civil",
+       "shadow_db": 5.988,
+       "source_id": "unit_h",
+       "state": "degraded"
+      }
+     ],
+     "healthy_by_class": {
+      "gnss_civil": [],
+      "gnss_mil": []
+     },
+     "id": "off_node_seed_sweep_s6",
+     "preview_reference": {
+      "any_healthy_civil": false,
+      "area90_km2": 801.9,
+      "truth_in_region90": true
+     },
+     "seed": 6
+    },
+    {
+     "degraded_by_class": {
+      "gnss_civil": [
+       "unit_b",
+       "unit_c",
+       "unit_d",
+       "unit_e",
+       "unit_g",
+       "unit_h"
+      ],
+      "gnss_mil": []
+     },
+     "evidence": [
+      {
+       "enu_km": [
+        0.0,
+        0.0
+       ],
+       "js_db": 48.815,
+       "key": "B",
+       "lat": 48.14,
+       "lon": 37.745,
+       "rx_class": "gnss_civil",
+       "shadow_db": 0.005,
+       "source_id": "unit_b",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        0.5,
+        4.0
+       ],
+       "js_db": 50.231,
+       "key": "D",
+       "lat": 48.17593,
+       "lon": 37.75173,
+       "rx_class": "gnss_civil",
+       "shadow_db": 1.195,
+       "source_id": "unit_d",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        0.3,
+        -4.0
+       ],
+       "js_db": 46.088,
+       "key": "E",
+       "lat": 48.10407,
+       "lon": 37.74904,
+       "rx_class": "gnss_civil",
+       "shadow_db": -1.097,
+       "source_id": "unit_e",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        -3.0,
+        -1.5
+       ],
+       "js_db": 40.286,
+       "key": "C",
+       "lat": 48.12653,
+       "lon": 37.70462,
+       "rx_class": "gnss_civil",
+       "shadow_db": -3.562,
+       "source_id": "unit_c",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        -7.0,
+        0.5
+       ],
+       "js_db": 37.607,
+       "key": "A",
+       "lat": 48.14449,
+       "lon": 37.65077,
+       "rx_class": "gnss_mil",
+       "shadow_db": -1.819,
+       "source_id": "unit_a",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -6.0,
+        -5.0
+       ],
+       "js_db": 35.306,
+       "key": "F",
+       "lat": 48.09508,
+       "lon": 37.66423,
+       "rx_class": "gnss_mil",
+       "shadow_db": -3.967,
+       "source_id": "unit_f",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -9.0,
+        3.0
+       ],
+       "js_db": 37.619,
+       "key": "G",
+       "lat": 48.16695,
+       "lon": 37.62385,
+       "rx_class": "gnss_civil",
+       "shadow_db": 0.241,
+       "source_id": "unit_g",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        -1.5,
+        6.0
+       ],
+       "js_db": 50.253,
+       "key": "H",
+       "lat": 48.1939,
+       "lon": 37.72481,
+       "rx_class": "gnss_civil",
+       "shadow_db": 5.361,
+       "source_id": "unit_h",
+       "state": "degraded"
+      }
+     ],
+     "healthy_by_class": {
+      "gnss_civil": [],
+      "gnss_mil": [
+       "unit_a",
+       "unit_f"
+      ]
+     },
+     "id": "off_node_seed_sweep_s7",
+     "preview_reference": {
+      "any_healthy_civil": false,
+      "area90_km2": 938.9,
+      "truth_in_region90": true
+     },
+     "seed": 7
+    },
+    {
+     "degraded_by_class": {
+      "gnss_civil": [
+       "unit_b",
+       "unit_c",
+       "unit_d",
+       "unit_e",
+       "unit_h"
+      ],
+      "gnss_mil": []
+     },
+     "evidence": [
+      {
+       "enu_km": [
+        0.0,
+        0.0
+       ],
+       "js_db": 41.857,
+       "key": "B",
+       "lat": 48.14,
+       "lon": 37.745,
+       "rx_class": "gnss_civil",
+       "shadow_db": -6.953,
+       "source_id": "unit_b",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        0.5,
+        4.0
+       ],
+       "js_db": 43.69,
+       "key": "D",
+       "lat": 48.17593,
+       "lon": 37.75173,
+       "rx_class": "gnss_civil",
+       "shadow_db": -5.347,
+       "source_id": "unit_d",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        0.3,
+        -4.0
+       ],
+       "js_db": 41.74,
+       "key": "E",
+       "lat": 48.10407,
+       "lon": 37.74904,
+       "rx_class": "gnss_civil",
+       "shadow_db": -5.444,
+       "source_id": "unit_e",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        -3.0,
+        -1.5
+       ],
+       "js_db": 42.442,
+       "key": "C",
+       "lat": 48.12653,
+       "lon": 37.70462,
+       "rx_class": "gnss_civil",
+       "shadow_db": -1.406,
+       "source_id": "unit_c",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        -7.0,
+        0.5
+       ],
+       "js_db": 30.175,
+       "key": "A",
+       "lat": 48.14449,
+       "lon": 37.65077,
+       "rx_class": "gnss_mil",
+       "shadow_db": -9.25,
+       "source_id": "unit_a",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -6.0,
+        -5.0
+       ],
+       "js_db": 38.517,
+       "key": "F",
+       "lat": 48.09508,
+       "lon": 37.66423,
+       "rx_class": "gnss_mil",
+       "shadow_db": -0.756,
+       "source_id": "unit_f",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -9.0,
+        3.0
+       ],
+       "js_db": 33.549,
+       "key": "G",
+       "lat": 48.16695,
+       "lon": 37.62385,
+       "rx_class": "gnss_civil",
+       "shadow_db": -3.829,
+       "source_id": "unit_g",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -1.5,
+        6.0
+       ],
+       "js_db": 48.467,
+       "key": "H",
+       "lat": 48.1939,
+       "lon": 37.72481,
+       "rx_class": "gnss_civil",
+       "shadow_db": 3.574,
+       "source_id": "unit_h",
+       "state": "degraded"
+      }
+     ],
+     "healthy_by_class": {
+      "gnss_civil": [
+       "unit_g"
+      ],
+      "gnss_mil": [
+       "unit_a",
+       "unit_f"
+      ]
+     },
+     "id": "off_node_seed_sweep_s8",
+     "preview_reference": {
+      "any_healthy_civil": true,
+      "area90_km2": 985.0,
+      "truth_in_region90": true
+     },
+     "seed": 8
+    },
+    {
+     "degraded_by_class": {
+      "gnss_civil": [
+       "unit_b",
+       "unit_c",
+       "unit_d",
+       "unit_e",
+       "unit_g",
+       "unit_h"
+      ],
+      "gnss_mil": [
+       "unit_a"
+      ]
+     },
+     "evidence": [
+      {
+       "enu_km": [
+        0.0,
+        0.0
+       ],
+       "js_db": 45.599,
+       "key": "B",
+       "lat": 48.14,
+       "lon": 37.745,
+       "rx_class": "gnss_civil",
+       "shadow_db": -3.211,
+       "source_id": "unit_b",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        0.5,
+        4.0
+       ],
+       "js_db": 50.008,
+       "key": "D",
+       "lat": 48.17593,
+       "lon": 37.75173,
+       "rx_class": "gnss_civil",
+       "shadow_db": 0.971,
+       "source_id": "unit_d",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        0.3,
+        -4.0
+       ],
+       "js_db": 40.559,
+       "key": "E",
+       "lat": 48.10407,
+       "lon": 37.74904,
+       "rx_class": "gnss_civil",
+       "shadow_db": -6.625,
+       "source_id": "unit_e",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        -3.0,
+        -1.5
+       ],
+       "js_db": 46.473,
+       "key": "C",
+       "lat": 48.12653,
+       "lon": 37.70462,
+       "rx_class": "gnss_civil",
+       "shadow_db": 2.624,
+       "source_id": "unit_c",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        -7.0,
+        0.5
+       ],
+       "js_db": 43.999,
+       "key": "A",
+       "lat": 48.14449,
+       "lon": 37.65077,
+       "rx_class": "gnss_mil",
+       "shadow_db": 4.574,
+       "source_id": "unit_a",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        -6.0,
+        -5.0
+       ],
+       "js_db": 37.462,
+       "key": "F",
+       "lat": 48.09508,
+       "lon": 37.66423,
+       "rx_class": "gnss_mil",
+       "shadow_db": -1.81,
+       "source_id": "unit_f",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -9.0,
+        3.0
+       ],
+       "js_db": 39.1,
+       "key": "G",
+       "lat": 48.16695,
+       "lon": 37.62385,
+       "rx_class": "gnss_civil",
+       "shadow_db": 1.722,
+       "source_id": "unit_g",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        -1.5,
+        6.0
+       ],
+       "js_db": 45.896,
+       "key": "H",
+       "lat": 48.1939,
+       "lon": 37.72481,
+       "rx_class": "gnss_civil",
+       "shadow_db": 1.004,
+       "source_id": "unit_h",
+       "state": "degraded"
+      }
+     ],
+     "healthy_by_class": {
+      "gnss_civil": [],
+      "gnss_mil": [
+       "unit_f"
+      ]
+     },
+     "id": "off_node_seed_sweep_s9",
+     "preview_reference": {
+      "any_healthy_civil": false,
+      "area90_km2": 919.2,
+      "truth_in_region90": true
+     },
+     "seed": 9
+    },
+    {
+     "degraded_by_class": {
+      "gnss_civil": [
+       "unit_b",
+       "unit_c",
+       "unit_d",
+       "unit_e",
+       "unit_g",
+       "unit_h"
+      ],
+      "gnss_mil": []
+     },
+     "evidence": [
+      {
+       "enu_km": [
+        0.0,
+        0.0
+       ],
+       "js_db": 44.397,
+       "key": "B",
+       "lat": 48.14,
+       "lon": 37.745,
+       "rx_class": "gnss_civil",
+       "shadow_db": -4.413,
+       "source_id": "unit_b",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        0.5,
+        4.0
+       ],
+       "js_db": 46.136,
+       "key": "D",
+       "lat": 48.17593,
+       "lon": 37.75173,
+       "rx_class": "gnss_civil",
+       "shadow_db": -2.9,
+       "source_id": "unit_d",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        0.3,
+        -4.0
+       ],
+       "js_db": 44.057,
+       "key": "E",
+       "lat": 48.10407,
+       "lon": 37.74904,
+       "rx_class": "gnss_civil",
+       "shadow_db": -3.127,
+       "source_id": "unit_e",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        -3.0,
+        -1.5
+       ],
+       "js_db": 44.917,
+       "key": "C",
+       "lat": 48.12653,
+       "lon": 37.70462,
+       "rx_class": "gnss_civil",
+       "shadow_db": 1.068,
+       "source_id": "unit_c",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        -7.0,
+        0.5
+       ],
+       "js_db": 38.431,
+       "key": "A",
+       "lat": 48.14449,
+       "lon": 37.65077,
+       "rx_class": "gnss_mil",
+       "shadow_db": -0.994,
+       "source_id": "unit_a",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -6.0,
+        -5.0
+       ],
+       "js_db": 39.779,
+       "key": "F",
+       "lat": 48.09508,
+       "lon": 37.66423,
+       "rx_class": "gnss_mil",
+       "shadow_db": 0.506,
+       "source_id": "unit_f",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -9.0,
+        3.0
+       ],
+       "js_db": 40.75,
+       "key": "G",
+       "lat": 48.16695,
+       "lon": 37.62385,
+       "rx_class": "gnss_civil",
+       "shadow_db": 3.372,
+       "source_id": "unit_g",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        -1.5,
+        6.0
+       ],
+       "js_db": 48.324,
+       "key": "H",
+       "lat": 48.1939,
+       "lon": 37.72481,
+       "rx_class": "gnss_civil",
+       "shadow_db": 3.432,
+       "source_id": "unit_h",
+       "state": "degraded"
+      }
+     ],
+     "healthy_by_class": {
+      "gnss_civil": [],
+      "gnss_mil": [
+       "unit_a",
+       "unit_f"
+      ]
+     },
+     "id": "off_node_seed_sweep_s10",
+     "preview_reference": {
+      "any_healthy_civil": false,
+      "area90_km2": 938.9,
+      "truth_in_region90": true
+     },
+     "seed": 10
+    },
+    {
+     "degraded_by_class": {
+      "gnss_civil": [
+       "unit_b",
+       "unit_c",
+       "unit_d",
+       "unit_e",
+       "unit_g",
+       "unit_h"
+      ],
+      "gnss_mil": []
+     },
+     "evidence": [
+      {
+       "enu_km": [
+        0.0,
+        0.0
+       ],
+       "js_db": 48.947,
+       "key": "B",
+       "lat": 48.14,
+       "lon": 37.745,
+       "rx_class": "gnss_civil",
+       "shadow_db": 0.137,
+       "source_id": "unit_b",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        0.5,
+        4.0
+       ],
+       "js_db": 54.475,
+       "key": "D",
+       "lat": 48.17593,
+       "lon": 37.75173,
+       "rx_class": "gnss_civil",
+       "shadow_db": 5.439,
+       "source_id": "unit_d",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        0.3,
+        -4.0
+       ],
+       "js_db": 52.083,
+       "key": "E",
+       "lat": 48.10407,
+       "lon": 37.74904,
+       "rx_class": "gnss_civil",
+       "shadow_db": 4.899,
+       "source_id": "unit_e",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        -3.0,
+        -1.5
+       ],
+       "js_db": 41.808,
+       "key": "C",
+       "lat": 48.12653,
+       "lon": 37.70462,
+       "rx_class": "gnss_civil",
+       "shadow_db": -2.041,
+       "source_id": "unit_c",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        -7.0,
+        0.5
+       ],
+       "js_db": 38.234,
+       "key": "A",
+       "lat": 48.14449,
+       "lon": 37.65077,
+       "rx_class": "gnss_mil",
+       "shadow_db": -1.192,
+       "source_id": "unit_a",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -6.0,
+        -5.0
+       ],
+       "js_db": 37.163,
+       "key": "F",
+       "lat": 48.09508,
+       "lon": 37.66423,
+       "rx_class": "gnss_mil",
+       "shadow_db": -2.11,
+       "source_id": "unit_f",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -9.0,
+        3.0
+       ],
+       "js_db": 39.657,
+       "key": "G",
+       "lat": 48.16695,
+       "lon": 37.62385,
+       "rx_class": "gnss_civil",
+       "shadow_db": 2.279,
+       "source_id": "unit_g",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        -1.5,
+        6.0
+       ],
+       "js_db": 44.668,
+       "key": "H",
+       "lat": 48.1939,
+       "lon": 37.72481,
+       "rx_class": "gnss_civil",
+       "shadow_db": -0.224,
+       "source_id": "unit_h",
+       "state": "degraded"
+      }
+     ],
+     "healthy_by_class": {
+      "gnss_civil": [],
+      "gnss_mil": [
+       "unit_a",
+       "unit_f"
+      ]
+     },
+     "id": "off_node_seed_sweep_s11",
+     "preview_reference": {
+      "any_healthy_civil": false,
+      "area90_km2": 938.9,
+      "truth_in_region90": true
+     },
+     "seed": 11
+    },
+    {
+     "degraded_by_class": {
+      "gnss_civil": [
+       "unit_b",
+       "unit_c",
+       "unit_d",
+       "unit_e",
+       "unit_h"
+      ],
+      "gnss_mil": [
+       "unit_a"
+      ]
+     },
+     "evidence": [
+      {
+       "enu_km": [
+        0.0,
+        0.0
+       ],
+       "js_db": 48.783,
+       "key": "B",
+       "lat": 48.14,
+       "lon": 37.745,
+       "rx_class": "gnss_civil",
+       "shadow_db": -0.027,
+       "source_id": "unit_b",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        0.5,
+        4.0
+       ],
+       "js_db": 53.221,
+       "key": "D",
+       "lat": 48.17593,
+       "lon": 37.75173,
+       "rx_class": "gnss_civil",
+       "shadow_db": 4.185,
+       "source_id": "unit_d",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        0.3,
+        -4.0
+       ],
+       "js_db": 50.15,
+       "key": "E",
+       "lat": 48.10407,
+       "lon": 37.74904,
+       "rx_class": "gnss_civil",
+       "shadow_db": 2.966,
+       "source_id": "unit_e",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        -3.0,
+        -1.5
+       ],
+       "js_db": 46.745,
+       "key": "C",
+       "lat": 48.12653,
+       "lon": 37.70462,
+       "rx_class": "gnss_civil",
+       "shadow_db": 2.896,
+       "source_id": "unit_c",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        -7.0,
+        0.5
+       ],
+       "js_db": 45.901,
+       "key": "A",
+       "lat": 48.14449,
+       "lon": 37.65077,
+       "rx_class": "gnss_mil",
+       "shadow_db": 6.475,
+       "source_id": "unit_a",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        -6.0,
+        -5.0
+       ],
+       "js_db": 34.45,
+       "key": "F",
+       "lat": 48.09508,
+       "lon": 37.66423,
+       "rx_class": "gnss_mil",
+       "shadow_db": -4.822,
+       "source_id": "unit_f",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -9.0,
+        3.0
+       ],
+       "js_db": 34.87,
+       "key": "G",
+       "lat": 48.16695,
+       "lon": 37.62385,
+       "rx_class": "gnss_civil",
+       "shadow_db": -2.508,
+       "source_id": "unit_g",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -1.5,
+        6.0
+       ],
+       "js_db": 39.61,
+       "key": "H",
+       "lat": 48.1939,
+       "lon": 37.72481,
+       "rx_class": "gnss_civil",
+       "shadow_db": -5.283,
+       "source_id": "unit_h",
+       "state": "degraded"
+      }
+     ],
+     "healthy_by_class": {
+      "gnss_civil": [
+       "unit_g"
+      ],
+      "gnss_mil": [
+       "unit_f"
+      ]
+     },
+     "id": "off_node_seed_sweep_s12",
+     "preview_reference": {
+      "any_healthy_civil": true,
+      "area90_km2": 1008.8,
+      "truth_in_region90": true
+     },
+     "seed": 12
+    },
+    {
+     "degraded_by_class": {
+      "gnss_civil": [
+       "unit_b",
+       "unit_c",
+       "unit_d",
+       "unit_e",
+       "unit_g",
+       "unit_h"
+      ],
+      "gnss_mil": [
+       "unit_a"
+      ]
+     },
+     "evidence": [
+      {
+       "enu_km": [
+        0.0,
+        0.0
+       ],
+       "js_db": 56.117,
+       "key": "B",
+       "lat": 48.14,
+       "lon": 37.745,
+       "rx_class": "gnss_civil",
+       "shadow_db": 7.307,
+       "source_id": "unit_b",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        0.5,
+        4.0
+       ],
+       "js_db": 36.723,
+       "key": "D",
+       "lat": 48.17593,
+       "lon": 37.75173,
+       "rx_class": "gnss_civil",
+       "shadow_db": -12.313,
+       "source_id": "unit_d",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        0.3,
+        -4.0
+       ],
+       "js_db": 51.016,
+       "key": "E",
+       "lat": 48.10407,
+       "lon": 37.74904,
+       "rx_class": "gnss_civil",
+       "shadow_db": 3.832,
+       "source_id": "unit_e",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        -3.0,
+        -1.5
+       ],
+       "js_db": 44.127,
+       "key": "C",
+       "lat": 48.12653,
+       "lon": 37.70462,
+       "rx_class": "gnss_civil",
+       "shadow_db": 0.279,
+       "source_id": "unit_c",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        -7.0,
+        0.5
+       ],
+       "js_db": 44.699,
+       "key": "A",
+       "lat": 48.14449,
+       "lon": 37.65077,
+       "rx_class": "gnss_mil",
+       "shadow_db": 5.273,
+       "source_id": "unit_a",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        -6.0,
+        -5.0
+       ],
+       "js_db": 40.815,
+       "key": "F",
+       "lat": 48.09508,
+       "lon": 37.66423,
+       "rx_class": "gnss_mil",
+       "shadow_db": 1.543,
+       "source_id": "unit_f",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -9.0,
+        3.0
+       ],
+       "js_db": 44.687,
+       "key": "G",
+       "lat": 48.16695,
+       "lon": 37.62385,
+       "rx_class": "gnss_civil",
+       "shadow_db": 7.309,
+       "source_id": "unit_g",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        -1.5,
+        6.0
+       ],
+       "js_db": 45.019,
+       "key": "H",
+       "lat": 48.1939,
+       "lon": 37.72481,
+       "rx_class": "gnss_civil",
+       "shadow_db": 0.127,
+       "source_id": "unit_h",
+       "state": "degraded"
+      }
+     ],
+     "healthy_by_class": {
+      "gnss_civil": [],
+      "gnss_mil": [
+       "unit_f"
+      ]
+     },
+     "id": "off_node_seed_sweep_s13",
+     "preview_reference": {
+      "any_healthy_civil": false,
+      "area90_km2": 919.2,
+      "truth_in_region90": true
+     },
+     "seed": 13
+    },
+    {
+     "degraded_by_class": {
+      "gnss_civil": [
+       "unit_b",
+       "unit_d",
+       "unit_e",
+       "unit_g",
+       "unit_h"
+      ],
+      "gnss_mil": [
+       "unit_f"
+      ]
+     },
+     "evidence": [
+      {
+       "enu_km": [
+        0.0,
+        0.0
+       ],
+       "js_db": 51.592,
+       "key": "B",
+       "lat": 48.14,
+       "lon": 37.745,
+       "rx_class": "gnss_civil",
+       "shadow_db": 2.782,
+       "source_id": "unit_b",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        0.5,
+        4.0
+       ],
+       "js_db": 45.118,
+       "key": "D",
+       "lat": 48.17593,
+       "lon": 37.75173,
+       "rx_class": "gnss_civil",
+       "shadow_db": -3.918,
+       "source_id": "unit_d",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        0.3,
+        -4.0
+       ],
+       "js_db": 40.89,
+       "key": "E",
+       "lat": 48.10407,
+       "lon": 37.74904,
+       "rx_class": "gnss_civil",
+       "shadow_db": -6.294,
+       "source_id": "unit_e",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        -3.0,
+        -1.5
+       ],
+       "js_db": 32.149,
+       "key": "C",
+       "lat": 48.12653,
+       "lon": 37.70462,
+       "rx_class": "gnss_civil",
+       "shadow_db": -11.7,
+       "source_id": "unit_c",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -7.0,
+        0.5
+       ],
+       "js_db": 38.013,
+       "key": "A",
+       "lat": 48.14449,
+       "lon": 37.65077,
+       "rx_class": "gnss_mil",
+       "shadow_db": -1.413,
+       "source_id": "unit_a",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -6.0,
+        -5.0
+       ],
+       "js_db": 44.263,
+       "key": "F",
+       "lat": 48.09508,
+       "lon": 37.66423,
+       "rx_class": "gnss_mil",
+       "shadow_db": 4.99,
+       "source_id": "unit_f",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        -9.0,
+        3.0
+       ],
+       "js_db": 37.51,
+       "key": "G",
+       "lat": 48.16695,
+       "lon": 37.62385,
+       "rx_class": "gnss_civil",
+       "shadow_db": 0.132,
+       "source_id": "unit_g",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        -1.5,
+        6.0
+       ],
+       "js_db": 46.94,
+       "key": "H",
+       "lat": 48.1939,
+       "lon": 37.72481,
+       "rx_class": "gnss_civil",
+       "shadow_db": 2.047,
+       "source_id": "unit_h",
+       "state": "degraded"
+      }
+     ],
+     "healthy_by_class": {
+      "gnss_civil": [
+       "unit_c"
+      ],
+      "gnss_mil": [
+       "unit_a"
+      ]
+     },
+     "id": "off_node_seed_sweep_s14",
+     "preview_reference": {
+      "any_healthy_civil": true,
+      "area90_km2": 981.7,
+      "truth_in_region90": true
+     },
+     "seed": 14
+    },
+    {
+     "degraded_by_class": {
+      "gnss_civil": [
+       "unit_b",
+       "unit_c",
+       "unit_d",
+       "unit_e",
+       "unit_h"
+      ],
+      "gnss_mil": [
+       "unit_a",
+       "unit_f"
+      ]
+     },
+     "evidence": [
+      {
+       "enu_km": [
+        0.0,
+        0.0
+       ],
+       "js_db": 43.086,
+       "key": "B",
+       "lat": 48.14,
+       "lon": 37.745,
+       "rx_class": "gnss_civil",
+       "shadow_db": -5.723,
+       "source_id": "unit_b",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        0.5,
+        4.0
+       ],
+       "js_db": 45.29,
+       "key": "D",
+       "lat": 48.17593,
+       "lon": 37.75173,
+       "rx_class": "gnss_civil",
+       "shadow_db": -3.746,
+       "source_id": "unit_d",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        0.3,
+        -4.0
+       ],
+       "js_db": 48.76,
+       "key": "E",
+       "lat": 48.10407,
+       "lon": 37.74904,
+       "rx_class": "gnss_civil",
+       "shadow_db": 1.576,
+       "source_id": "unit_e",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        -3.0,
+        -1.5
+       ],
+       "js_db": 41.753,
+       "key": "C",
+       "lat": 48.12653,
+       "lon": 37.70462,
+       "rx_class": "gnss_civil",
+       "shadow_db": -2.096,
+       "source_id": "unit_c",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        -7.0,
+        0.5
+       ],
+       "js_db": 41.528,
+       "key": "A",
+       "lat": 48.14449,
+       "lon": 37.65077,
+       "rx_class": "gnss_mil",
+       "shadow_db": 2.102,
+       "source_id": "unit_a",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        -6.0,
+        -5.0
+       ],
+       "js_db": 42.502,
+       "key": "F",
+       "lat": 48.09508,
+       "lon": 37.66423,
+       "rx_class": "gnss_mil",
+       "shadow_db": 3.229,
+       "source_id": "unit_f",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        -9.0,
+        3.0
+       ],
+       "js_db": 31.604,
+       "key": "G",
+       "lat": 48.16695,
+       "lon": 37.62385,
+       "rx_class": "gnss_civil",
+       "shadow_db": -5.774,
+       "source_id": "unit_g",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -1.5,
+        6.0
+       ],
+       "js_db": 48.961,
+       "key": "H",
+       "lat": 48.1939,
+       "lon": 37.72481,
+       "rx_class": "gnss_civil",
+       "shadow_db": 4.068,
+       "source_id": "unit_h",
+       "state": "degraded"
+      }
+     ],
+     "healthy_by_class": {
+      "gnss_civil": [
+       "unit_g"
+      ],
+      "gnss_mil": []
+     },
+     "id": "off_node_seed_sweep_s15",
+     "preview_reference": {
+      "any_healthy_civil": true,
+      "area90_km2": 890.4,
+      "truth_in_region90": true
+     },
+     "seed": 15
+    },
+    {
+     "degraded_by_class": {
+      "gnss_civil": [
+       "unit_b",
+       "unit_c",
+       "unit_d",
+       "unit_e",
+       "unit_g",
+       "unit_h"
+      ],
+      "gnss_mil": [
+       "unit_a"
+      ]
+     },
+     "evidence": [
+      {
+       "enu_km": [
+        0.0,
+        0.0
+       ],
+       "js_db": 46.431,
+       "key": "B",
+       "lat": 48.14,
+       "lon": 37.745,
+       "rx_class": "gnss_civil",
+       "shadow_db": -2.379,
+       "source_id": "unit_b",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        0.5,
+        4.0
+       ],
+       "js_db": 51.56,
+       "key": "D",
+       "lat": 48.17593,
+       "lon": 37.75173,
+       "rx_class": "gnss_civil",
+       "shadow_db": 2.523,
+       "source_id": "unit_d",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        0.3,
+        -4.0
+       ],
+       "js_db": 51.341,
+       "key": "E",
+       "lat": 48.10407,
+       "lon": 37.74904,
+       "rx_class": "gnss_civil",
+       "shadow_db": 4.157,
+       "source_id": "unit_e",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        -3.0,
+        -1.5
+       ],
+       "js_db": 47.973,
+       "key": "C",
+       "lat": 48.12653,
+       "lon": 37.70462,
+       "rx_class": "gnss_civil",
+       "shadow_db": 4.124,
+       "source_id": "unit_c",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        -7.0,
+        0.5
+       ],
+       "js_db": 46.697,
+       "key": "A",
+       "lat": 48.14449,
+       "lon": 37.65077,
+       "rx_class": "gnss_mil",
+       "shadow_db": 7.271,
+       "source_id": "unit_a",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        -6.0,
+        -5.0
+       ],
+       "js_db": 37.732,
+       "key": "F",
+       "lat": 48.09508,
+       "lon": 37.66423,
+       "rx_class": "gnss_mil",
+       "shadow_db": -1.541,
+       "source_id": "unit_f",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -9.0,
+        3.0
+       ],
+       "js_db": 39.555,
+       "key": "G",
+       "lat": 48.16695,
+       "lon": 37.62385,
+       "rx_class": "gnss_civil",
+       "shadow_db": 2.177,
+       "source_id": "unit_g",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        -1.5,
+        6.0
+       ],
+       "js_db": 43.427,
+       "key": "H",
+       "lat": 48.1939,
+       "lon": 37.72481,
+       "rx_class": "gnss_civil",
+       "shadow_db": -1.465,
+       "source_id": "unit_h",
+       "state": "degraded"
+      }
+     ],
+     "healthy_by_class": {
+      "gnss_civil": [],
+      "gnss_mil": [
+       "unit_f"
+      ]
+     },
+     "id": "off_node_seed_sweep_s16",
+     "preview_reference": {
+      "any_healthy_civil": false,
+      "area90_km2": 919.2,
+      "truth_in_region90": true
+     },
+     "seed": 16
+    },
+    {
+     "degraded_by_class": {
+      "gnss_civil": [
+       "unit_b",
+       "unit_c",
+       "unit_d",
+       "unit_e",
+       "unit_h"
+      ],
+      "gnss_mil": []
+     },
+     "evidence": [
+      {
+       "enu_km": [
+        0.0,
+        0.0
+       ],
+       "js_db": 53.215,
+       "key": "B",
+       "lat": 48.14,
+       "lon": 37.745,
+       "rx_class": "gnss_civil",
+       "shadow_db": 4.405,
+       "source_id": "unit_b",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        0.5,
+        4.0
+       ],
+       "js_db": 50.39,
+       "key": "D",
+       "lat": 48.17593,
+       "lon": 37.75173,
+       "rx_class": "gnss_civil",
+       "shadow_db": 1.354,
+       "source_id": "unit_d",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        0.3,
+        -4.0
+       ],
+       "js_db": 45.024,
+       "key": "E",
+       "lat": 48.10407,
+       "lon": 37.74904,
+       "rx_class": "gnss_civil",
+       "shadow_db": -2.16,
+       "source_id": "unit_e",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        -3.0,
+        -1.5
+       ],
+       "js_db": 38.808,
+       "key": "C",
+       "lat": 48.12653,
+       "lon": 37.70462,
+       "rx_class": "gnss_civil",
+       "shadow_db": -5.041,
+       "source_id": "unit_c",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        -7.0,
+        0.5
+       ],
+       "js_db": 31.847,
+       "key": "A",
+       "lat": 48.14449,
+       "lon": 37.65077,
+       "rx_class": "gnss_mil",
+       "shadow_db": -7.578,
+       "source_id": "unit_a",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -6.0,
+        -5.0
+       ],
+       "js_db": 39.347,
+       "key": "F",
+       "lat": 48.09508,
+       "lon": 37.66423,
+       "rx_class": "gnss_mil",
+       "shadow_db": 0.075,
+       "source_id": "unit_f",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -9.0,
+        3.0
+       ],
+       "js_db": 34.136,
+       "key": "G",
+       "lat": 48.16695,
+       "lon": 37.62385,
+       "rx_class": "gnss_civil",
+       "shadow_db": -3.242,
+       "source_id": "unit_g",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -1.5,
+        6.0
+       ],
+       "js_db": 41.404,
+       "key": "H",
+       "lat": 48.1939,
+       "lon": 37.72481,
+       "rx_class": "gnss_civil",
+       "shadow_db": -3.489,
+       "source_id": "unit_h",
+       "state": "degraded"
+      }
+     ],
+     "healthy_by_class": {
+      "gnss_civil": [
+       "unit_g"
+      ],
+      "gnss_mil": [
+       "unit_a",
+       "unit_f"
+      ]
+     },
+     "id": "off_node_seed_sweep_s17",
+     "preview_reference": {
+      "any_healthy_civil": true,
+      "area90_km2": 985.0,
+      "truth_in_region90": true
+     },
+     "seed": 17
+    },
+    {
+     "degraded_by_class": {
+      "gnss_civil": [
+       "unit_b",
+       "unit_c",
+       "unit_d",
+       "unit_e",
+       "unit_h"
+      ],
+      "gnss_mil": [
+       "unit_a",
+       "unit_f"
+      ]
+     },
+     "evidence": [
+      {
+       "enu_km": [
+        0.0,
+        0.0
+       ],
+       "js_db": 47.081,
+       "key": "B",
+       "lat": 48.14,
+       "lon": 37.745,
+       "rx_class": "gnss_civil",
+       "shadow_db": -1.729,
+       "source_id": "unit_b",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        0.5,
+        4.0
+       ],
+       "js_db": 44.516,
+       "key": "D",
+       "lat": 48.17593,
+       "lon": 37.75173,
+       "rx_class": "gnss_civil",
+       "shadow_db": -4.52,
+       "source_id": "unit_d",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        0.3,
+        -4.0
+       ],
+       "js_db": 49.879,
+       "key": "E",
+       "lat": 48.10407,
+       "lon": 37.74904,
+       "rx_class": "gnss_civil",
+       "shadow_db": 2.695,
+       "source_id": "unit_e",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        -3.0,
+        -1.5
+       ],
+       "js_db": 39.418,
+       "key": "C",
+       "lat": 48.12653,
+       "lon": 37.70462,
+       "rx_class": "gnss_civil",
+       "shadow_db": -4.431,
+       "source_id": "unit_c",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        -7.0,
+        0.5
+       ],
+       "js_db": 47.481,
+       "key": "A",
+       "lat": 48.14449,
+       "lon": 37.65077,
+       "rx_class": "gnss_mil",
+       "shadow_db": 8.056,
+       "source_id": "unit_a",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        -6.0,
+        -5.0
+       ],
+       "js_db": 42.969,
+       "key": "F",
+       "lat": 48.09508,
+       "lon": 37.66423,
+       "rx_class": "gnss_mil",
+       "shadow_db": 3.696,
+       "source_id": "unit_f",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        -9.0,
+        3.0
+       ],
+       "js_db": 35.941,
+       "key": "G",
+       "lat": 48.16695,
+       "lon": 37.62385,
+       "rx_class": "gnss_civil",
+       "shadow_db": -1.437,
+       "source_id": "unit_g",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -1.5,
+        6.0
+       ],
+       "js_db": 47.174,
+       "key": "H",
+       "lat": 48.1939,
+       "lon": 37.72481,
+       "rx_class": "gnss_civil",
+       "shadow_db": 2.282,
+       "source_id": "unit_h",
+       "state": "degraded"
+      }
+     ],
+     "healthy_by_class": {
+      "gnss_civil": [
+       "unit_g"
+      ],
+      "gnss_mil": []
+     },
+     "id": "off_node_seed_sweep_s18",
+     "preview_reference": {
+      "any_healthy_civil": true,
+      "area90_km2": 890.4,
+      "truth_in_region90": true
+     },
+     "seed": 18
+    },
+    {
+     "degraded_by_class": {
+      "gnss_civil": [
+       "unit_b",
+       "unit_c",
+       "unit_d",
+       "unit_e",
+       "unit_g",
+       "unit_h"
+      ],
+      "gnss_mil": [
+       "unit_a"
+      ]
+     },
+     "evidence": [
+      {
+       "enu_km": [
+        0.0,
+        0.0
+       ],
+       "js_db": 47.33,
+       "key": "B",
+       "lat": 48.14,
+       "lon": 37.745,
+       "rx_class": "gnss_civil",
+       "shadow_db": -1.48,
+       "source_id": "unit_b",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        0.5,
+        4.0
+       ],
+       "js_db": 53.013,
+       "key": "D",
+       "lat": 48.17593,
+       "lon": 37.75173,
+       "rx_class": "gnss_civil",
+       "shadow_db": 3.976,
+       "source_id": "unit_d",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        0.3,
+        -4.0
+       ],
+       "js_db": 48.847,
+       "key": "E",
+       "lat": 48.10407,
+       "lon": 37.74904,
+       "rx_class": "gnss_civil",
+       "shadow_db": 1.663,
+       "source_id": "unit_e",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        -3.0,
+        -1.5
+       ],
+       "js_db": 41.376,
+       "key": "C",
+       "lat": 48.12653,
+       "lon": 37.70462,
+       "rx_class": "gnss_civil",
+       "shadow_db": -2.473,
+       "source_id": "unit_c",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        -7.0,
+        0.5
+       ],
+       "js_db": 42.114,
+       "key": "A",
+       "lat": 48.14449,
+       "lon": 37.65077,
+       "rx_class": "gnss_mil",
+       "shadow_db": 2.689,
+       "source_id": "unit_a",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        -6.0,
+        -5.0
+       ],
+       "js_db": 33.472,
+       "key": "F",
+       "lat": 48.09508,
+       "lon": 37.66423,
+       "rx_class": "gnss_mil",
+       "shadow_db": -5.8,
+       "source_id": "unit_f",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -9.0,
+        3.0
+       ],
+       "js_db": 39.752,
+       "key": "G",
+       "lat": 48.16695,
+       "lon": 37.62385,
+       "rx_class": "gnss_civil",
+       "shadow_db": 2.374,
+       "source_id": "unit_g",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        -1.5,
+        6.0
+       ],
+       "js_db": 42.645,
+       "key": "H",
+       "lat": 48.1939,
+       "lon": 37.72481,
+       "rx_class": "gnss_civil",
+       "shadow_db": -2.247,
+       "source_id": "unit_h",
+       "state": "degraded"
+      }
+     ],
+     "healthy_by_class": {
+      "gnss_civil": [],
+      "gnss_mil": [
+       "unit_f"
+      ]
+     },
+     "id": "off_node_seed_sweep_s19",
+     "preview_reference": {
+      "any_healthy_civil": false,
+      "area90_km2": 919.2,
+      "truth_in_region90": true
+     },
+     "seed": 19
+    }
+   ],
+   "seeds": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18,
+    19
+   ],
+   "truth": {
+    "back_db": -20.0,
+    "eirp_w": 420.0,
+    "enu_km": [
+     9.63,
+     1.13
+    ],
+    "erp_dbm": 56.2325,
+    "lat": 48.15015,
+    "lon": 37.87464,
+    "mast_m": 20.0,
+    "sector_az_deg": 270.0,
+    "sector_width_deg": 125.0,
+    "shadow_seed": null
+   },
+   "truth_cell": {
+    "ix": 139,
+    "iy": 125,
+    "x_km": 9.75,
+    "y_km": 1.25
+   }
+  },
+  {
+   "assertion": {
+    "kind": "recorded_only",
+    "note": "known limitation of the omni MVP (D8 sector fitting, v2)"
+   },
+   "id": "back_lobe_seed_sweep",
+   "preview_reference_contained": 9,
+   "runs": [
+    {
+     "degraded_by_class": {
+      "gnss_civil": [
+       "unit_b",
+       "unit_c",
+       "unit_d",
+       "unit_h"
+      ],
+      "gnss_mil": []
+     },
+     "evidence": [
+      {
+       "enu_km": [
+        0.0,
+        0.0
+       ],
+       "js_db": 42.09,
+       "key": "B",
+       "lat": 48.14,
+       "lon": 37.745,
+       "rx_class": "gnss_civil",
+       "shadow_db": 0.503,
+       "source_id": "unit_b",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        0.5,
+        4.0
+       ],
+       "js_db": 41.179,
+       "key": "D",
+       "lat": 48.17593,
+       "lon": 37.75173,
+       "rx_class": "gnss_civil",
+       "shadow_db": -0.528,
+       "source_id": "unit_d",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        0.3,
+        -4.0
+       ],
+       "js_db": 22.554,
+       "key": "E",
+       "lat": 48.10407,
+       "lon": 37.74904,
+       "rx_class": "gnss_civil",
+       "shadow_db": 2.562,
+       "source_id": "unit_e",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -3.0,
+        -1.5
+       ],
+       "js_db": 36.994,
+       "key": "C",
+       "lat": 48.12653,
+       "lon": 37.70462,
+       "rx_class": "gnss_civil",
+       "shadow_db": 0.42,
+       "source_id": "unit_c",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        -7.0,
+        0.5
+       ],
+       "js_db": 29.942,
+       "key": "A",
+       "lat": 48.14449,
+       "lon": 37.65077,
+       "rx_class": "gnss_mil",
+       "shadow_db": -2.143,
+       "source_id": "unit_a",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -6.0,
+        -5.0
+       ],
+       "js_db": 13.412,
+       "key": "F",
+       "lat": 48.09508,
+       "lon": 37.66423,
+       "rx_class": "gnss_mil",
+       "shadow_db": 1.446,
+       "source_id": "unit_f",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -9.0,
+        3.0
+       ],
+       "js_db": 35.22,
+       "key": "G",
+       "lat": 48.16695,
+       "lon": 37.62385,
+       "rx_class": "gnss_civil",
+       "shadow_db": 5.216,
+       "source_id": "unit_g",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -1.5,
+        6.0
+       ],
+       "js_db": 41.293,
+       "key": "H",
+       "lat": 48.1939,
+       "lon": 37.72481,
+       "rx_class": "gnss_civil",
+       "shadow_db": 3.788,
+       "source_id": "unit_h",
+       "state": "degraded"
+      }
+     ],
+     "healthy_by_class": {
+      "gnss_civil": [
+       "unit_e",
+       "unit_g"
+      ],
+      "gnss_mil": [
+       "unit_a",
+       "unit_f"
+      ]
+     },
+     "id": "back_lobe_seed_sweep_s0",
+     "preview_reference": {
+      "any_healthy_civil": true,
+      "area90_km2": 798.6,
+      "truth_in_region90": true
+     },
+     "seed": 0
+    },
+    {
+     "degraded_by_class": {
+      "gnss_civil": [
+       "unit_b",
+       "unit_d",
+       "unit_h"
+      ],
+      "gnss_mil": []
+     },
+     "evidence": [
+      {
+       "enu_km": [
+        0.0,
+        0.0
+       ],
+       "js_db": 42.969,
+       "key": "B",
+       "lat": 48.14,
+       "lon": 37.745,
+       "rx_class": "gnss_civil",
+       "shadow_db": 1.382,
+       "source_id": "unit_b",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        0.5,
+        4.0
+       ],
+       "js_db": 44.993,
+       "key": "D",
+       "lat": 48.17593,
+       "lon": 37.75173,
+       "rx_class": "gnss_civil",
+       "shadow_db": 3.286,
+       "source_id": "unit_d",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        0.3,
+        -4.0
+       ],
+       "js_db": 21.314,
+       "key": "E",
+       "lat": 48.10407,
+       "lon": 37.74904,
+       "rx_class": "gnss_civil",
+       "shadow_db": 1.322,
+       "source_id": "unit_e",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -3.0,
+        -1.5
+       ],
+       "js_db": 31.362,
+       "key": "C",
+       "lat": 48.12653,
+       "lon": 37.70462,
+       "rx_class": "gnss_civil",
+       "shadow_db": -5.213,
+       "source_id": "unit_c",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -7.0,
+        0.5
+       ],
+       "js_db": 35.706,
+       "key": "A",
+       "lat": 48.14449,
+       "lon": 37.65077,
+       "rx_class": "gnss_mil",
+       "shadow_db": 3.621,
+       "source_id": "unit_a",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -6.0,
+        -5.0
+       ],
+       "js_db": 13.751,
+       "key": "F",
+       "lat": 48.09508,
+       "lon": 37.66423,
+       "rx_class": "gnss_mil",
+       "shadow_db": 1.785,
+       "source_id": "unit_f",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -9.0,
+        3.0
+       ],
+       "js_db": 27.856,
+       "key": "G",
+       "lat": 48.16695,
+       "lon": 37.62385,
+       "rx_class": "gnss_civil",
+       "shadow_db": -2.148,
+       "source_id": "unit_g",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -1.5,
+        6.0
+       ],
+       "js_db": 39.829,
+       "key": "H",
+       "lat": 48.1939,
+       "lon": 37.72481,
+       "rx_class": "gnss_civil",
+       "shadow_db": 2.324,
+       "source_id": "unit_h",
+       "state": "degraded"
+      }
+     ],
+     "healthy_by_class": {
+      "gnss_civil": [
+       "unit_c",
+       "unit_e",
+       "unit_g"
+      ],
+      "gnss_mil": [
+       "unit_a",
+       "unit_f"
+      ]
+     },
+     "id": "back_lobe_seed_sweep_s1",
+     "preview_reference": {
+      "any_healthy_civil": true,
+      "area90_km2": 608.4,
+      "truth_in_region90": false
+     },
+     "seed": 1
+    },
+    {
+     "degraded_by_class": {
+      "gnss_civil": [
+       "unit_b",
+       "unit_d",
+       "unit_h"
+      ],
+      "gnss_mil": []
+     },
+     "evidence": [
+      {
+       "enu_km": [
+        0.0,
+        0.0
+       ],
+       "js_db": 42.343,
+       "key": "B",
+       "lat": 48.14,
+       "lon": 37.745,
+       "rx_class": "gnss_civil",
+       "shadow_db": 0.756,
+       "source_id": "unit_b",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        0.5,
+        4.0
+       ],
+       "js_db": 39.616,
+       "key": "D",
+       "lat": 48.17593,
+       "lon": 37.75173,
+       "rx_class": "gnss_civil",
+       "shadow_db": -2.091,
+       "source_id": "unit_d",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        0.3,
+        -4.0
+       ],
+       "js_db": 18.34,
+       "key": "E",
+       "lat": 48.10407,
+       "lon": 37.74904,
+       "rx_class": "gnss_civil",
+       "shadow_db": -1.652,
+       "source_id": "unit_e",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -3.0,
+        -1.5
+       ],
+       "js_db": 26.809,
+       "key": "C",
+       "lat": 48.12653,
+       "lon": 37.70462,
+       "rx_class": "gnss_civil",
+       "shadow_db": -9.766,
+       "source_id": "unit_c",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -7.0,
+        0.5
+       ],
+       "js_db": 39.283,
+       "key": "A",
+       "lat": 48.14449,
+       "lon": 37.65077,
+       "rx_class": "gnss_mil",
+       "shadow_db": 7.199,
+       "source_id": "unit_a",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -6.0,
+        -5.0
+       ],
+       "js_db": 16.542,
+       "key": "F",
+       "lat": 48.09508,
+       "lon": 37.66423,
+       "rx_class": "gnss_mil",
+       "shadow_db": 4.577,
+       "source_id": "unit_f",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -9.0,
+        3.0
+       ],
+       "js_db": 28.702,
+       "key": "G",
+       "lat": 48.16695,
+       "lon": 37.62385,
+       "rx_class": "gnss_civil",
+       "shadow_db": -1.302,
+       "source_id": "unit_g",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -1.5,
+        6.0
+       ],
+       "js_db": 40.6,
+       "key": "H",
+       "lat": 48.1939,
+       "lon": 37.72481,
+       "rx_class": "gnss_civil",
+       "shadow_db": 3.095,
+       "source_id": "unit_h",
+       "state": "degraded"
+      }
+     ],
+     "healthy_by_class": {
+      "gnss_civil": [
+       "unit_c",
+       "unit_e",
+       "unit_g"
+      ],
+      "gnss_mil": [
+       "unit_a",
+       "unit_f"
+      ]
+     },
+     "id": "back_lobe_seed_sweep_s2",
+     "preview_reference": {
+      "any_healthy_civil": true,
+      "area90_km2": 608.4,
+      "truth_in_region90": false
+     },
+     "seed": 2
+    },
+    {
+     "degraded_by_class": {
+      "gnss_civil": [
+       "unit_b",
+       "unit_h"
+      ],
+      "gnss_mil": []
+     },
+     "evidence": [
+      {
+       "enu_km": [
+        0.0,
+        0.0
+       ],
+       "js_db": 49.751,
+       "key": "B",
+       "lat": 48.14,
+       "lon": 37.745,
+       "rx_class": "gnss_civil",
+       "shadow_db": 8.164,
+       "source_id": "unit_b",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        0.5,
+        4.0
+       ],
+       "js_db": 31.484,
+       "key": "D",
+       "lat": 48.17593,
+       "lon": 37.75173,
+       "rx_class": "gnss_civil",
+       "shadow_db": -10.223,
+       "source_id": "unit_d",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        0.3,
+        -4.0
+       ],
+       "js_db": 21.665,
+       "key": "E",
+       "lat": 48.10407,
+       "lon": 37.74904,
+       "rx_class": "gnss_civil",
+       "shadow_db": 1.672,
+       "source_id": "unit_e",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -3.0,
+        -1.5
+       ],
+       "js_db": 34.304,
+       "key": "C",
+       "lat": 48.12653,
+       "lon": 37.70462,
+       "rx_class": "gnss_civil",
+       "shadow_db": -2.271,
+       "source_id": "unit_c",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -7.0,
+        0.5
+       ],
+       "js_db": 30.274,
+       "key": "A",
+       "lat": 48.14449,
+       "lon": 37.65077,
+       "rx_class": "gnss_mil",
+       "shadow_db": -1.811,
+       "source_id": "unit_a",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -6.0,
+        -5.0
+       ],
+       "js_db": 11.103,
+       "key": "F",
+       "lat": 48.09508,
+       "lon": 37.66423,
+       "rx_class": "gnss_mil",
+       "shadow_db": -0.862,
+       "source_id": "unit_f",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -9.0,
+        3.0
+       ],
+       "js_db": 21.924,
+       "key": "G",
+       "lat": 48.16695,
+       "lon": 37.62385,
+       "rx_class": "gnss_civil",
+       "shadow_db": -8.08,
+       "source_id": "unit_g",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -1.5,
+        6.0
+       ],
+       "js_db": 36.577,
+       "key": "H",
+       "lat": 48.1939,
+       "lon": 37.72481,
+       "rx_class": "gnss_civil",
+       "shadow_db": -0.928,
+       "source_id": "unit_h",
+       "state": "degraded"
+      }
+     ],
+     "healthy_by_class": {
+      "gnss_civil": [
+       "unit_c",
+       "unit_d",
+       "unit_e",
+       "unit_g"
+      ],
+      "gnss_mil": [
+       "unit_a",
+       "unit_f"
+      ]
+     },
+     "id": "back_lobe_seed_sweep_s3",
+     "preview_reference": {
+      "any_healthy_civil": true,
+      "area90_km2": 598.9,
+      "truth_in_region90": false
+     },
+     "seed": 3
+    },
+    {
+     "degraded_by_class": {
+      "gnss_civil": [
+       "unit_b",
+       "unit_c",
+       "unit_d",
+       "unit_h"
+      ],
+      "gnss_mil": []
+     },
+     "evidence": [
+      {
+       "enu_km": [
+        0.0,
+        0.0
+       ],
+       "js_db": 38.98,
+       "key": "B",
+       "lat": 48.14,
+       "lon": 37.745,
+       "rx_class": "gnss_civil",
+       "shadow_db": -2.607,
+       "source_id": "unit_b",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        0.5,
+        4.0
+       ],
+       "js_db": 41.008,
+       "key": "D",
+       "lat": 48.17593,
+       "lon": 37.75173,
+       "rx_class": "gnss_civil",
+       "shadow_db": -0.699,
+       "source_id": "unit_d",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        0.3,
+        -4.0
+       ],
+       "js_db": 26.647,
+       "key": "E",
+       "lat": 48.10407,
+       "lon": 37.74904,
+       "rx_class": "gnss_civil",
+       "shadow_db": 6.655,
+       "source_id": "unit_e",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -3.0,
+        -1.5
+       ],
+       "js_db": 39.211,
+       "key": "C",
+       "lat": 48.12653,
+       "lon": 37.70462,
+       "rx_class": "gnss_civil",
+       "shadow_db": 2.637,
+       "source_id": "unit_c",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        -7.0,
+        0.5
+       ],
+       "js_db": 25.519,
+       "key": "A",
+       "lat": 48.14449,
+       "lon": 37.65077,
+       "rx_class": "gnss_mil",
+       "shadow_db": -6.566,
+       "source_id": "unit_a",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -6.0,
+        -5.0
+       ],
+       "js_db": 11.945,
+       "key": "F",
+       "lat": 48.09508,
+       "lon": 37.66423,
+       "rx_class": "gnss_mil",
+       "shadow_db": -0.021,
+       "source_id": "unit_f",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -9.0,
+        3.0
+       ],
+       "js_db": 27.51,
+       "key": "G",
+       "lat": 48.16695,
+       "lon": 37.62385,
+       "rx_class": "gnss_civil",
+       "shadow_db": -2.494,
+       "source_id": "unit_g",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -1.5,
+        6.0
+       ],
+       "js_db": 38.099,
+       "key": "H",
+       "lat": 48.1939,
+       "lon": 37.72481,
+       "rx_class": "gnss_civil",
+       "shadow_db": 0.595,
+       "source_id": "unit_h",
+       "state": "degraded"
+      }
+     ],
+     "healthy_by_class": {
+      "gnss_civil": [
+       "unit_e",
+       "unit_g"
+      ],
+      "gnss_mil": [
+       "unit_a",
+       "unit_f"
+      ]
+     },
+     "id": "back_lobe_seed_sweep_s4",
+     "preview_reference": {
+      "any_healthy_civil": true,
+      "area90_km2": 798.6,
+      "truth_in_region90": true
+     },
+     "seed": 4
+    },
+    {
+     "degraded_by_class": {
+      "gnss_civil": [
+       "unit_b",
+       "unit_c",
+       "unit_d"
+      ],
+      "gnss_mil": []
+     },
+     "evidence": [
+      {
+       "enu_km": [
+        0.0,
+        0.0
+       ],
+       "js_db": 38.379,
+       "key": "B",
+       "lat": 48.14,
+       "lon": 37.745,
+       "rx_class": "gnss_civil",
+       "shadow_db": -3.208,
+       "source_id": "unit_b",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        0.5,
+        4.0
+       ],
+       "js_db": 36.41,
+       "key": "D",
+       "lat": 48.17593,
+       "lon": 37.75173,
+       "rx_class": "gnss_civil",
+       "shadow_db": -5.297,
+       "source_id": "unit_d",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        0.3,
+        -4.0
+       ],
+       "js_db": 18.999,
+       "key": "E",
+       "lat": 48.10407,
+       "lon": 37.74904,
+       "rx_class": "gnss_civil",
+       "shadow_db": -0.993,
+       "source_id": "unit_e",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -3.0,
+        -1.5
+       ],
+       "js_db": 38.257,
+       "key": "C",
+       "lat": 48.12653,
+       "lon": 37.70462,
+       "rx_class": "gnss_civil",
+       "shadow_db": 1.682,
+       "source_id": "unit_c",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        -7.0,
+        0.5
+       ],
+       "js_db": 36.629,
+       "key": "A",
+       "lat": 48.14449,
+       "lon": 37.65077,
+       "rx_class": "gnss_mil",
+       "shadow_db": 4.544,
+       "source_id": "unit_a",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -6.0,
+        -5.0
+       ],
+       "js_db": 12.405,
+       "key": "F",
+       "lat": 48.09508,
+       "lon": 37.66423,
+       "rx_class": "gnss_mil",
+       "shadow_db": 0.439,
+       "source_id": "unit_f",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -9.0,
+        3.0
+       ],
+       "js_db": 27.793,
+       "key": "G",
+       "lat": 48.16695,
+       "lon": 37.62385,
+       "rx_class": "gnss_civil",
+       "shadow_db": -2.211,
+       "source_id": "unit_g",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -1.5,
+        6.0
+       ],
+       "js_db": 34.366,
+       "key": "H",
+       "lat": 48.1939,
+       "lon": 37.72481,
+       "rx_class": "gnss_civil",
+       "shadow_db": -3.139,
+       "source_id": "unit_h",
+       "state": "healthy"
+      }
+     ],
+     "healthy_by_class": {
+      "gnss_civil": [
+       "unit_e",
+       "unit_g",
+       "unit_h"
+      ],
+      "gnss_mil": [
+       "unit_a",
+       "unit_f"
+      ]
+     },
+     "id": "back_lobe_seed_sweep_s5",
+     "preview_reference": {
+      "any_healthy_civil": true,
+      "area90_km2": 918.8,
+      "truth_in_region90": true
+     },
+     "seed": 5
+    },
+    {
+     "degraded_by_class": {
+      "gnss_civil": [
+       "unit_b",
+       "unit_c",
+       "unit_d",
+       "unit_h"
+      ],
+      "gnss_mil": []
+     },
+     "evidence": [
+      {
+       "enu_km": [
+        0.0,
+        0.0
+       ],
+       "js_db": 45.8,
+       "key": "B",
+       "lat": 48.14,
+       "lon": 37.745,
+       "rx_class": "gnss_civil",
+       "shadow_db": 4.212,
+       "source_id": "unit_b",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        0.5,
+        4.0
+       ],
+       "js_db": 48.813,
+       "key": "D",
+       "lat": 48.17593,
+       "lon": 37.75173,
+       "rx_class": "gnss_civil",
+       "shadow_db": 7.106,
+       "source_id": "unit_d",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        0.3,
+        -4.0
+       ],
+       "js_db": 9.779,
+       "key": "E",
+       "lat": 48.10407,
+       "lon": 37.74904,
+       "rx_class": "gnss_civil",
+       "shadow_db": -10.213,
+       "source_id": "unit_e",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -3.0,
+        -1.5
+       ],
+       "js_db": 36.023,
+       "key": "C",
+       "lat": 48.12653,
+       "lon": 37.70462,
+       "rx_class": "gnss_civil",
+       "shadow_db": -0.552,
+       "source_id": "unit_c",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        -7.0,
+        0.5
+       ],
+       "js_db": 36.139,
+       "key": "A",
+       "lat": 48.14449,
+       "lon": 37.65077,
+       "rx_class": "gnss_mil",
+       "shadow_db": 4.055,
+       "source_id": "unit_a",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -6.0,
+        -5.0
+       ],
+       "js_db": 17.374,
+       "key": "F",
+       "lat": 48.09508,
+       "lon": 37.66423,
+       "rx_class": "gnss_mil",
+       "shadow_db": 5.409,
+       "source_id": "unit_f",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -9.0,
+        3.0
+       ],
+       "js_db": 32.619,
+       "key": "G",
+       "lat": 48.16695,
+       "lon": 37.62385,
+       "rx_class": "gnss_civil",
+       "shadow_db": 2.615,
+       "source_id": "unit_g",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -1.5,
+        6.0
+       ],
+       "js_db": 43.493,
+       "key": "H",
+       "lat": 48.1939,
+       "lon": 37.72481,
+       "rx_class": "gnss_civil",
+       "shadow_db": 5.988,
+       "source_id": "unit_h",
+       "state": "degraded"
+      }
+     ],
+     "healthy_by_class": {
+      "gnss_civil": [
+       "unit_e",
+       "unit_g"
+      ],
+      "gnss_mil": [
+       "unit_a",
+       "unit_f"
+      ]
+     },
+     "id": "back_lobe_seed_sweep_s6",
+     "preview_reference": {
+      "any_healthy_civil": true,
+      "area90_km2": 798.6,
+      "truth_in_region90": true
+     },
+     "seed": 6
+    },
+    {
+     "degraded_by_class": {
+      "gnss_civil": [
+       "unit_b",
+       "unit_d",
+       "unit_h"
+      ],
+      "gnss_mil": []
+     },
+     "evidence": [
+      {
+       "enu_km": [
+        0.0,
+        0.0
+       ],
+       "js_db": 41.592,
+       "key": "B",
+       "lat": 48.14,
+       "lon": 37.745,
+       "rx_class": "gnss_civil",
+       "shadow_db": 0.005,
+       "source_id": "unit_b",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        0.5,
+        4.0
+       ],
+       "js_db": 42.902,
+       "key": "D",
+       "lat": 48.17593,
+       "lon": 37.75173,
+       "rx_class": "gnss_civil",
+       "shadow_db": 1.195,
+       "source_id": "unit_d",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        0.3,
+        -4.0
+       ],
+       "js_db": 18.896,
+       "key": "E",
+       "lat": 48.10407,
+       "lon": 37.74904,
+       "rx_class": "gnss_civil",
+       "shadow_db": -1.097,
+       "source_id": "unit_e",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -3.0,
+        -1.5
+       ],
+       "js_db": 33.012,
+       "key": "C",
+       "lat": 48.12653,
+       "lon": 37.70462,
+       "rx_class": "gnss_civil",
+       "shadow_db": -3.562,
+       "source_id": "unit_c",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -7.0,
+        0.5
+       ],
+       "js_db": 30.266,
+       "key": "A",
+       "lat": 48.14449,
+       "lon": 37.65077,
+       "rx_class": "gnss_mil",
+       "shadow_db": -1.819,
+       "source_id": "unit_a",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -6.0,
+        -5.0
+       ],
+       "js_db": 7.999,
+       "key": "F",
+       "lat": 48.09508,
+       "lon": 37.66423,
+       "rx_class": "gnss_mil",
+       "shadow_db": -3.967,
+       "source_id": "unit_f",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -9.0,
+        3.0
+       ],
+       "js_db": 30.245,
+       "key": "G",
+       "lat": 48.16695,
+       "lon": 37.62385,
+       "rx_class": "gnss_civil",
+       "shadow_db": 0.241,
+       "source_id": "unit_g",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -1.5,
+        6.0
+       ],
+       "js_db": 42.866,
+       "key": "H",
+       "lat": 48.1939,
+       "lon": 37.72481,
+       "rx_class": "gnss_civil",
+       "shadow_db": 5.361,
+       "source_id": "unit_h",
+       "state": "degraded"
+      }
+     ],
+     "healthy_by_class": {
+      "gnss_civil": [
+       "unit_c",
+       "unit_e",
+       "unit_g"
+      ],
+      "gnss_mil": [
+       "unit_a",
+       "unit_f"
+      ]
+     },
+     "id": "back_lobe_seed_sweep_s7",
+     "preview_reference": {
+      "any_healthy_civil": true,
+      "area90_km2": 608.4,
+      "truth_in_region90": false
+     },
+     "seed": 7
+    },
+    {
+     "degraded_by_class": {
+      "gnss_civil": [
+       "unit_d",
+       "unit_h"
+      ],
+      "gnss_mil": []
+     },
+     "evidence": [
+      {
+       "enu_km": [
+        0.0,
+        0.0
+       ],
+       "js_db": 34.634,
+       "key": "B",
+       "lat": 48.14,
+       "lon": 37.745,
+       "rx_class": "gnss_civil",
+       "shadow_db": -6.953,
+       "source_id": "unit_b",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        0.5,
+        4.0
+       ],
+       "js_db": 36.36,
+       "key": "D",
+       "lat": 48.17593,
+       "lon": 37.75173,
+       "rx_class": "gnss_civil",
+       "shadow_db": -5.347,
+       "source_id": "unit_d",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        0.3,
+        -4.0
+       ],
+       "js_db": 14.548,
+       "key": "E",
+       "lat": 48.10407,
+       "lon": 37.74904,
+       "rx_class": "gnss_civil",
+       "shadow_db": -5.444,
+       "source_id": "unit_e",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -3.0,
+        -1.5
+       ],
+       "js_db": 35.168,
+       "key": "C",
+       "lat": 48.12653,
+       "lon": 37.70462,
+       "rx_class": "gnss_civil",
+       "shadow_db": -1.406,
+       "source_id": "unit_c",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -7.0,
+        0.5
+       ],
+       "js_db": 22.834,
+       "key": "A",
+       "lat": 48.14449,
+       "lon": 37.65077,
+       "rx_class": "gnss_mil",
+       "shadow_db": -9.25,
+       "source_id": "unit_a",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -6.0,
+        -5.0
+       ],
+       "js_db": 11.21,
+       "key": "F",
+       "lat": 48.09508,
+       "lon": 37.66423,
+       "rx_class": "gnss_mil",
+       "shadow_db": -0.756,
+       "source_id": "unit_f",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -9.0,
+        3.0
+       ],
+       "js_db": 26.175,
+       "key": "G",
+       "lat": 48.16695,
+       "lon": 37.62385,
+       "rx_class": "gnss_civil",
+       "shadow_db": -3.829,
+       "source_id": "unit_g",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -1.5,
+        6.0
+       ],
+       "js_db": 41.079,
+       "key": "H",
+       "lat": 48.1939,
+       "lon": 37.72481,
+       "rx_class": "gnss_civil",
+       "shadow_db": 3.574,
+       "source_id": "unit_h",
+       "state": "degraded"
+      }
+     ],
+     "healthy_by_class": {
+      "gnss_civil": [
+       "unit_b",
+       "unit_c",
+       "unit_e",
+       "unit_g"
+      ],
+      "gnss_mil": [
+       "unit_a",
+       "unit_f"
+      ]
+     },
+     "id": "back_lobe_seed_sweep_s8",
+     "preview_reference": {
+      "any_healthy_civil": true,
+      "area90_km2": 477.1,
+      "truth_in_region90": false
+     },
+     "seed": 8
+    },
+    {
+     "degraded_by_class": {
+      "gnss_civil": [
+       "unit_b",
+       "unit_c",
+       "unit_d",
+       "unit_h"
+      ],
+      "gnss_mil": []
+     },
+     "evidence": [
+      {
+       "enu_km": [
+        0.0,
+        0.0
+       ],
+       "js_db": 38.376,
+       "key": "B",
+       "lat": 48.14,
+       "lon": 37.745,
+       "rx_class": "gnss_civil",
+       "shadow_db": -3.211,
+       "source_id": "unit_b",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        0.5,
+        4.0
+       ],
+       "js_db": 42.678,
+       "key": "D",
+       "lat": 48.17593,
+       "lon": 37.75173,
+       "rx_class": "gnss_civil",
+       "shadow_db": 0.971,
+       "source_id": "unit_d",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        0.3,
+        -4.0
+       ],
+       "js_db": 13.367,
+       "key": "E",
+       "lat": 48.10407,
+       "lon": 37.74904,
+       "rx_class": "gnss_civil",
+       "shadow_db": -6.625,
+       "source_id": "unit_e",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -3.0,
+        -1.5
+       ],
+       "js_db": 39.199,
+       "key": "C",
+       "lat": 48.12653,
+       "lon": 37.70462,
+       "rx_class": "gnss_civil",
+       "shadow_db": 2.624,
+       "source_id": "unit_c",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        -7.0,
+        0.5
+       ],
+       "js_db": 36.658,
+       "key": "A",
+       "lat": 48.14449,
+       "lon": 37.65077,
+       "rx_class": "gnss_mil",
+       "shadow_db": 4.574,
+       "source_id": "unit_a",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -6.0,
+        -5.0
+       ],
+       "js_db": 10.155,
+       "key": "F",
+       "lat": 48.09508,
+       "lon": 37.66423,
+       "rx_class": "gnss_mil",
+       "shadow_db": -1.81,
+       "source_id": "unit_f",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -9.0,
+        3.0
+       ],
+       "js_db": 31.726,
+       "key": "G",
+       "lat": 48.16695,
+       "lon": 37.62385,
+       "rx_class": "gnss_civil",
+       "shadow_db": 1.722,
+       "source_id": "unit_g",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -1.5,
+        6.0
+       ],
+       "js_db": 38.508,
+       "key": "H",
+       "lat": 48.1939,
+       "lon": 37.72481,
+       "rx_class": "gnss_civil",
+       "shadow_db": 1.004,
+       "source_id": "unit_h",
+       "state": "degraded"
+      }
+     ],
+     "healthy_by_class": {
+      "gnss_civil": [
+       "unit_e",
+       "unit_g"
+      ],
+      "gnss_mil": [
+       "unit_a",
+       "unit_f"
+      ]
+     },
+     "id": "back_lobe_seed_sweep_s9",
+     "preview_reference": {
+      "any_healthy_civil": true,
+      "area90_km2": 798.6,
+      "truth_in_region90": true
+     },
+     "seed": 9
+    },
+    {
+     "degraded_by_class": {
+      "gnss_civil": [
+       "unit_b",
+       "unit_c",
+       "unit_d",
+       "unit_h"
+      ],
+      "gnss_mil": []
+     },
+     "evidence": [
+      {
+       "enu_km": [
+        0.0,
+        0.0
+       ],
+       "js_db": 37.174,
+       "key": "B",
+       "lat": 48.14,
+       "lon": 37.745,
+       "rx_class": "gnss_civil",
+       "shadow_db": -4.413,
+       "source_id": "unit_b",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        0.5,
+        4.0
+       ],
+       "js_db": 38.807,
+       "key": "D",
+       "lat": 48.17593,
+       "lon": 37.75173,
+       "rx_class": "gnss_civil",
+       "shadow_db": -2.9,
+       "source_id": "unit_d",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        0.3,
+        -4.0
+       ],
+       "js_db": 16.865,
+       "key": "E",
+       "lat": 48.10407,
+       "lon": 37.74904,
+       "rx_class": "gnss_civil",
+       "shadow_db": -3.127,
+       "source_id": "unit_e",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -3.0,
+        -1.5
+       ],
+       "js_db": 37.643,
+       "key": "C",
+       "lat": 48.12653,
+       "lon": 37.70462,
+       "rx_class": "gnss_civil",
+       "shadow_db": 1.068,
+       "source_id": "unit_c",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        -7.0,
+        0.5
+       ],
+       "js_db": 31.09,
+       "key": "A",
+       "lat": 48.14449,
+       "lon": 37.65077,
+       "rx_class": "gnss_mil",
+       "shadow_db": -0.994,
+       "source_id": "unit_a",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -6.0,
+        -5.0
+       ],
+       "js_db": 12.472,
+       "key": "F",
+       "lat": 48.09508,
+       "lon": 37.66423,
+       "rx_class": "gnss_mil",
+       "shadow_db": 0.506,
+       "source_id": "unit_f",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -9.0,
+        3.0
+       ],
+       "js_db": 33.376,
+       "key": "G",
+       "lat": 48.16695,
+       "lon": 37.62385,
+       "rx_class": "gnss_civil",
+       "shadow_db": 3.372,
+       "source_id": "unit_g",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -1.5,
+        6.0
+       ],
+       "js_db": 40.937,
+       "key": "H",
+       "lat": 48.1939,
+       "lon": 37.72481,
+       "rx_class": "gnss_civil",
+       "shadow_db": 3.432,
+       "source_id": "unit_h",
+       "state": "degraded"
+      }
+     ],
+     "healthy_by_class": {
+      "gnss_civil": [
+       "unit_e",
+       "unit_g"
+      ],
+      "gnss_mil": [
+       "unit_a",
+       "unit_f"
+      ]
+     },
+     "id": "back_lobe_seed_sweep_s10",
+     "preview_reference": {
+      "any_healthy_civil": true,
+      "area90_km2": 798.6,
+      "truth_in_region90": true
+     },
+     "seed": 10
+    },
+    {
+     "degraded_by_class": {
+      "gnss_civil": [
+       "unit_b",
+       "unit_d",
+       "unit_h"
+      ],
+      "gnss_mil": []
+     },
+     "evidence": [
+      {
+       "enu_km": [
+        0.0,
+        0.0
+       ],
+       "js_db": 41.724,
+       "key": "B",
+       "lat": 48.14,
+       "lon": 37.745,
+       "rx_class": "gnss_civil",
+       "shadow_db": 0.137,
+       "source_id": "unit_b",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        0.5,
+        4.0
+       ],
+       "js_db": 47.146,
+       "key": "D",
+       "lat": 48.17593,
+       "lon": 37.75173,
+       "rx_class": "gnss_civil",
+       "shadow_db": 5.439,
+       "source_id": "unit_d",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        0.3,
+        -4.0
+       ],
+       "js_db": 24.891,
+       "key": "E",
+       "lat": 48.10407,
+       "lon": 37.74904,
+       "rx_class": "gnss_civil",
+       "shadow_db": 4.899,
+       "source_id": "unit_e",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -3.0,
+        -1.5
+       ],
+       "js_db": 34.534,
+       "key": "C",
+       "lat": 48.12653,
+       "lon": 37.70462,
+       "rx_class": "gnss_civil",
+       "shadow_db": -2.041,
+       "source_id": "unit_c",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -7.0,
+        0.5
+       ],
+       "js_db": 30.893,
+       "key": "A",
+       "lat": 48.14449,
+       "lon": 37.65077,
+       "rx_class": "gnss_mil",
+       "shadow_db": -1.192,
+       "source_id": "unit_a",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -6.0,
+        -5.0
+       ],
+       "js_db": 9.856,
+       "key": "F",
+       "lat": 48.09508,
+       "lon": 37.66423,
+       "rx_class": "gnss_mil",
+       "shadow_db": -2.11,
+       "source_id": "unit_f",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -9.0,
+        3.0
+       ],
+       "js_db": 32.283,
+       "key": "G",
+       "lat": 48.16695,
+       "lon": 37.62385,
+       "rx_class": "gnss_civil",
+       "shadow_db": 2.279,
+       "source_id": "unit_g",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -1.5,
+        6.0
+       ],
+       "js_db": 37.28,
+       "key": "H",
+       "lat": 48.1939,
+       "lon": 37.72481,
+       "rx_class": "gnss_civil",
+       "shadow_db": -0.224,
+       "source_id": "unit_h",
+       "state": "degraded"
+      }
+     ],
+     "healthy_by_class": {
+      "gnss_civil": [
+       "unit_c",
+       "unit_e",
+       "unit_g"
+      ],
+      "gnss_mil": [
+       "unit_a",
+       "unit_f"
+      ]
+     },
+     "id": "back_lobe_seed_sweep_s11",
+     "preview_reference": {
+      "any_healthy_civil": true,
+      "area90_km2": 608.4,
+      "truth_in_region90": false
+     },
+     "seed": 11
+    },
+    {
+     "degraded_by_class": {
+      "gnss_civil": [
+       "unit_b",
+       "unit_c",
+       "unit_d"
+      ],
+      "gnss_mil": []
+     },
+     "evidence": [
+      {
+       "enu_km": [
+        0.0,
+        0.0
+       ],
+       "js_db": 41.56,
+       "key": "B",
+       "lat": 48.14,
+       "lon": 37.745,
+       "rx_class": "gnss_civil",
+       "shadow_db": -0.027,
+       "source_id": "unit_b",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        0.5,
+        4.0
+       ],
+       "js_db": 45.892,
+       "key": "D",
+       "lat": 48.17593,
+       "lon": 37.75173,
+       "rx_class": "gnss_civil",
+       "shadow_db": 4.185,
+       "source_id": "unit_d",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        0.3,
+        -4.0
+       ],
+       "js_db": 22.959,
+       "key": "E",
+       "lat": 48.10407,
+       "lon": 37.74904,
+       "rx_class": "gnss_civil",
+       "shadow_db": 2.966,
+       "source_id": "unit_e",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -3.0,
+        -1.5
+       ],
+       "js_db": 39.471,
+       "key": "C",
+       "lat": 48.12653,
+       "lon": 37.70462,
+       "rx_class": "gnss_civil",
+       "shadow_db": 2.896,
+       "source_id": "unit_c",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        -7.0,
+        0.5
+       ],
+       "js_db": 38.56,
+       "key": "A",
+       "lat": 48.14449,
+       "lon": 37.65077,
+       "rx_class": "gnss_mil",
+       "shadow_db": 6.475,
+       "source_id": "unit_a",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -6.0,
+        -5.0
+       ],
+       "js_db": 7.144,
+       "key": "F",
+       "lat": 48.09508,
+       "lon": 37.66423,
+       "rx_class": "gnss_mil",
+       "shadow_db": -4.822,
+       "source_id": "unit_f",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -9.0,
+        3.0
+       ],
+       "js_db": 27.496,
+       "key": "G",
+       "lat": 48.16695,
+       "lon": 37.62385,
+       "rx_class": "gnss_civil",
+       "shadow_db": -2.508,
+       "source_id": "unit_g",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -1.5,
+        6.0
+       ],
+       "js_db": 32.222,
+       "key": "H",
+       "lat": 48.1939,
+       "lon": 37.72481,
+       "rx_class": "gnss_civil",
+       "shadow_db": -5.283,
+       "source_id": "unit_h",
+       "state": "healthy"
+      }
+     ],
+     "healthy_by_class": {
+      "gnss_civil": [
+       "unit_e",
+       "unit_g",
+       "unit_h"
+      ],
+      "gnss_mil": [
+       "unit_a",
+       "unit_f"
+      ]
+     },
+     "id": "back_lobe_seed_sweep_s12",
+     "preview_reference": {
+      "any_healthy_civil": true,
+      "area90_km2": 918.8,
+      "truth_in_region90": true
+     },
+     "seed": 12
+    },
+    {
+     "degraded_by_class": {
+      "gnss_civil": [
+       "unit_b",
+       "unit_c",
+       "unit_g",
+       "unit_h"
+      ],
+      "gnss_mil": []
+     },
+     "evidence": [
+      {
+       "enu_km": [
+        0.0,
+        0.0
+       ],
+       "js_db": 48.894,
+       "key": "B",
+       "lat": 48.14,
+       "lon": 37.745,
+       "rx_class": "gnss_civil",
+       "shadow_db": 7.307,
+       "source_id": "unit_b",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        0.5,
+        4.0
+       ],
+       "js_db": 29.394,
+       "key": "D",
+       "lat": 48.17593,
+       "lon": 37.75173,
+       "rx_class": "gnss_civil",
+       "shadow_db": -12.313,
+       "source_id": "unit_d",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        0.3,
+        -4.0
+       ],
+       "js_db": 23.825,
+       "key": "E",
+       "lat": 48.10407,
+       "lon": 37.74904,
+       "rx_class": "gnss_civil",
+       "shadow_db": 3.832,
+       "source_id": "unit_e",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -3.0,
+        -1.5
+       ],
+       "js_db": 36.853,
+       "key": "C",
+       "lat": 48.12653,
+       "lon": 37.70462,
+       "rx_class": "gnss_civil",
+       "shadow_db": 0.279,
+       "source_id": "unit_c",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        -7.0,
+        0.5
+       ],
+       "js_db": 37.357,
+       "key": "A",
+       "lat": 48.14449,
+       "lon": 37.65077,
+       "rx_class": "gnss_mil",
+       "shadow_db": 5.273,
+       "source_id": "unit_a",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -6.0,
+        -5.0
+       ],
+       "js_db": 13.508,
+       "key": "F",
+       "lat": 48.09508,
+       "lon": 37.66423,
+       "rx_class": "gnss_mil",
+       "shadow_db": 1.543,
+       "source_id": "unit_f",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -9.0,
+        3.0
+       ],
+       "js_db": 37.313,
+       "key": "G",
+       "lat": 48.16695,
+       "lon": 37.62385,
+       "rx_class": "gnss_civil",
+       "shadow_db": 7.309,
+       "source_id": "unit_g",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        -1.5,
+        6.0
+       ],
+       "js_db": 37.632,
+       "key": "H",
+       "lat": 48.1939,
+       "lon": 37.72481,
+       "rx_class": "gnss_civil",
+       "shadow_db": 0.127,
+       "source_id": "unit_h",
+       "state": "degraded"
+      }
+     ],
+     "healthy_by_class": {
+      "gnss_civil": [
+       "unit_d",
+       "unit_e"
+      ],
+      "gnss_mil": [
+       "unit_a",
+       "unit_f"
+      ]
+     },
+     "id": "back_lobe_seed_sweep_s13",
+     "preview_reference": {
+      "any_healthy_civil": true,
+      "area90_km2": 817.6,
+      "truth_in_region90": true
+     },
+     "seed": 13
+    },
+    {
+     "degraded_by_class": {
+      "gnss_civil": [
+       "unit_b",
+       "unit_d",
+       "unit_h"
+      ],
+      "gnss_mil": []
+     },
+     "evidence": [
+      {
+       "enu_km": [
+        0.0,
+        0.0
+       ],
+       "js_db": 44.369,
+       "key": "B",
+       "lat": 48.14,
+       "lon": 37.745,
+       "rx_class": "gnss_civil",
+       "shadow_db": 2.782,
+       "source_id": "unit_b",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        0.5,
+        4.0
+       ],
+       "js_db": 37.789,
+       "key": "D",
+       "lat": 48.17593,
+       "lon": 37.75173,
+       "rx_class": "gnss_civil",
+       "shadow_db": -3.918,
+       "source_id": "unit_d",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        0.3,
+        -4.0
+       ],
+       "js_db": 13.698,
+       "key": "E",
+       "lat": 48.10407,
+       "lon": 37.74904,
+       "rx_class": "gnss_civil",
+       "shadow_db": -6.294,
+       "source_id": "unit_e",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -3.0,
+        -1.5
+       ],
+       "js_db": 24.875,
+       "key": "C",
+       "lat": 48.12653,
+       "lon": 37.70462,
+       "rx_class": "gnss_civil",
+       "shadow_db": -11.7,
+       "source_id": "unit_c",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -7.0,
+        0.5
+       ],
+       "js_db": 30.672,
+       "key": "A",
+       "lat": 48.14449,
+       "lon": 37.65077,
+       "rx_class": "gnss_mil",
+       "shadow_db": -1.413,
+       "source_id": "unit_a",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -6.0,
+        -5.0
+       ],
+       "js_db": 16.956,
+       "key": "F",
+       "lat": 48.09508,
+       "lon": 37.66423,
+       "rx_class": "gnss_mil",
+       "shadow_db": 4.99,
+       "source_id": "unit_f",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -9.0,
+        3.0
+       ],
+       "js_db": 30.136,
+       "key": "G",
+       "lat": 48.16695,
+       "lon": 37.62385,
+       "rx_class": "gnss_civil",
+       "shadow_db": 0.132,
+       "source_id": "unit_g",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -1.5,
+        6.0
+       ],
+       "js_db": 39.552,
+       "key": "H",
+       "lat": 48.1939,
+       "lon": 37.72481,
+       "rx_class": "gnss_civil",
+       "shadow_db": 2.047,
+       "source_id": "unit_h",
+       "state": "degraded"
+      }
+     ],
+     "healthy_by_class": {
+      "gnss_civil": [
+       "unit_c",
+       "unit_e",
+       "unit_g"
+      ],
+      "gnss_mil": [
+       "unit_a",
+       "unit_f"
+      ]
+     },
+     "id": "back_lobe_seed_sweep_s14",
+     "preview_reference": {
+      "any_healthy_civil": true,
+      "area90_km2": 608.4,
+      "truth_in_region90": false
+     },
+     "seed": 14
+    },
+    {
+     "degraded_by_class": {
+      "gnss_civil": [
+       "unit_d",
+       "unit_h"
+      ],
+      "gnss_mil": []
+     },
+     "evidence": [
+      {
+       "enu_km": [
+        0.0,
+        0.0
+       ],
+       "js_db": 35.864,
+       "key": "B",
+       "lat": 48.14,
+       "lon": 37.745,
+       "rx_class": "gnss_civil",
+       "shadow_db": -5.723,
+       "source_id": "unit_b",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        0.5,
+        4.0
+       ],
+       "js_db": 37.961,
+       "key": "D",
+       "lat": 48.17593,
+       "lon": 37.75173,
+       "rx_class": "gnss_civil",
+       "shadow_db": -3.746,
+       "source_id": "unit_d",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        0.3,
+        -4.0
+       ],
+       "js_db": 21.568,
+       "key": "E",
+       "lat": 48.10407,
+       "lon": 37.74904,
+       "rx_class": "gnss_civil",
+       "shadow_db": 1.576,
+       "source_id": "unit_e",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -3.0,
+        -1.5
+       ],
+       "js_db": 34.478,
+       "key": "C",
+       "lat": 48.12653,
+       "lon": 37.70462,
+       "rx_class": "gnss_civil",
+       "shadow_db": -2.096,
+       "source_id": "unit_c",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -7.0,
+        0.5
+       ],
+       "js_db": 34.187,
+       "key": "A",
+       "lat": 48.14449,
+       "lon": 37.65077,
+       "rx_class": "gnss_mil",
+       "shadow_db": 2.102,
+       "source_id": "unit_a",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -6.0,
+        -5.0
+       ],
+       "js_db": 15.195,
+       "key": "F",
+       "lat": 48.09508,
+       "lon": 37.66423,
+       "rx_class": "gnss_mil",
+       "shadow_db": 3.229,
+       "source_id": "unit_f",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -9.0,
+        3.0
+       ],
+       "js_db": 24.23,
+       "key": "G",
+       "lat": 48.16695,
+       "lon": 37.62385,
+       "rx_class": "gnss_civil",
+       "shadow_db": -5.774,
+       "source_id": "unit_g",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -1.5,
+        6.0
+       ],
+       "js_db": 41.573,
+       "key": "H",
+       "lat": 48.1939,
+       "lon": 37.72481,
+       "rx_class": "gnss_civil",
+       "shadow_db": 4.068,
+       "source_id": "unit_h",
+       "state": "degraded"
+      }
+     ],
+     "healthy_by_class": {
+      "gnss_civil": [
+       "unit_b",
+       "unit_c",
+       "unit_e",
+       "unit_g"
+      ],
+      "gnss_mil": [
+       "unit_a",
+       "unit_f"
+      ]
+     },
+     "id": "back_lobe_seed_sweep_s15",
+     "preview_reference": {
+      "any_healthy_civil": true,
+      "area90_km2": 477.1,
+      "truth_in_region90": false
+     },
+     "seed": 15
+    },
+    {
+     "degraded_by_class": {
+      "gnss_civil": [
+       "unit_b",
+       "unit_c",
+       "unit_d",
+       "unit_h"
+      ],
+      "gnss_mil": []
+     },
+     "evidence": [
+      {
+       "enu_km": [
+        0.0,
+        0.0
+       ],
+       "js_db": 39.208,
+       "key": "B",
+       "lat": 48.14,
+       "lon": 37.745,
+       "rx_class": "gnss_civil",
+       "shadow_db": -2.379,
+       "source_id": "unit_b",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        0.5,
+        4.0
+       ],
+       "js_db": 44.23,
+       "key": "D",
+       "lat": 48.17593,
+       "lon": 37.75173,
+       "rx_class": "gnss_civil",
+       "shadow_db": 2.523,
+       "source_id": "unit_d",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        0.3,
+        -4.0
+       ],
+       "js_db": 24.15,
+       "key": "E",
+       "lat": 48.10407,
+       "lon": 37.74904,
+       "rx_class": "gnss_civil",
+       "shadow_db": 4.157,
+       "source_id": "unit_e",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -3.0,
+        -1.5
+       ],
+       "js_db": 40.698,
+       "key": "C",
+       "lat": 48.12653,
+       "lon": 37.70462,
+       "rx_class": "gnss_civil",
+       "shadow_db": 4.124,
+       "source_id": "unit_c",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        -7.0,
+        0.5
+       ],
+       "js_db": 39.356,
+       "key": "A",
+       "lat": 48.14449,
+       "lon": 37.65077,
+       "rx_class": "gnss_mil",
+       "shadow_db": 7.271,
+       "source_id": "unit_a",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -6.0,
+        -5.0
+       ],
+       "js_db": 10.425,
+       "key": "F",
+       "lat": 48.09508,
+       "lon": 37.66423,
+       "rx_class": "gnss_mil",
+       "shadow_db": -1.541,
+       "source_id": "unit_f",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -9.0,
+        3.0
+       ],
+       "js_db": 32.181,
+       "key": "G",
+       "lat": 48.16695,
+       "lon": 37.62385,
+       "rx_class": "gnss_civil",
+       "shadow_db": 2.177,
+       "source_id": "unit_g",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -1.5,
+        6.0
+       ],
+       "js_db": 36.04,
+       "key": "H",
+       "lat": 48.1939,
+       "lon": 37.72481,
+       "rx_class": "gnss_civil",
+       "shadow_db": -1.465,
+       "source_id": "unit_h",
+       "state": "degraded"
+      }
+     ],
+     "healthy_by_class": {
+      "gnss_civil": [
+       "unit_e",
+       "unit_g"
+      ],
+      "gnss_mil": [
+       "unit_a",
+       "unit_f"
+      ]
+     },
+     "id": "back_lobe_seed_sweep_s16",
+     "preview_reference": {
+      "any_healthy_civil": true,
+      "area90_km2": 798.6,
+      "truth_in_region90": true
+     },
+     "seed": 16
+    },
+    {
+     "degraded_by_class": {
+      "gnss_civil": [
+       "unit_b",
+       "unit_d"
+      ],
+      "gnss_mil": []
+     },
+     "evidence": [
+      {
+       "enu_km": [
+        0.0,
+        0.0
+       ],
+       "js_db": 45.992,
+       "key": "B",
+       "lat": 48.14,
+       "lon": 37.745,
+       "rx_class": "gnss_civil",
+       "shadow_db": 4.405,
+       "source_id": "unit_b",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        0.5,
+        4.0
+       ],
+       "js_db": 43.061,
+       "key": "D",
+       "lat": 48.17593,
+       "lon": 37.75173,
+       "rx_class": "gnss_civil",
+       "shadow_db": 1.354,
+       "source_id": "unit_d",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        0.3,
+        -4.0
+       ],
+       "js_db": 17.833,
+       "key": "E",
+       "lat": 48.10407,
+       "lon": 37.74904,
+       "rx_class": "gnss_civil",
+       "shadow_db": -2.16,
+       "source_id": "unit_e",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -3.0,
+        -1.5
+       ],
+       "js_db": 31.534,
+       "key": "C",
+       "lat": 48.12653,
+       "lon": 37.70462,
+       "rx_class": "gnss_civil",
+       "shadow_db": -5.041,
+       "source_id": "unit_c",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -7.0,
+        0.5
+       ],
+       "js_db": 24.506,
+       "key": "A",
+       "lat": 48.14449,
+       "lon": 37.65077,
+       "rx_class": "gnss_mil",
+       "shadow_db": -7.578,
+       "source_id": "unit_a",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -6.0,
+        -5.0
+       ],
+       "js_db": 12.04,
+       "key": "F",
+       "lat": 48.09508,
+       "lon": 37.66423,
+       "rx_class": "gnss_mil",
+       "shadow_db": 0.075,
+       "source_id": "unit_f",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -9.0,
+        3.0
+       ],
+       "js_db": 26.762,
+       "key": "G",
+       "lat": 48.16695,
+       "lon": 37.62385,
+       "rx_class": "gnss_civil",
+       "shadow_db": -3.242,
+       "source_id": "unit_g",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -1.5,
+        6.0
+       ],
+       "js_db": 34.016,
+       "key": "H",
+       "lat": 48.1939,
+       "lon": 37.72481,
+       "rx_class": "gnss_civil",
+       "shadow_db": -3.489,
+       "source_id": "unit_h",
+       "state": "healthy"
+      }
+     ],
+     "healthy_by_class": {
+      "gnss_civil": [
+       "unit_c",
+       "unit_e",
+       "unit_g",
+       "unit_h"
+      ],
+      "gnss_mil": [
+       "unit_a",
+       "unit_f"
+      ]
+     },
+     "id": "back_lobe_seed_sweep_s17",
+     "preview_reference": {
+      "any_healthy_civil": true,
+      "area90_km2": 800.0,
+      "truth_in_region90": false
+     },
+     "seed": 17
+    },
+    {
+     "degraded_by_class": {
+      "gnss_civil": [
+       "unit_b",
+       "unit_d",
+       "unit_h"
+      ],
+      "gnss_mil": []
+     },
+     "evidence": [
+      {
+       "enu_km": [
+        0.0,
+        0.0
+       ],
+       "js_db": 39.858,
+       "key": "B",
+       "lat": 48.14,
+       "lon": 37.745,
+       "rx_class": "gnss_civil",
+       "shadow_db": -1.729,
+       "source_id": "unit_b",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        0.5,
+        4.0
+       ],
+       "js_db": 37.187,
+       "key": "D",
+       "lat": 48.17593,
+       "lon": 37.75173,
+       "rx_class": "gnss_civil",
+       "shadow_db": -4.52,
+       "source_id": "unit_d",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        0.3,
+        -4.0
+       ],
+       "js_db": 22.688,
+       "key": "E",
+       "lat": 48.10407,
+       "lon": 37.74904,
+       "rx_class": "gnss_civil",
+       "shadow_db": 2.695,
+       "source_id": "unit_e",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -3.0,
+        -1.5
+       ],
+       "js_db": 32.143,
+       "key": "C",
+       "lat": 48.12653,
+       "lon": 37.70462,
+       "rx_class": "gnss_civil",
+       "shadow_db": -4.431,
+       "source_id": "unit_c",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -7.0,
+        0.5
+       ],
+       "js_db": 40.14,
+       "key": "A",
+       "lat": 48.14449,
+       "lon": 37.65077,
+       "rx_class": "gnss_mil",
+       "shadow_db": 8.056,
+       "source_id": "unit_a",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -6.0,
+        -5.0
+       ],
+       "js_db": 15.662,
+       "key": "F",
+       "lat": 48.09508,
+       "lon": 37.66423,
+       "rx_class": "gnss_mil",
+       "shadow_db": 3.696,
+       "source_id": "unit_f",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -9.0,
+        3.0
+       ],
+       "js_db": 28.567,
+       "key": "G",
+       "lat": 48.16695,
+       "lon": 37.62385,
+       "rx_class": "gnss_civil",
+       "shadow_db": -1.437,
+       "source_id": "unit_g",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -1.5,
+        6.0
+       ],
+       "js_db": 39.787,
+       "key": "H",
+       "lat": 48.1939,
+       "lon": 37.72481,
+       "rx_class": "gnss_civil",
+       "shadow_db": 2.282,
+       "source_id": "unit_h",
+       "state": "degraded"
+      }
+     ],
+     "healthy_by_class": {
+      "gnss_civil": [
+       "unit_c",
+       "unit_e",
+       "unit_g"
+      ],
+      "gnss_mil": [
+       "unit_a",
+       "unit_f"
+      ]
+     },
+     "id": "back_lobe_seed_sweep_s18",
+     "preview_reference": {
+      "any_healthy_civil": true,
+      "area90_km2": 608.4,
+      "truth_in_region90": false
+     },
+     "seed": 18
+    },
+    {
+     "degraded_by_class": {
+      "gnss_civil": [
+       "unit_b",
+       "unit_d"
+      ],
+      "gnss_mil": []
+     },
+     "evidence": [
+      {
+       "enu_km": [
+        0.0,
+        0.0
+       ],
+       "js_db": 40.107,
+       "key": "B",
+       "lat": 48.14,
+       "lon": 37.745,
+       "rx_class": "gnss_civil",
+       "shadow_db": -1.48,
+       "source_id": "unit_b",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        0.5,
+        4.0
+       ],
+       "js_db": 45.683,
+       "key": "D",
+       "lat": 48.17593,
+       "lon": 37.75173,
+       "rx_class": "gnss_civil",
+       "shadow_db": 3.976,
+       "source_id": "unit_d",
+       "state": "degraded"
+      },
+      {
+       "enu_km": [
+        0.3,
+        -4.0
+       ],
+       "js_db": 21.656,
+       "key": "E",
+       "lat": 48.10407,
+       "lon": 37.74904,
+       "rx_class": "gnss_civil",
+       "shadow_db": 1.663,
+       "source_id": "unit_e",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -3.0,
+        -1.5
+       ],
+       "js_db": 34.102,
+       "key": "C",
+       "lat": 48.12653,
+       "lon": 37.70462,
+       "rx_class": "gnss_civil",
+       "shadow_db": -2.473,
+       "source_id": "unit_c",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -7.0,
+        0.5
+       ],
+       "js_db": 34.773,
+       "key": "A",
+       "lat": 48.14449,
+       "lon": 37.65077,
+       "rx_class": "gnss_mil",
+       "shadow_db": 2.689,
+       "source_id": "unit_a",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -6.0,
+        -5.0
+       ],
+       "js_db": 6.166,
+       "key": "F",
+       "lat": 48.09508,
+       "lon": 37.66423,
+       "rx_class": "gnss_mil",
+       "shadow_db": -5.8,
+       "source_id": "unit_f",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -9.0,
+        3.0
+       ],
+       "js_db": 32.378,
+       "key": "G",
+       "lat": 48.16695,
+       "lon": 37.62385,
+       "rx_class": "gnss_civil",
+       "shadow_db": 2.374,
+       "source_id": "unit_g",
+       "state": "healthy"
+      },
+      {
+       "enu_km": [
+        -1.5,
+        6.0
+       ],
+       "js_db": 35.257,
+       "key": "H",
+       "lat": 48.1939,
+       "lon": 37.72481,
+       "rx_class": "gnss_civil",
+       "shadow_db": -2.247,
+       "source_id": "unit_h",
+       "state": "healthy"
+      }
+     ],
+     "healthy_by_class": {
+      "gnss_civil": [
+       "unit_c",
+       "unit_e",
+       "unit_g",
+       "unit_h"
+      ],
+      "gnss_mil": [
+       "unit_a",
+       "unit_f"
+      ]
+     },
+     "id": "back_lobe_seed_sweep_s19",
+     "preview_reference": {
+      "any_healthy_civil": true,
+      "area90_km2": 800.0,
+      "truth_in_region90": false
+     },
+     "seed": 19
+    }
+   ],
+   "seeds": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18,
+    19
+   ],
+   "truth": {
+    "back_db": -20.0,
+    "eirp_w": 300.0,
+    "enu_km": [
+     9.5,
+     1.0
+    ],
+    "erp_dbm": 54.7712,
+    "lat": 48.14898,
+    "lon": 37.87289,
+    "mast_m": 10.0,
+    "sector_az_deg": 315.0,
+    "sector_width_deg": 125.0,
+    "shadow_seed": null
+   },
+   "truth_cell": {
+    "ix": 138,
+    "iy": 124,
+    "x_km": 9.5,
+    "y_km": 1.0
+   }
+  }
+ ],
+ "units": [
+  {
+   "enu_km": [
+    0.0,
+    0.0
+   ],
+   "key": "B",
+   "lat": 48.14,
+   "lon": 37.745,
+   "rx_class": "gnss_civil",
+   "source_id": "unit_b"
+  },
+  {
+   "enu_km": [
+    0.5,
+    4.0
+   ],
+   "key": "D",
+   "lat": 48.17593,
+   "lon": 37.75173,
+   "rx_class": "gnss_civil",
+   "source_id": "unit_d"
+  },
+  {
+   "enu_km": [
+    0.3,
+    -4.0
+   ],
+   "key": "E",
+   "lat": 48.10407,
+   "lon": 37.74904,
+   "rx_class": "gnss_civil",
+   "source_id": "unit_e"
+  },
+  {
+   "enu_km": [
+    -3.0,
+    -1.5
+   ],
+   "key": "C",
+   "lat": 48.12653,
+   "lon": 37.70462,
+   "rx_class": "gnss_civil",
+   "source_id": "unit_c"
+  },
+  {
+   "enu_km": [
+    -7.0,
+    0.5
+   ],
+   "key": "A",
+   "lat": 48.14449,
+   "lon": 37.65077,
+   "rx_class": "gnss_mil",
+   "source_id": "unit_a"
+  },
+  {
+   "enu_km": [
+    -6.0,
+    -5.0
+   ],
+   "key": "F",
+   "lat": 48.09508,
+   "lon": 37.66423,
+   "rx_class": "gnss_mil",
+   "source_id": "unit_f"
+  },
+  {
+   "enu_km": [
+    -9.0,
+    3.0
+   ],
+   "key": "G",
+   "lat": 48.16695,
+   "lon": 37.62385,
+   "rx_class": "gnss_civil",
+   "source_id": "unit_g"
+  },
+  {
+   "enu_km": [
+    -1.5,
+    6.0
+   ],
+   "key": "H",
+   "lat": 48.1939,
+   "lon": 37.72481,
+   "rx_class": "gnss_civil",
+   "source_id": "unit_h"
+  }
+ ]
+}

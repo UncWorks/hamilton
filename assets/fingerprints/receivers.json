@@ -1,0 +1,49 @@
+{
+  "version": "0.1.0",
+  "source_note": "Receiver thresholds and GNSS signal levels for the AoE estimator (docs/plans/jammer-aoe.md A2, §7.1). Data, not code (NFR-06). threshold_js_db = the jammer-to-signal ratio at which the class is denied.",
+  "provenance_tags": {
+    "VMC": "verified manufacturer claim (ua-jamming-verification §4)",
+    "RC": "recomputed by the verifier",
+    "STD": "standard",
+    "DES": "design worked-example value",
+    "ASM": "assumption",
+    "UNV": "unverifiable / do not use"
+  },
+  "gnss_signal": {
+    "f_mhz": 1575.42,
+    "l1_ca_received_dbm": {
+      "nominal": -125.0,
+      "minimum": -128.5,
+      "provenance": {
+        "nominal": "RC (GPS L1 C/A nominal received power)",
+        "minimum": "STD (IS-GPS-200 minimum)"
+      }
+    },
+    "rx_antenna_gain_toward_jammer_dbi": -5.0,
+    "rx_antenna_height_m": 2.0,
+    "provenance": {
+      "rx_antenna_gain_toward_jammer_dbi": "DES/RC (patch gain toward a horizon jammer)",
+      "rx_antenna_height_m": "DES"
+    }
+  },
+  "receivers": {
+    "gnss_civil": {
+      "threshold_js_db": 36.0,
+      "threshold_range_db": [36.0, 58.0],
+      "provenance": "RC",
+      "source": "Forssell & Olsen 2003 Table 3: civil loss of 3-D fix at J/S 36-58 dB; the model uses the lower bound 36"
+    },
+    "gnss_mil": {
+      "threshold_js_db": 41.0,
+      "recomputed_range_db": [42.0, 45.0],
+      "provenance": "DES; RC 42-45 (V17)",
+      "source": "DAGR P(Y) tracking, design worked-example value. The 'DAGR spec' source is unverifiable (V17); the verifier recomputed 42-45 dB. 41 is conservative (a larger military AoE)."
+    },
+    "uhf_comms": {
+      "link": "uhf_fhss",
+      "threshold_js_db": 10.0,
+      "provenance": "ASM",
+      "source": "Comms link J/S threshold for the simulator's FHSS UHF link (comms-sim C2/C3); not estimated or drawn in the MVP"
+    }
+  }
+}
