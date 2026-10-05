@@ -52,6 +52,7 @@ import { AOE_DASH_PX, AOE_EDGE50_PX, AOE_EDGE90_PX, AOE_FILL_ALPHA, AOE_RGB, AOE
 import { useAoeFade, useEstimateView } from '@/hooks/useEmitterEstimate';
 import { AoeScreen } from './AoeKey';
 import { BasemapAttribution } from './BasemapAttribution';
+import { useDemoVisible } from '@/store/demo-view';
 
 // One pmtiles:// protocol handler per page (maplibre's protocol registry is global).
 let pmtilesProtocolAdded = false;
@@ -108,6 +109,13 @@ export function MapSpine({ emitterEstimate, candidateSites, evaluations, symbolS
   const reducedMotionRef = useRef(reducedMotion);
   reducedMotionRef.current = reducedMotion;
   const containerRef = useRef<HTMLDivElement>(null);
+  // Admin · Demo simulation view filter (docs/plans/admin-demo-menu.md D8).
+  // Tracks are the SVG overlay (showTracks); the AoE layers take deck `visible`.
+  const tracksVisible = useDemoVisible('map.tracks');
+  const aoeAreaVisible = useDemoVisible('map.aoeArea');
+  const aoeLabelVisible = useDemoVisible('map.aoeLabel');
+  const aoeKeyVisible = useDemoVisible('map.aoeKey');
+  const fitButtonVisible = useDemoVisible('map.fitButton');
 
   // --- Viewport size + controlled view state -------------------------------
   const [size, setSize] = useState<{ width: number; height: number } | null>(null);
@@ -341,6 +349,7 @@ export function MapSpine({ emitterEstimate, candidateSites, evaluations, symbolS
       layers.push(
         new PolygonLayer({
           id: 'aoe-fill90-gnss_civil',
+          visible: aoeAreaVisible,
           data: c90.polygon.coordinates,
           getPolygon: (rings: unknown) => rings as [number, number][][],
           filled: true,
@@ -356,6 +365,7 @@ export function MapSpine({ emitterEstimate, candidateSites, evaluations, symbolS
       layers.push(
         new PathLayer({
           id: 'aoe-edge90-gnss_civil',
+          visible: aoeAreaVisible,
           data: c90.polygon.coordinates.flat(),
           getPath: (ring: unknown) => ring as [number, number][],
           getColor: [...rgb, 255],
@@ -375,6 +385,7 @@ export function MapSpine({ emitterEstimate, candidateSites, evaluations, symbolS
       layers.push(
         new PathLayer({
           id: 'aoe-edge50-gnss_civil',
+          visible: aoeAreaVisible,
           data: dashes,
           getPath: (d: unknown) => d as [number, number][],
           getColor: [...rgb, 242],
@@ -387,7 +398,7 @@ export function MapSpine({ emitterEstimate, candidateSites, evaluations, symbolS
       drawn.push('edge50-gnss_civil');
     }
     return { layers, drawn };
-  }, [c90, c50, stale, dashZoom, aoeOpacity]);
+  }, [c90, c50, stale, dashZoom, aoeOpacity, aoeAreaVisible]);
 
   useEffect(() => {
     overlayRef.current?.setProps({ layers: aoe.layers as never });
@@ -433,6 +444,8 @@ export function MapSpine({ emitterEstimate, candidateSites, evaluations, symbolS
           manual={manual}
           reducedMotion={reducedMotion}
           nowIso={nowIso}
+          showTracks={tracksVisible}
+          showFit={fitButtonVisible}
           aoe={
             est.entry && est.state ? (
               <AoeScreen
@@ -443,8 +456,11 @@ export function MapSpine({ emitterEstimate, candidateSites, evaluations, symbolS
                 layers={aoe.drawn}
                 opacity={aoeOpacity}
                 reducedMotion={reducedMotion}
-                avoid={[...singles, ...stacks.map((st) => st.anchor)]}
+                avoid={tracksVisible ? [...singles, ...stacks.map((st) => st.anchor)] : []}
                 avoidPx={sizePx}
+                showLabel={aoeLabelVisible}
+                showKey={aoeKeyVisible}
+                showArea={aoeAreaVisible}
               />
             ) : null
           }

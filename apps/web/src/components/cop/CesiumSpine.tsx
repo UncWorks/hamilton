@@ -55,6 +55,7 @@ import { mapLabel, type EstimateEntry } from '@/lib/emitter-estimate';
 import { AOE_EDGE50_PX, AOE_EDGE90_PX, AOE_FILL_ALPHA, AOE_RGB, AOE_STALE_EDGE_PX } from '@/lib/aoe-style';
 import { useAoeFade, useEstimateView } from '@/hooks/useEmitterEstimate';
 import { AoeScreen } from './AoeKey';
+import { useDemoVisible } from '@/store/demo-view';
 
 // Fallback view before anything is framed (Avdiivka AO). As soon as there are
 // fit points the camera frames them instead (lib/camera-fit.ts). This used to
@@ -148,6 +149,19 @@ export function CesiumSpine(props: CesiumSpineProps) {
   const symbolsRef = useRef(symbols);
   symbolsRef.current = symbols;
   const [activeId, setActiveId] = useState<string | null>(null);
+
+  // --- Admin · Demo simulation view filter (docs/plans/admin-demo-menu.md D8)
+  // Hides, never removes: billboards and AoE entities stay in the scene with
+  // show = false, so declutter, fade and episode state carry on untouched.
+  const tracksVisible = useDemoVisible('map.tracks');
+  const tracksVisibleRef = useRef(tracksVisible);
+  tracksVisibleRef.current = tracksVisible;
+  const aoeAreaVisible = useDemoVisible('map.aoeArea');
+  const aoeAreaVisibleRef = useRef(aoeAreaVisible);
+  aoeAreaVisibleRef.current = aoeAreaVisible;
+  const aoeLabelVisible = useDemoVisible('map.aoeLabel');
+  const aoeKeyVisible = useDemoVisible('map.aoeKey');
+  const fitButtonVisible = useDemoVisible('map.fitButton');
 
   // --- Camera fit ------------------------------------------------------------
   const { initialRangeM } = props;
@@ -409,8 +423,11 @@ export function CesiumSpine(props: CesiumSpineProps) {
     const viewport = { width: cv.clientWidth, height: cv.clientHeight };
     const result = declutter(items, { viewport, minSeparationPx: box.minSeparationPx, minCount: box.minCount });
     const grouped = new Set(result.groups.flatMap((g) => g.ids));
+    // AND with the demo view's tracks flag (read through the ref), or the next
+    // pass after a pan / zoom would re-show hidden billboards.
+    const tracksOn = tracksVisibleRef.current;
     for (const [id, ent] of symbolEntitiesRef.current) {
-      const show = !grouped.has(id) && billboardKeyRef.current.has(id);
+      const show = tracksOn && !grouped.has(id) && billboardKeyRef.current.has(id);
       if (ent.show !== show) ent.show = show;
     }
     setDecl((prev) => (sameLayout(prev, result, positions, viewport) ? prev : { result, positions, viewport }));
@@ -528,7 +545,8 @@ export function CesiumSpine(props: CesiumSpineProps) {
       const l = coords[coords.length - 1];
       return f && l && (f[0] !== l[0] || f[1] !== l[1]) ? [...coords, f] : coords;
     };
-    const add = (e: CesiumNs.Entity.ConstructorOptions) => overlayEntitiesRef.current.add(viewer.entities.add(e));
+    const add = (e: CesiumNs.Entity.ConstructorOptions) =>
+      overlayEntitiesRef.current.add(viewer.entities.add({ ...e, show: aoeAreaVisibleRef.current }));
     const drawn: string[] = [];
     if (c90 && !stale) {
       c90.polygon.coordinates.forEach((poly, i) => {
@@ -573,6 +591,22 @@ export function CesiumSpine(props: CesiumSpineProps) {
     declDirtyRef.current = true;
     declutterRef.current?.call();
   }, [ready, c90, c50, stale]);
+
+  // Demo view: show / hide the AoE entities in place. The fade is keyed on the
+  // estimate id (useAoeFade), so toggling never replays it.
+  useEffect(() => {
+    if (!ready) return;
+    for (const ent of overlayEntitiesRef.current) if (ent.show !== aoeAreaVisible) ent.show = aoeAreaVisible;
+    viewerRef.current?.scene.requestRender();
+  }, [ready, aoeAreaVisible]);
+
+  // Demo view: re-run the declutter pass now so the billboards follow the
+  // tracks flag without waiting for a camera move.
+  useEffect(() => {
+    if (!ready) return;
+    runDeclutterRef.current();
+    viewerRef.current?.scene.requestRender();
+  }, [ready, tracksVisible]);
 
 
   // Basemap imagery layer (per mode; swapped in place when the mode changes).
@@ -627,6 +661,8 @@ export function CesiumSpine(props: CesiumSpineProps) {
           manual={manual}
           reducedMotion={reducedMotion}
           nowIso={nowIso}
+          showTracks={tracksVisible}
+          showFit={fitButtonVisible}
           aoe={
             est.entry && est.state ? (
               <AoeScreen
@@ -637,8 +673,11 @@ export function CesiumSpine(props: CesiumSpineProps) {
                 layers={est.state === 'unbounded' ? [] : aoeDrawn}
                 opacity={aoeOpacity}
                 reducedMotion={reducedMotion}
-                avoid={[...singles, ...stacks.map((st) => st.anchor)]}
+                avoid={tracksVisible ? [...singles, ...stacks.map((st) => st.anchor)] : []}
                 avoidPx={sizePx}
+                showLabel={aoeLabelVisible}
+                showKey={aoeKeyVisible}
+                showArea={aoeAreaVisible}
               />
             ) : null
           }

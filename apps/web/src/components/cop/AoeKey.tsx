@@ -6,7 +6,9 @@
 //  - the map label `Est. GPS denial · <method>-class · 90% · <age> · <n> degraded / <m> healthy`
 //    on a halo plate just above the 90% contour's label point (lib/aoe.ts labelAnchor);
 //  - a state marker for tests and screen readers: data-state (active / stale /
-//    unbounded), data-layers (what the spine drew) and data-fade.
+//    unbounded), data-layers (what the spine drew), data-fade and data-hidden
+//    (Admin · Demo simulation: which of area / label / key the view filter
+//    hides; docs/plans/admin-demo-menu.md D8).
 // The polygons themselves are WebGL (deck.gl layers / Cesium entities).
 
 import { useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
@@ -73,6 +75,15 @@ export interface AoeScreenProps {
   avoid?: readonly { x: number; y: number }[];
   /** Symbol box size in px (LIVE_SYMBOL_PX). */
   avoidPx?: number;
+  /** Demo view (`map.aoeLabel`): false drops the map label. Default true. */
+  showLabel?: boolean | undefined;
+  /** Demo view (`map.aoeKey`): false drops the key. Default true. */
+  showKey?: boolean | undefined;
+  /**
+   * Demo view (`map.aoeArea`): the spine hides the polygons itself; this only
+   * feeds `data-hidden`. `data-layers` keeps reporting what is drawn. Default true.
+   */
+  showArea?: boolean | undefined;
 }
 
 /** Label + key + state marker, inside SpineOverlay (below the symbols). */
@@ -88,7 +99,10 @@ export function AoeScreen(p: AoeScreenProps) {
     if (h && h !== labelH) setLabelH(h);
   });
   let labelEl = null;
-  if (p.label && p.anchor && drawn) {
+  const showLabel = p.showLabel !== false;
+  const showKey = p.showKey !== false;
+  const hidden = [p.showArea === false && 'area', !showLabel && 'label', !showKey && 'key'].filter(Boolean).join(' ');
+  if (showLabel && p.label && p.anchor && drawn) {
     const est = labelW || p.label.length * 7.5 + 24;
     const x = Math.min(Math.max(p.anchor.x - est / 2, 8), Math.max(8, p.viewport.width - est - 8));
     const y0 = Math.min(Math.max(p.anchor.y - 34, 48), Math.max(48, p.viewport.height - 60));
@@ -109,12 +123,13 @@ export function AoeScreen(p: AoeScreenProps) {
       data-state={p.state}
       data-layers={p.layers.join(' ')}
       data-fade={p.reducedMotion ? 'none' : 'once-300ms'}
+      data-hidden={hidden || undefined}
       role="note"
       aria-label={p.label ?? (p.state === 'unbounded' ? 'Estimated GPS denial: edge not observed' : 'Estimated GPS denial')}
       style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}
     >
       {labelEl}
-      {drawn && <AoeKey state={p.state} />}
+      {drawn && showKey && <AoeKey state={p.state} />}
     </div>
   );
 }

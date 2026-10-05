@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react';
+import { useLayoutEffect, type ReactNode } from 'react';
 import { expect, userEvent, waitFor, within } from '@storybook/test';
 import { CesiumSpine } from './CesiumSpine';
 import {
@@ -14,6 +15,8 @@ import { cesiumLoader } from '@/stories/support/cesium';
 import { spinePlay } from '@/stories/support/spine-play';
 import { AoeStoryFrame, GnssPaletteTable, aoePlay, aoeSeed, colourVisionPlay } from '@/stories/support/aoe-stories';
 import { withVision } from '@/stories/support/vision-filters';
+import { matchingPreset, type DemoComponentId } from '@/lib/demo-view';
+import { useDemoView } from '@/store/demo-view';
 
 const meta = {
   title: 'COP/CesiumSpine',
@@ -154,6 +157,56 @@ export const AoeFirstEstimate: Story = {
     ),
   },
   play: aoePlay.b115,
+};
+
+// --- Admin · Demo simulation view filter (docs/plans/admin-demo-menu.md D8) --
+
+const MAP_DEMO_IDS: DemoComponentId[] = ['map.tracks', 'map.aoeArea', 'map.aoeLabel', 'map.aoeKey', 'map.fitButton'];
+
+/** Applies `hidden` to the demo-view store while the story is mounted (args update it live). */
+function DemoViewFrame({ hidden, children }: { hidden: readonly DemoComponentId[]; children: ReactNode }) {
+  const key = hidden.join();
+  useLayoutEffect(() => {
+    const ids = key ? (key.split(',') as DemoComponentId[]) : [];
+    useDemoView.setState({ hidden: ids, preset: matchingPreset(ids) });
+  }, [key]);
+  useLayoutEffect(() => () => useDemoView.getState().reset(), []);
+  return <>{children}</>;
+}
+
+/**
+ * The 1:15 beat with the map's demo-view components hidden (the Admin menu's
+ * view filter). Toggle `demoHidden` to show / hide each one in place: the
+ * polygons come back without replaying the fade, hidden symbols stay hidden
+ * through a pan or zoom, and F still fits with the button hidden.
+ */
+export const AoeDemoView: StoryObj<{ demoHidden: DemoComponentId[] }> = {
+  name: 'AoE 1:15 demo view (hidden components)',
+  args: { demoHidden: MAP_DEMO_IDS },
+  argTypes: { demoHidden: { control: 'check', options: MAP_DEMO_IDS } },
+  render: (args) => (
+    <DemoViewFrame hidden={args.demoHidden}>
+      <AoeStoryFrame spine={(e) => <CesiumSpine emitterEstimate={e} evaluations={UNIT_EVALUATION} />} />
+    </DemoViewFrame>
+  ),
+  parameters: {
+    hamilton: aoeSeed('b115'),
+    ...aoeDocs(
+      'Admin · Demo simulation: `map.*` components hidden through the demo-view store. A view filter only: the estimate, ' +
+        'the fade and the declutter keep running. The basemap attribution is never hidden.',
+    ),
+  },
+  play: async ({ canvasElement, args }) => {
+    const c = within(canvasElement);
+    const layer = await c.findByTestId('aoe-layer', {}, { timeout: 15000 });
+    const hidden = args.demoHidden;
+    await waitFor(() => expect(layer.getAttribute('data-layers')).toContain('edge90-gnss_civil'), { timeout: 15000 });
+    if (hidden.includes('map.aoeArea')) await expect(layer.getAttribute('data-hidden') ?? '').toContain('area');
+    if (hidden.includes('map.aoeLabel')) await expect(c.queryByTestId('aoe-label')).toBeNull();
+    if (hidden.includes('map.aoeKey')) await expect(c.queryByTestId('aoe-key')).toBeNull();
+    if (hidden.includes('map.fitButton')) await expect(c.queryByTestId('fit-to-tracks')).toBeNull();
+    if (hidden.includes('map.tracks')) await expect(canvasElement.querySelector('[data-testid^="cop-symbol-"], [data-testid="declutter-stack"]')).toBeNull();
+  },
 };
 
 /** 1:50 — B moved 5 km west: healthy now, its old degraded report still counts; the estimate updates. */

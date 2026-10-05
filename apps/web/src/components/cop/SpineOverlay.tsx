@@ -12,6 +12,9 @@
 //    the rating breakdown (RatingExplanation, WCAG 1.4.13: hoverable,
 //    Escape dismisses), click / Enter selects the track;
 //  - the "Fit to tracks" control;
+//  - Admin · Demo simulation view filter (docs/plans/admin-demo-menu.md D8):
+//    `showTracks` / `showFit` drop the symbols and the Fit control from the
+//    render. The F shortcut lives in each spine, so it still fits.
 //  - the area-of-effect label, key and state marker (AoeKey.tsx), below the symbols.
 //
 // Renderer-agnostic: each spine projects its own points.
@@ -70,6 +73,13 @@ export interface SpineOverlayProps {
   nowIso: () => string;
   /** Area-of-effect label / key (AoeScreen), drawn under the symbols. */
   aoe?: ReactNode;
+  /**
+   * Demo view (`map.tracks`): false skips the singles, stacks, hit targets and
+   * rating tips — nothing to hover, focus or click. Default true.
+   */
+  showTracks?: boolean | undefined;
+  /** Demo view (`map.fitButton`): false removes the Fit control; F still fits. Default true. */
+  showFit?: boolean | undefined;
 }
 
 /** Singles + stacks in screen space from a declutter result. */
@@ -106,7 +116,14 @@ interface Tip {
   box: { left: number; top: number; right: number };
 }
 
-export function SpineOverlay(p: SpineOverlayProps) {
+const NO_SINGLES: readonly PlacedSymbol[] = [];
+const NO_STACKS: readonly PlacedStack[] = [];
+
+export function SpineOverlay(props: SpineOverlayProps) {
+  // Hidden tracks: the overlay sees no symbols at all, so open tips and
+  // pinned / hovered stacks are dropped by the clean-up effects below.
+  const tracksShown = props.showTracks !== false;
+  const p: SpineOverlayProps = tracksShown ? props : { ...props, singles: NO_SINGLES, stacks: NO_STACKS };
   const [tip, setTip] = useState<Tip | null>(null);
   const timer = useRef<number | undefined>(undefined);
   const [hoveredStack, setHoveredStack] = useState<string | null>(null);
@@ -325,14 +342,16 @@ export function SpineOverlay(p: SpineOverlayProps) {
           );
         })}
 
-      <button type="button" data-testid="fit-to-tracks" onClick={p.onFit} title={`Fit to tracks (${FIT_SHORTCUT_LABEL})`} aria-keyshortcuts={FIT_SHORTCUT_LABEL} style={fitButton}>
-        <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden style={{ display: 'block' }}>
-          <path d="M1 4V1h3M8 1h3v3M11 8v3H8M4 11H1V8" fill="none" stroke="currentColor" strokeWidth="1.4" />
-        </svg>
-        <span>Fit to tracks</span>
-        <kbd style={kbd}>{FIT_SHORTCUT_LABEL}</kbd>
-        {p.manual && <span style={{ color: 'var(--text-tertiary)' }}>· manual</span>}
-      </button>
+      {p.showFit !== false && (
+        <button type="button" data-testid="fit-to-tracks" onClick={p.onFit} title={`Fit to tracks (${FIT_SHORTCUT_LABEL})`} aria-keyshortcuts={FIT_SHORTCUT_LABEL} style={fitButton}>
+          <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden style={{ display: 'block' }}>
+            <path d="M1 4V1h3M8 1h3v3M11 8v3H8M4 11H1V8" fill="none" stroke="currentColor" strokeWidth="1.4" />
+          </svg>
+          <span>Fit to tracks</span>
+          <kbd style={kbd}>{FIT_SHORTCUT_LABEL}</kbd>
+          {p.manual && <span style={{ color: 'var(--text-tertiary)' }}>· manual</span>}
+        </button>
+      )}
     </div>
   );
 }
