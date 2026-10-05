@@ -14,6 +14,8 @@
 
 import {
   DetectionEventSchema,
+  EmitterEstimatePayloadSchema,
+  type EmitterEstimatePayload,
   FingerprintCandidatesPayloadSchema,
   TrustScorePayloadSchema,
   type DetectionEvent,
@@ -23,6 +25,13 @@ import {
   type TrustScorePayload,
 } from '@hamilton/contracts';
 import type { TrackState } from '@/store/hamilton';
+import type { EstimateEntry } from '@/lib/emitter-estimate';
+// The frozen CP1 estimate fixtures (packages/contracts/fixtures/aoe, owned by
+// WS-A), imported in place — never copied — and parsed through the strict schema below.
+import b115Json from '../../../../../packages/contracts/fixtures/aoe/emitter-estimate.b115.json';
+import b150Json from '../../../../../packages/contracts/fixtures/aoe/emitter-estimate.b150.json';
+import b215Json from '../../../../../packages/contracts/fixtures/aoe/emitter-estimate.b215-stale.json';
+import unboundedJson from '../../../../../packages/contracts/fixtures/aoe/emitter-estimate.unbounded.json';
 import {
   AVDIIVKA_BEATS,
   AVDIIVKA_POSITIONS,
@@ -125,9 +134,10 @@ export const TRACE_BULLETS = [
   'Degradation localized at B — no degrading unit within 500 m. A, C healthy.',
 ] as const;
 
+/** Roles per the scenario (jammer-aoe.md §0.4 finding 3): A = FU (firing battery), B = FO (OBS B), C = TA radar. */
 const SENSOR: Record<AvdiivkaUnit, TrackState['sensor_type']> = {
-  unit_a: 'recon_static',
-  unit_b: 'offense',
+  unit_a: 'offense',
+  unit_b: 'recon_static',
   unit_c: 'detection',
 };
 
@@ -425,3 +435,87 @@ export const TERMINAL_EVENTS_FULL: DetectionEvent[] = Array.from({ length: 80 },
     timestamp: at(i),
   });
 }).reverse();
+
+// ---------------------------------------------------------------------------
+// Jammer AoE (FR-04b / FR-06a) — the 8-unit layout and the frozen estimates
+// ---------------------------------------------------------------------------
+
+/** integrity/emitter/estimate at 1:15 (first estimate; civil 90% ~365 km², 50% ~1657 km²). */
+export const EMITTER_ESTIMATE_B115: EmitterEstimatePayload = EmitterEstimatePayloadSchema.parse(b115Json);
+/** 1:50: B moved 5 km west — two B reports (degraded at the old position 39 s ago, healthy now). */
+export const EMITTER_ESTIMATE_B150: EmitterEstimatePayload = EmitterEstimatePayloadSchema.parse(b150Json);
+/** 2:15 + 10 s: jammer off, trigger dropped → stale (the 1:50 geometry, outline only). */
+export const EMITTER_ESTIMATE_B215_STALE: EmitterEstimatePayload = EmitterEstimatePayloadSchema.parse(b215Json);
+/** Every reporting civil unit degraded: no contour, region unbounded → "edge not observed". */
+export const EMITTER_ESTIMATE_UNBOUNDED: EmitterEstimatePayload = EmitterEstimatePayloadSchema.parse(unboundedJson);
+
+/** A store entry as if the C2 received `payload` `ageS` seconds ago (on the C2 clock, judged from receipt). */
+export function estimateEntry(payload: EmitterEstimatePayload, ageS = 3, nowMs = Date.now()): EstimateEntry {
+  return { payload, receivedAtMs: nowMs - ageS * 1000 };
+}
+
+/**
+ * The 8-unit layout (jammer-aoe.md §6, D1; app/page.tsx SEED_TRACKS). The
+ * K5 trust pins (A, B, C) still use link-trust-rating AVDIIVKA_POSITIONS until
+ * WS-E moves them; the AoE stories use these positions.
+ */
+export const AOE_UNITS: readonly { source_id: string; sensor_type: TrackState['sensor_type']; lat: number; lon: number }[] = [
+  { source_id: 'unit_a', sensor_type: 'offense', lat: 48.14449, lon: 37.65077 },
+  { source_id: 'unit_b', sensor_type: 'recon_static', lat: 48.14, lon: 37.745 },
+  { source_id: 'unit_c', sensor_type: 'detection', lat: 48.12653, lon: 37.70462 },
+  { source_id: 'unit_d', sensor_type: 'recon_static', lat: 48.17593, lon: 37.75173 },
+  { source_id: 'unit_e', sensor_type: 'recon_static', lat: 48.10407, lon: 37.74904 },
+  { source_id: 'unit_f', sensor_type: 'offense', lat: 48.09508, lon: 37.66423 },
+  { source_id: 'unit_g', sensor_type: 'defense', lat: 48.16695, lon: 37.62385 },
+  { source_id: 'unit_h', sensor_type: 'recon_mobile', lat: 48.1939, lon: 37.72481 },
+];
+
+/** B's position after its 1:50 move (the healthy B report in the 1:50 estimate). */
+export const B_MOVED = (() => {
+  const e = EMITTER_ESTIMATE_B150.evidence.find((x) => x.source_id === 'unit_b' && x.state === 'healthy')!;
+  return { lat: e.lat, lon: e.lon };
+})();
+
+export type AoeBeat = 'b115' | 'b150' | 'b215';
+export const AOE_BEAT_CLOCK_S: Record<AoeBeat, number> = { b115: 75, b150: 110, b215: 135 };
+
+/**
+ * Link trust per unit at an AoE beat. A, B, C: the engine beats (K5 pins).
+ * D – H have no engine beat; per the simulator stream D and H show comms
+ * degradation from 0:45 and E goes to WATCH from 1:15, so they take the
+ * SYNTHETIC band samples (D, H 0.45 degraded; E 0.70 watching) — never
+ * hard-coded healthy. F, G 1.00. At 2:15 (jammer just off) D, E, H are still
+ * recovering: WATCH 0.70 (synthetic).
+ */
+function aoeScore(sourceId: string, beat: AoeBeat): number {
+  const clockS = AOE_BEAT_CLOCK_S[beat];
+  if (sourceId === 'unit_a' || sourceId === 'unit_b' || sourceId === 'unit_c') return beatOf(clockS).units[sourceId].score;
+  if (beat === 'b215') return sourceId === 'unit_d' || sourceId === 'unit_e' || sourceId === 'unit_h' ? BAND_SAMPLES.watching : 1;
+  if (sourceId === 'unit_d' || sourceId === 'unit_h') return BAND_SAMPLES.degraded;
+  if (sourceId === 'unit_e') return BAND_SAMPLES.watching;
+  return 1;
+}
+
+/** The 8 tracks at an AoE beat (B at its moved position from 1:50). */
+export function aoeBeatTracks(beat: AoeBeat): Record<string, TrackState> {
+  const clockS = AOE_BEAT_CLOCK_S[beat];
+  return tracksRecord(
+    ...AOE_UNITS.map((u): TrackState => {
+      const score = aoeScore(u.source_id, beat);
+      const engine = u.source_id === 'unit_a' || u.source_id === 'unit_b' || u.source_id === 'unit_c' ? beatOf(clockS).units[u.source_id] : null;
+      const moved = u.source_id === 'unit_b' && beat !== 'b115';
+      return {
+        source_id: u.source_id,
+        affiliation: 'friendly',
+        sensor_type: u.sensor_type,
+        lat: moved ? B_MOVED.lat : u.lat,
+        lon: moved ? B_MOVED.lon : u.lon,
+        score,
+        prev_score: score,
+        components: engine ? { ...engine.components } : componentsFor(score),
+        trace_bullets: u.source_id === 'unit_b' && beat !== 'b215' ? [...TRACE_BULLETS] : [],
+        last_update: clockIso(clockS),
+      };
+    }),
+  );
+}

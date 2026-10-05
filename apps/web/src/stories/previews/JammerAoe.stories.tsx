@@ -27,9 +27,8 @@ import {
 } from '@/stories/fixtures/aoe-preview';
 import { AoeMapFrame } from '@/stories/support/AoeOverlay';
 import { AoeAdvisoryInjector, AoeCandidateBlock, ab1001Advisories } from '@/stories/support/AoePanels';
-import { AOE_RGB, VISIONS, aoeCssVars, hex, paletteChecks } from '@/stories/support/aoe-palette';
+import { aoeCssVars } from '@/stories/support/aoe-palette';
 import { TrustHeartbeat } from '@/stories/support/mocks';
-import { withDeuteranopia } from '@/stories/support/vision-filters';
 
 // Previews/Jammer AoE — visual PREVIEWS of docs/plans/jammer-aoe.md. Real
 // components (MapSpine over the offline basemap, the production symbol and
@@ -112,6 +111,9 @@ const meta = {
       description: {
         component:
           '**PREVIEW — not implemented.** Visual mocks of the jammer area-of-effect (AoE) plan, `docs/plans/jammer-aoe.md`. ' +
+          '**Shipped:** the 1:15, 2:15 and Colour vision previews were converted to production stories — **COP/MapSpine** and ' +
+          '**COP/CesiumSpine** › *AoE 1:15 first estimate*, *AoE 2:15 stale*, *AoE colour vision* (plus 1:50 and unbounded), drawn by the ' +
+          'real spines from the frozen `packages/contracts/fixtures/aoe` estimates. The stories left here are deferred features. ' +
           '**MVP scope after the 2026-10-04 plan review (§0):** the civil-GNSS 90% / 50% areas, the label, the card block and ' +
           'stale / retire. The NAI outline, the `J1?` symbol and bearings (1:35), the layer chips, "Fit to NAI" and the mission-row ' +
           'advisory shown in some stories here are **deferred**, not MVP.\n\n' +
@@ -145,35 +147,6 @@ const svgReady = async (canvasElement: HTMLElement) => {
 // ---------------------------------------------------------------------------
 // 2–5. The beats
 // ---------------------------------------------------------------------------
-
-export const FirstEstimate: Story = {
-  name: '1:15 first estimate',
-  args: { beat: 'b115' },
-  parameters: {
-    docs: {
-      description: {
-        story:
-          '**1:15 — first estimate** (the MVP milestone). Fingerprint 6/6, B / D / E / H degraded, C / A / F / G healthy → the engine publishes ' +
-          '`integrity/emitter/estimate`. The operator sees the **civil GPS AoE** (90% tint over the friendly sector, 50% dashed edge, the ' +
-          'far side outline-only = extrapolated), the dashed **NAI J1** east of the FLOT, **evidence marks** (✕ / ○ + age) under each unit, ' +
-          'the label `Est. GPS denial · Pole-21-class · 90% · 3 s ago · 4 degraded / 4 healthy` and the legend. **No emitter symbol**: the ' +
-          '90% emitter region is ~900 km² (> 25 km²) and there are no bearings. No bearing line, no 120 m ring. Implemented by: ' +
-          '`crates/estimator` (engine), `contracts` (estimate payload), `store/hamilton.ts`, `MapSpine.tsx` / `CesiumSpine.tsx` AoE layers, ' +
-          '`components/cop/AoeLegend.tsx`, `spine-symbols.ts` (symbol gate).',
-      },
-    },
-  },
-  play: async ({ canvasElement }) => {
-    const c = await svgReady(canvasElement);
-    await waitFor(() => c.getByTestId('aoe-nai'), T);
-    await expect(c.getByTestId('aoe-label-gnss_civil')).toHaveTextContent(/Est\. GPS denial · Pole-21-class · 90% · 3 s ago · 4 degraded \/ 4 healthy/);
-    await expect(canvasElement.querySelector('[data-cop-symbol^="__candidate"]')).toBeNull();
-    await expect(canvasElement.querySelector('[data-cop-symbol="__jammer"]')).toBeNull();
-    await expect(canvasElement.querySelector('[data-testid^="aoe-bearing-"]')).toBeNull();
-    await expect(c.getByTestId('aoe-evidence-B')).toHaveAttribute('data-state', 'degraded');
-    await expect(c.getByTestId('aoe-evidence-C')).toHaveAttribute('data-state', 'healthy');
-  },
-};
 
 export const WithBearings: Story = {
   name: '1:35 with bearings',
@@ -220,27 +193,6 @@ export const Tightened: Story = {
     const c = await svgReady(canvasElement);
     await waitFor(() => c.getByTestId('aoe-evidence-B-earlier'), T);
     await expect(c.getAllByTestId('aoe-evidence-B')[0]).toHaveAttribute('data-state', 'healthy');
-  },
-};
-
-export const Stale: Story = {
-  name: '2:15 stale',
-  args: { beat: 'b215' },
-  parameters: {
-    docs: {
-      description: {
-        story:
-          '**2:15 — jammer off**: every unit healthy, the trigger drops, the estimate is held 10 s and then marked **STALE**: outline only ' +
-          '(no fills, thinner and dimmer edges), no evidence marks, label `Last est. <DTG> · …`. It retires 120 s after the last estimate or ' +
-          'on dismissal (logged). Implemented by: `ticker.rs` (hysteresis), `store/hamilton.ts` (stale timer), spine AoE layers (stale style).',
-      },
-    },
-  },
-  play: async ({ canvasElement }) => {
-    const c = await svgReady(canvasElement);
-    await waitFor(() => expect(c.getByTestId('aoe-svg')).toHaveAttribute('data-state', 'stale'), T);
-    await expect(canvasElement.querySelector('[data-testid^="aoe-fill90-"]')).toBeNull();
-    await expect(c.getByTestId('aoe-label-gnss_civil')).toHaveTextContent(/^Last est\./);
   },
 };
 
@@ -451,51 +403,4 @@ export const Evaluation: Story = {
 // 9. Colour vision
 // ---------------------------------------------------------------------------
 
-function PaletteTable() {
-  const { pairs, contrast } = paletteChecks();
-  const worst = pairs.filter((p) => p.deltaE < p.min + 10).sort((a, b) => a.deltaE / a.min - b.deltaE / b.min);
-  return (
-    <div data-testid="aoe-palette-checks" style={{ fontSize: 10, display: 'grid', gap: 3, borderTop: '1px solid var(--surface-elevated)', paddingTop: 4 }}>
-      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-        {(Object.keys(AOE_RGB) as (keyof typeof AOE_RGB)[]).map((k) => (
-          <span key={k} style={{ display: 'inline-flex', gap: 4, alignItems: 'center' }}>
-            <span style={{ width: 10, height: 10, background: hex(AOE_RGB[k]) }} /> {k} {hex(AOE_RGB[k])} · {contrast.find((x) => x.hue === k)!.ratio.toFixed(1)}:1
-          </span>
-        ))}
-      </div>
-      <div style={{ color: 'var(--text-tertiary)' }}>Closest pairs (min ΔE76 over {VISIONS.join(' / ')}):</div>
-      {worst.map((p) => (
-        <div key={p.a + p.b} data-testid="aoe-palette-pair" data-kind={p.kind} data-pass={p.pass} style={{ color: p.pass ? 'var(--text-secondary)' : 'var(--text-primary)' }}>
-          {p.pass ? '✓' : '✕'} {p.a} vs {p.b}: ΔE {p.deltaE.toFixed(0)} ({p.worstVision}) · min {p.min} [{p.kind}]
-        </div>
-      ))}
-    </div>
-  );
-}
 
-export const ColourVision: Story = {
-  name: 'Colour vision',
-  args: { beat: 'b135', bearings: true, layers: ['gnss_civil', 'gnss_mil'], deuteranopia: true },
-  decorators: [withDeuteranopia],
-  render: (args) => <AoePreviewMap {...args} legendExtra={<PaletteTable />} />,
-  parameters: {
-    docs: {
-      description: {
-        story:
-          'The 1:35 view (civil + military layers, NAI, DF wedges, the dashed symbol) through the existing **deuteranopia** decorator ' +
-          '(Machado 2009, severity 1.0; toggle the `deuteranopia` control). The legend adds the palette checks: ΔE76 between AoE hues ' +
-          '≥ 15 and against trust / gating / enemy ≥ 30 under normal, deuteranopia and protanopia; edge contrast vs `--surface-base` ' +
-          '≥ 3:1. Advisory pairs (friendly blue, symbol ink) are reported, not gated: civil violet vs friendly blue falls to ΔE ≈ 7 under protanopia, ' +
-          'which is acceptable only because AoE areas and friendly frames never share a mark type (open decision). ' +
-          'Implemented by: `src/styles/tokens.css` (`--aoe-*`, if accepted), `scripts/basemap/contrast-check.mjs` (add the AoE colours).',
-      },
-    },
-  },
-  play: async ({ canvasElement }) => {
-    const c = await svgReady(canvasElement);
-    await waitFor(() => c.getByTestId('aoe-palette-checks'), T);
-    const { pairs, contrast } = paletteChecks();
-    await expect(pairs.filter((p) => p.kind !== 'advisory' && !p.pass)).toEqual([]);
-    await expect(contrast.every((x) => x.pass)).toBe(true);
-  },
-};
