@@ -154,7 +154,7 @@ const TRACKING = ['0', '0.01em', '0.02em', '0.04em', '0.06em', '0.08em', '0.16em
 export const LetterSpacingInventory: Story = {
   render: () => (
     <Page>
-      <Section title="letter-spacing values found in components" note="Eight ad-hoc values; see Branding Audit for file:line.">
+      <Section title="letter-spacing values found in components" note="Ad-hoc values with no tracking token; see Branding Audit (A18).">
         {TRACKING.map((t) => (
           <div key={t} style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: 'var(--space-4)' }}>
             <code style={{ ...mono, color: 'var(--text-tertiary)' }}>{t}</code>

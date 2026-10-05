@@ -16,7 +16,7 @@ type Story = StoryObj<typeof meta>;
 
 /**
  * The decided track symbol (Decisions/Track Symbology) — what CesiumSpine and MapSpine draw. FM 1-02 / MCRP 5-12A
- * frame + function icon; the contract sensor type picks the function. Replaces the §5.2 n-gons (archived, G01).
+ * frame + function icon; the contract sensor type picks the function. Replaces the rejected §5.2 n-gons (Decisions/Track Symbology).
  */
 export const TrackSymbology: Story = {
   render: () => (

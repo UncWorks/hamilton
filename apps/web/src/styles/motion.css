@@ -1,10 +1,7 @@
 /* Motion primitives — Branding §6.1.
  * Compositor-friendly only: transform, opacity, clip-path, filter.
  * Reduced-motion fallback for every primitive.
- *
- * The gating-modal-arrival choreography and .motion-cop-blur are removed: the
- * kill-chain modal is superseded by the non-modal TSS mission row, which uses no
- * motion at all (docs/plans/tss-mission-row.md).
+ * The TSS fire-mission row uses no motion (docs/plans/tss-mission-row.md).
  */
 
 @keyframes recovery-pulse {
