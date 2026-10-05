@@ -22,6 +22,91 @@ pub struct SourceState {
     pub recent_arrivals: VecDeque<InterArrival>,
     pub stability: StabilityWindow,
     pub last_rf: Option<RfFingerprint>,
+    /// telemetry/2 receiver class (absent on v1 telemetry).
+    pub rx_class: Option<wire::RxClass>,
+    /// GNSS-class evidence (K2): from `gnss_fix` only, never from the link verdict.
+    pub gnss: Option<GnssTrack>,
+    /// Engine time (Unix ms) of the last telemetry message.
+    pub last_report_ms: i64,
+}
+
+/// Binary per-class state of a unit (E13).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ClassState {
+    Degraded,
+    Healthy,
+}
+
+impl From<wire::GnssFix> for ClassState {
+    /// K2: `3d` = healthy; `2d` / `none` = degraded.
+    fn from(fix: wire::GnssFix) -> Self {
+        if fix.is_degraded() {
+            ClassState::Degraded
+        } else {
+            ClassState::Healthy
+        }
+    }
+}
+
+/// One binary observation of a class at a place and time.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct ClassObservation {
+    pub state: ClassState,
+    pub lat: f64,
+    pub lon: f64,
+    /// Last time (Unix ms) the unit reported this state at this position.
+    pub last_ms: i64,
+}
+
+/// GNSS evidence of one unit: the current state (with when it began) and the
+/// last observation of the opposite state, so a unit that moves out of the
+/// AoE keeps its earlier degraded report as evidence (no history ring).
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct GnssTrack {
+    pub rx_class: wire::RxClass,
+    pub current: ClassObservation,
+    /// When `current.state` began (Unix ms).
+    pub since_ms: i64,
+    /// Last-degraded or last-healthy observation before the current state.
+    pub previous: Option<ClassObservation>,
+}
+
+impl GnssTrack {
+    /// Fold one `gnss_fix` report into the track.
+    pub fn observe(
+        this: Option<Self>,
+        rx_class: wire::RxClass,
+        fix: wire::GnssFix,
+        lat: f64,
+        lon: f64,
+        now_ms: i64,
+    ) -> Self {
+        let obs = ClassObservation {
+            state: fix.into(),
+            lat,
+            lon,
+            last_ms: now_ms,
+        };
+        match this {
+            Some(t) if t.current.state == obs.state => GnssTrack {
+                rx_class,
+                current: obs,
+                ..t
+            },
+            Some(t) => GnssTrack {
+                rx_class,
+                current: obs,
+                since_ms: now_ms,
+                previous: Some(t.current),
+            },
+            None => GnssTrack {
+                rx_class,
+                current: obs,
+                since_ms: now_ms,
+                previous: None,
+            },
+        }
+    }
 }
 
 impl SourceState {
@@ -42,6 +127,9 @@ impl SourceState {
                 baseline_duplicate_rate: 0.0,
             },
             last_rf: None,
+            rx_class: None,
+            gnss: None,
+            last_report_ms: 0,
         }
     }
 }
