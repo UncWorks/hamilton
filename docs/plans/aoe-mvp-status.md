@@ -98,3 +98,17 @@ The largest payload was 6555 B. No `mode` or `bearings_used` key appeared. The c
 - **"Bronk RUSI 2024":** still cited in docs prose (FRS FR-04a library source and R14 verbatim answer, URS UR-09 citations, System Design R14 answer, Branding token note). Only `library.json` was in the approved CR.
 - **Stale card block:** after B recovers at 2:15, the side panel returns to Unit A and the AoE card block is not on screen. The map label carries "Last est.".
 - **Late joiner:** a page that joins mid-run evaluates AB1001 against the seed track (1.00) for about 1 s before B's trust payload arrives. The terminal logs a transient PASS B2 line.
+
+## CP5: docs and vault sync (coordinator, 2026-10-04)
+
+- ✅ The in-repo docs (URS, FRS, System Design, Tech Stack, Branding, README) are updated by WS-E (PR #13).
+- ✅ The vault storyboard in `05 - Build Plan/Demo and Pitch.md` has been rewritten to the CP4 beats: 8 units, TSS row in place of the modal, AoE estimate, and k/6 match scores. Two Q&A rows are updated. The previous version is backed up outside the vault.
+- ⏳ The vault spec copies in `03 - Strategy/Specs/{URS,FRS,System Design,Tech Stack,Branding and Frontend Design}.md` are **still the old versions**. Replacing them was blocked for the coordinator, so the user should copy these files from this branch's `docs/`.
+- ⏳ **Open items for the user:**
+  - K3 counting rule (off-node sweep: 15/20, or 15/15 among bounded runs).
+  - The [ASM] sim decisions: net-sync latch, per-net control stations, D/H comms degradation from 0:45.
+  - The replacement citation for `ground_based_gps_uhf_barrage` is weak (verification V25).
+  - "Bronk RUSI 2024" still appears in prose in FRS FR-04a, URS UR-09, System Design R14 and Branding.
+  - README row 0:00 and System Design §2 beat 1 still say three units.
+  - While the estimate is stale, the AoE card block is not on screen, because the panel returns to Unit A.
+  - Late joiners see a transient "PASS B2" terminal line.
