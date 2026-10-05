@@ -126,13 +126,13 @@ export const aoePlay = {
     await expect(card.querySelector('[data-evidence="B"]')).toHaveAttribute('data-state', 'degraded');
     await expect(card.querySelector('[data-evidence="C"]')).toHaveAttribute('data-state', 'healthy');
   },
-  /** 1:50: still active; B's old degraded report and its new healthy one are both listed. */
+  /** 1:50: still active; B is listed once: its new healthy report, with the earlier degraded one noted. */
   b150: async ({ canvasElement }: { canvasElement: HTMLElement }) => {
     const { c, layer } = await common(canvasElement);
     await waitFor(() => expect(layer.getAttribute('data-layers')).toContain('fill90-gnss_civil'), T);
     const card = await waitFor(() => c.getByTestId('aoe-card-block'), T);
     const b = [...card.querySelectorAll('[data-evidence="B"]')].map((x) => x.textContent);
-    await expect(b).toEqual(['✕ B 39s', '○ B 2s']);
+    await expect(b).toEqual(['○ B 2s · was ✕ 39s']);
     await expect(card.textContent).toContain('Emitter not located (90% region ~809 km²)');
   },
   /** 2:15 stale: outline only, "Last est.", never "clear" / "window open". */
