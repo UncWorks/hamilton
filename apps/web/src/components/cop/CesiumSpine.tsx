@@ -635,6 +635,8 @@ export function CesiumSpine(props: CesiumSpineProps) {
                 layers={est.state === 'unbounded' ? [] : aoeDrawn}
                 opacity={aoeOpacity}
                 reducedMotion={reducedMotion}
+                avoid={[...singles, ...stacks.map((st) => st.anchor)]}
+                avoidPx={sizePx}
               />
             ) : null
           }

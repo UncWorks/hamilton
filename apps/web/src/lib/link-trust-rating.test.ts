@@ -223,13 +223,24 @@ test('engine beats: exact values from the detector mappings + avdiivka.py teleme
   for (const beat of rating.AVDIIVKA_BEATS) {
     for (const u of ['unit_a', 'unit_c'] as const) assert.equal(beat.units[u].score, 1, `${beat.label} ${u}`);
   }
-  // Positions: avdiivka.py SOURCE_POSITIONS, A and C inside B's 500 m radius.
-  assert.deepEqual(rating.AVDIIVKA_POSITIONS.unit_b, { lat: 48.14, lon: 37.745 });
+  // Positions: avdiivka.py UNITS; A and C are outside B's 500 m radius.
+  assert.deepEqual(rating.AVDIIVKA_POSITIONS, {
+    unit_a: { lat: 48.14449, lon: 37.65077 },
+    unit_b: { lat: 48.14, lon: 37.745 },
+    unit_c: { lat: 48.12653, lon: 37.70462 },
+  });
 });
 
 test('engineTick: all-degraded gives the blanket penalty (aggregator all_degraded_gives_blanket_penalty)', () => {
   const d = { cadenceS: 1.2, crc: 0.08, rfMatch: 0 };
-  const out = rating.engineTick({ unit_a: d, unit_b: d, unit_c: d });
+  // The demo layout has km spacing (no neighbour within 500 m), so this keeps the
+  // aggregator test's 245 m N/S cluster around B.
+  const cluster = {
+    unit_a: { lat: 48.1422, lon: 37.745 },
+    unit_b: { lat: 48.14, lon: 37.745 },
+    unit_c: { lat: 48.1378, lon: 37.745 },
+  };
+  const out = rating.engineTick({ unit_a: d, unit_b: d, unit_c: d }, cluster);
   for (const u of rating.AVDIIVKA_UNITS) assert.equal(out[u].components.spatial, rating.ENGINE_SPATIAL_TRUST.blanket);
 });
 

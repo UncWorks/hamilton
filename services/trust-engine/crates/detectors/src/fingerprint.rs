@@ -25,11 +25,6 @@ pub struct FingerprintEntry {
     pub gps_l1_overlap: bool,
     pub gps_l2_overlap: bool,
     pub time_domain_pattern: TimeDomainPattern,
-    /// Effective range threshold in km. **Deprecated** (library v0.2): an
-    /// emitter range is not observable. Used only by the legacy dimension 6
-    /// ([`Dimension6::LegacyRange`]); absent = 0.
-    #[serde(default)]
-    pub effective_range_km: f64,
     /// Receiver classes the method affects (library v0.2, A1). Dimension 6:
     /// the classes observed degraded at the source are non-empty and a subset
     /// of this set (FRS FR-04 rev).
@@ -87,16 +82,14 @@ impl FingerprintEntry {
     }
 }
 
-/// How dimension 6 is evaluated.
+/// How dimension 6 is evaluated. The library v0.1 range rule
+/// (`effective_range_km`) is gone: an emitter's range is not observable
+/// (library v0.2, FRS FR-04 rev).
 #[derive(Debug, Clone, Copy)]
 pub enum Dimension6<'a> {
     /// FRS FR-04 rev: the receiver classes observed degraded at the source are
     /// non-empty and a subset of the entry's `affects_rx_classes`.
     ObservedClasses(&'a BTreeSet<RxClass>),
-    /// Library v0.1 / telemetry v1: entry `effective_range_km` >= observed.
-    /// Kept only for callers that have no per-class observation (the
-    /// aggregator's beat test until E23); the engine uses `ObservedClasses`.
-    LegacyRange,
 }
 
 /// Observed RF fingerprint from the sensor stream.
@@ -109,8 +102,6 @@ pub struct RfFingerprint {
     pub gps_l1_overlap: bool,
     pub gps_l2_overlap: bool,
     pub time_domain_pattern: TimeDomainPattern,
-    /// Estimated effective range in km.
-    pub effective_range_km: f64,
 }
 
 /// The best-matching fingerprint library entry when overlap >= 0.5.
@@ -131,19 +122,11 @@ const MIN_MATCH_THRESHOLD: f64 = 0.5;
 /// Number of fingerprint dimensions.
 pub const TOTAL_DIMENSIONS: u32 = 6;
 
-/// Match observed RF fingerprint against the library (legacy dimension 6).
+/// Match an observed RF fingerprint against the library, with dimension 6 per
+/// [`Dimension6`] (FRS FR-04 rev).
 ///
 /// Score = matched_threshold_booleans / total_dimensions (R14-safe, FRS §2.4a).
 /// Returns the single best match if score >= 0.5, otherwise None.
-pub fn match_fingerprint(
-    observed: &RfFingerprint,
-    library: &[FingerprintEntry],
-) -> Option<FingerprintMatch> {
-    match_fingerprint_with(observed, Dimension6::LegacyRange, library)
-}
-
-/// [`match_fingerprint`] with an explicit dimension-6 rule. The engine passes
-/// [`Dimension6::ObservedClasses`] (FRS FR-04 rev).
 pub fn match_fingerprint_with(
     observed: &RfFingerprint,
     dim6: Dimension6<'_>,
@@ -185,11 +168,14 @@ pub fn fingerprint_trust(best: Option<&FingerprintMatch>) -> f64 {
 ///   3. GPS L1 overlap match
 ///   4. GPS L2 overlap match
 ///   5. time-domain pattern match
-///   6. legacy: effective range (entry threshold ≥ observed)
+///   6. affected receiver classes (see [`matched_dimensions`])
 #[cfg(test)]
-pub(crate) fn overlap_score(observed: &RfFingerprint, entry: &FingerprintEntry) -> f64 {
-    f64::from(matched_dimensions(observed, Dimension6::LegacyRange, entry))
-        / f64::from(TOTAL_DIMENSIONS)
+pub(crate) fn overlap_score(
+    observed: &RfFingerprint,
+    dim6: Dimension6<'_>,
+    entry: &FingerprintEntry,
+) -> f64 {
+    f64::from(matched_dimensions(observed, dim6, entry)) / f64::from(TOTAL_DIMENSIONS)
 }
 
 /// Integer count of matched dimensions (0..=6). Comparisons between methods
@@ -200,8 +186,7 @@ pub(crate) fn overlap_score(observed: &RfFingerprint, entry: &FingerprintEntry) 
 ///   3. GPS L1 overlap match
 ///   4. GPS L2 overlap match
 ///   5. time-domain pattern match
-///   6. per [`Dimension6`]: affected receiver classes consistent (FR-04 rev),
-///      or the legacy range test
+///   6. per [`Dimension6`]: affected receiver classes consistent (FR-04 rev)
 pub fn matched_dimensions(
     observed: &RfFingerprint,
     dim6: Dimension6<'_>,
@@ -218,7 +203,6 @@ pub fn matched_dimensions(
             Dimension6::ObservedClasses(classes) => {
                 !classes.is_empty() && classes.iter().all(|c| entry.affects_rx_classes.contains(c))
             }
-            Dimension6::LegacyRange => entry.effective_range_km >= observed.effective_range_km,
         },
     ];
     checks.iter().filter(|&&ok| ok).count() as u32
@@ -246,8 +230,19 @@ mod tests {
             gps_l1_overlap: true,
             gps_l2_overlap: true,
             time_domain_pattern: TimeDomainPattern::Barrage,
-            effective_range_km: 30.0,
         }
+    }
+
+    /// B at 1:15: civil GNSS and the UHF link degraded.
+    fn b115() -> BTreeSet<RxClass> {
+        [RxClass::GnssCivil, RxClass::UhfComms].into()
+    }
+
+    fn match_fingerprint(
+        observed: &RfFingerprint,
+        library: &[FingerprintEntry],
+    ) -> Option<FingerprintMatch> {
+        match_fingerprint_with(observed, Dimension6::ObservedClasses(&b115()), library)
     }
 
     // FRS §2.4 acceptance: Unit B pattern → ground_based_gps_uhf_barrage at 6/6 = 1.00
@@ -321,7 +316,6 @@ mod tests {
             gps_l1_overlap: false,
             gps_l2_overlap: false,
             time_domain_pattern: TimeDomainPattern::Swept,
-            effective_range_km: 0.1,
         };
         // Not asserting None definitively because some entries may partially match;
         // we assert the returned score is consistent if present
@@ -353,14 +347,13 @@ mod tests {
             gps_l1_overlap: true,                // matches
             gps_l2_overlap: false,               // does NOT match (observed has true)
             time_domain_pattern: TimeDomainPattern::Pulsed, // does NOT match
-            effective_range_km: 10.0,            // does NOT match (observed 30.0 > 10.0)
-            affects_rx_classes: vec![],
+            affects_rx_classes: vec![],          // dimension 6 does NOT match
             munitions_affected: vec![],
             source_citation: "test".into(),
             emitter: EmitterEnvelope::default(),
         };
-        let observed = unit_b_observed(); // gps_l2=true, pattern=Barrage, range=30
-        let score = super::overlap_score(&observed, &entry);
+        let observed = unit_b_observed(); // gps_l2=true, pattern=Barrage
+        let score = super::overlap_score(&observed, Dimension6::ObservedClasses(&b115()), &entry);
         assert!(
             (score - 0.5).abs() < 1e-10,
             "expected 3/6 = 0.5, got {score}"
@@ -382,14 +375,13 @@ mod tests {
             gps_l1_overlap: false,               // does NOT match
             gps_l2_overlap: false,               // does NOT match
             time_domain_pattern: TimeDomainPattern::Pulsed, // does NOT match
-            effective_range_km: 10.0,            // does NOT match
-            affects_rx_classes: vec![],
+            affects_rx_classes: vec![],          // does NOT match
             munitions_affected: vec![],
             source_citation: "test".into(),
             emitter: EmitterEnvelope::default(),
         };
         let observed = unit_b_observed();
-        let score = super::overlap_score(&observed, &entry);
+        let score = super::overlap_score(&observed, Dimension6::ObservedClasses(&b115()), &entry);
         assert!(
             (score - 2.0 / 6.0).abs() < 1e-10,
             "expected 2/6, got {score}"

@@ -106,7 +106,7 @@ export function evidenceFor(f: TrustFactor, c: number, ctx: EvidenceContext = {}
       if (c >= 0.6) {
         return n
           ? `Only this unit is affected — ${n} within 500 m ${/ and /.test(n) ? 'are' : 'is'} healthy`
-          : 'Only this unit is affected — nearby units within 500 m are healthy';
+          : 'Only this unit is affected — no degrading unit within 500 m';
       }
       return 'Nearby units also degraded';
     }

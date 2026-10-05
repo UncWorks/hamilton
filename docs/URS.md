@@ -97,7 +97,7 @@ This counterfactual is the operational basis for every UR below. It is **one Fir
 |---|---|
 | **ID** | `UR-04` |
 | **Statement** | *"As Adam, I need the system to tell me whether a degradation is localized to one corridor or affecting everything, and to name the suspected jammer profile when criteria are met — so I'm not flying blind on attribution."* |
-| **Success criterion** | At `B-1:05`, side panel reads *"Degradation directional, vicinity B's flank corridor. Neighbors A, C unaffected."* At `B-1:15`, banner reads *"Suspected ground-based GPS+UHF barrage jammer."* |
+| **Success criterion** | At `B-1:05`, side panel reads *"Degradation localized at B — no degrading unit within 500 m. A, C healthy."* At `B-1:15`, banner reads *"Suspected ground-based GPS+UHF barrage jammer."* |
 | **Satisfied by** | `FR-03`, `FR-04` |
 | **Demo beat** | `B-1:05`, `B-1:15` |
 | **Priority** | P0 |
@@ -155,7 +155,7 @@ This counterfactual is the operational basis for every UR below. It is **one Fir
 |---|---|
 | **ID** | `UR-09` |
 | **Statement** | *"As Adam, when the trust layer detects a jamming-pattern degradation, I need to see (a) the top three named jamming methods most likely responsible, ranked by match strength, and (b) for each candidate, the list of munitions in my inventory whose guidance package is known to be affected — so I can decide whether to switch round type, delay, or proceed."* |
-| **Success criterion** | At `B-1:15`, side panel renders: *"Top match: ground_based_gps_uhf_barrage (1.00) — affected: Excalibur, JDAM-ER, Switchblade 300, GMLRS-U. Second: pulsed_uhf_wide (0.50) — affected: FPV C2 link, Switchblade 300. Third: cellular_uhf_barrage (0.17) — affected: ATAK position-share, FPV C2 link."* Adam can name the round he'd switch to in <10s. |
+| **Success criterion** | At `B-1:15`, side panel renders: *"Top match: ground_based_gps_uhf_barrage (1.00) — affected: Excalibur, JDAM-ER, Switchblade 300, GMLRS-U. Second: pulsed_uhf_wide (0.67) — affected: FPV C2 link, Switchblade 300. Third: cellular_uhf_barrage (0.17) — affected: ATAK position-share, FPV C2 link."* Adam can name the round he'd switch to in <10s. |
 | **Why (operator)** | Naming the jammer is necessary but insufficient — Adam in Avdiivka would still need to know *which rounds in his inventory are denied by that jammer class*. The munitions-affected link is what turns attribution into a decision substrate inside the engagement window. |
 | **Why (R14 discipline)** | "Likelihood" here is operator-readable shorthand for a deterministic normalized overlap score — count of matched fingerprint-dimension threshold booleans / total dimensions. **Not** a trained probabilistic classifier. See `FR-04a`. |
 | **Satisfied by** | `FR-04` (detection), `FR-04a` (ranked mapping + munitions-affected) |

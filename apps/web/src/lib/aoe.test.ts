@@ -117,3 +117,14 @@ test('screenLabelAnchor: highest on-screen vertex with headroom; null when none'
   assert.equal(M.screenLabelAnchor([{ x: -5, y: 100 }], vp), null);
   assert.ok(M.largestOuterRing(mp([sq(0, 0, 1, 1)], [sq(0, 0, 5, 5)]))!.some((c) => c[0] === 5));
 });
+
+test('nudgeLabelRect: moves the plate off a covered symbol, smallest move first; unchanged when clear', () => {
+  const vp = { width: 800, height: 600 };
+  const rect = { x: 100, y: 200, w: 300, h: 24 };
+  assert.deepEqual(M.nudgeLabelRect(rect, [{ x: 600, y: 210 }], 32, vp), rect);
+  // Symbol centre at (250, 215): box 228..272 (32 + 2·6 pad); the plate moves just above it.
+  assert.deepEqual(M.nudgeLabelRect(rect, [{ x: 250, y: 215 }], 32, vp), { ...rect, y: 193 - 24 - 2 });
+  // No room above (minY 48) → just below.
+  const high = { ...rect, y: 50 };
+  assert.deepEqual(M.nudgeLabelRect(high, [{ x: 250, y: 60 }], 32, vp), { ...high, y: 82 + 2 });
+});

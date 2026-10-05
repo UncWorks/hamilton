@@ -8,7 +8,8 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { FingerprintCandidate } from '@hamilton/contracts';
-import { STALE_AFTER_S, rateLinkTrust, type Corroboration, type JOverride } from '@/lib/link-trust-rating';
+import { SPATIAL_RADIUS_M, STALE_AFTER_S, rateLinkTrust, type Corroboration, type JOverride } from '@/lib/link-trust-rating';
+import { haversineM } from '@/lib/camera-fit';
 import { SYMBOL_FUNCTIONS, symbolFunctionOf } from '@/lib/track-sidc';
 import { affiliationRank } from '@/lib/declutter';
 import { copNowMs, designationOf, functionOverrideOf, isStaleAt } from '@/lib/cop-symbols';
@@ -81,8 +82,15 @@ export function buildSpineSymbols(
     const evaluation = opts.evaluations?.[t.source_id];
     const stale = isStaleAt(t.last_update, opts.nowMs, STALE_AFTER_S);
     const track = trackToSymbol(t, stale, evaluation);
+    // FR-03 neighbours: same-side units within the engine's spatial radius (500 m). With the
+    // km-scale layout there are none, and the tooltip says so instead of naming far units.
     const neighbours = tracks
-      .filter((o) => o.source_id !== t.source_id && o.affiliation === t.affiliation)
+      .filter(
+        (o) =>
+          o.source_id !== t.source_id &&
+          o.affiliation === t.affiliation &&
+          haversineM({ lat: t.lat, lon: t.lon }, { lat: o.lat, lon: o.lon }) <= SPATIAL_RADIUS_M,
+      )
       .slice(0, 2)
       .map((o) => designationOf(o.source_id));
     const top = opts.candidates?.source_id === t.source_id ? opts.candidates.items[0] : undefined;

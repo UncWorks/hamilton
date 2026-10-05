@@ -6,6 +6,7 @@ import {
   PHASE_TRACKS,
   UNIT_EVALUATION,
   track,
+  clustered,
   tracksRecord,
 } from '@/stories/fixtures/avdiivka';
 import { denseTracks } from '@/stories/fixtures/dense-tracks';
@@ -100,7 +101,7 @@ export const Dense: Story = {
 /** Opened at zoom 10 (~51 m/px): A/B/C collapse into one stack. The play function expands it. */
 export const ZoomedOut: Story = {
   args: { initialZoom: 10 },
-  parameters: { hamilton: { tracks: PHASE_TRACKS.watching } },
+  parameters: { hamilton: { tracks: clustered(PHASE_TRACKS.watching) } }, // co-located A/B/C: the 8-unit layout never stacks
   play: async ({ canvasElement }) => {
     const c = within(canvasElement);
     const stack = await waitFor(() => c.getByTestId('declutter-stack'), { timeout: 15_000 });

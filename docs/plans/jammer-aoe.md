@@ -132,7 +132,7 @@ The demo truth sits *on* a hypothesis node (300 W / 10 m). That is why the off-n
 ### 0.4 Other findings
 
 1. **The plan's total was not reconcilable with its own rows.** The plan said 11–14 dev-days, but its M1 items alone sum to 10 d, and the 70 rows sum to ~48 d at the plan's own S / M sizes. Re-estimated bottom-up (§2.8): the plan as written is ≈ 24 d (≈ 30 raw); the reduced MVP is **≈ 16 dev-days** (range 14–18); two people take **≈ 10 working days**, with the engine track on the critical path.
-2. **`PathStyleExtension`** is in `@deck.gl/extensions`, which is installed only transitively through the `deck.gl` meta-package (pnpm). Import it from **`deck.gl`**, not `@deck.gl/extensions`, or NFR-07 gains a direct dependency.
+2. ~~**`PathStyleExtension`** is in `@deck.gl/extensions`, which is installed only transitively through the `deck.gl` meta-package (pnpm). Import it from **`deck.gl`**, not `@deck.gl/extensions`, or NFR-07 gains a direct dependency.~~ **Corrected at integration (WS-E, 2026-10-04):** this finding is wrong for deck.gl 9.0.33. The `deck.gl` meta-package does **not** re-export `PathStyleExtension`, and importing `@deck.gl/extensions` would add a direct dependency (NFR-07). The web therefore dashes the 50% outline **geometrically** on MapLibre (`dashRing` in `src/lib/aoe.ts`, deck.gl `PathLayer`, recomputed per zoom) and uses `PolylineDashMaterialProperty` on Cesium. FRS FR-06a (6) says the same.
 3. **`page.tsx` `SEED_TRACKS`** were missing from the plan. They must become the 8 units, and their roles are wrong today: `unit_a` is `recon_static` but is FU A; `unit_b` is `offense` but is OBS B (FO). Fix them per the preview fixture.
 4. **Provenance fixes.** `gnss_mil` 41 dB was tagged "DAGR spec". The verification (V17) found the source unverifiable and recomputed 42–45 dB, so it is re-tagged [DES; RC 42–45]. 41 dB is conservative: it gives a larger military AoE. The plan's `[P]` tag on `uhf_fhss` is not a defined tag; it is re-tagged [ASM].
 5. **Retire timing was ambiguous.** It is now defined as **120 s after the trigger drops** (110 s after `stale`). `valid_until` = publish time + 20 s, which is 2 missed 10 s heartbeats, the FR-06a (3) C2-side stale rule.
@@ -271,7 +271,7 @@ No ML. The R14 discipline holds: identical input gives byte-identical output. Th
 | W3 | `src/hooks/useHamiltonMqtt.ts` | modify | HS-21, HS-25 | `integrity/emitter/estimate` → store; empty retained payload → clear. | W2 | 0.1 | Low |
 | W4 | `src/lib/aoe.ts` (+ `aoe.test.ts`) | add | HS-22 | Point-in-MultiPolygon with holes, and `contourLevelAt(estimate, class, point)` → 0.9 / 0.5 / none. Tests: holes, multipolygons, level precedence. | — | 0.5 | Low |
 | W6 | `src/components/cop/Spine.tsx` | modify | HS-20, HS-21 | Removes `jammerLocation`, `directionalFrom/To`, `candidateNai`; adds `emitterEstimate`. | — | 0.1 | Low |
-| W7 | `src/components/cop/MapSpine.tsx` | modify | HS-20, HS-21, HS-25, FR-06a (1)(3)(5) | **Removes** `JAMMER_RING_M`, `circlePolygon` and the `directional-vector` layer. Adds deck.gl `PolygonLayer`s: civil 90% fill + edge, 50% dashed outline (`PathStyleExtension` imported from **`deck.gl`**), and stale = outline only. One ≤ 300 ms fade-in, none under reduced motion. | W2, W4 | 0.75 | Med |
+| W7 | `src/components/cop/MapSpine.tsx` | modify | HS-20, HS-21, HS-25, FR-06a (1)(3)(5) | **Removes** `JAMMER_RING_M`, `circlePolygon` and the `directional-vector` layer. Adds deck.gl `PolygonLayer`s: civil 90% fill + edge, 50% dashed outline (geometric dashes: `dashRing` in `lib/aoe.ts` + `PathLayer`; §0.4 finding 2 corrected), and stale = outline only. One ≤ 300 ms fade-in, none under reduced motion. | W2, W4 | 0.75 | Med |
 | W8 | `src/components/cop/CesiumSpine.tsx` | modify | HS-20, HS-21, HS-25, FR-06a (1) | **Default renderer, so this is in M1.** **Removes** `JAMMER_RING_M` and the ellipse / polyline entities. Adds `Entity.polygon` (`classificationType: TERRAIN`) for fills, and `clampToGround` polylines with `PolylineDashMaterialProperty` for edges and dashes. This avoids the ground-polygon outline gotcha at `CesiumSpine.tsx:498` (outlines are unsupported on terrain-clamped geometry). | W2, W4 | 1.0 | Med |
 | W9 | `src/components/cop/spine-symbols.ts` | modify | HS-20 | Removes the solid `jammer` kind and `JAMMER_SYMBOL_ID`. Nothing replaces it in the MVP. | — | 0.25 | Low |
 | W11 | `src/components/cop/AoeKey.tsx` | add | HS-21, FR-06a output | Two-swatch key (90% fill, 50% dash), mounted in `SpineOverlay` while an estimate is shown. The map label `Est. GPS denial · <method>-class · 90% · <age> · <n> degraded / <m> healthy` sits at the 90% contour's label point. | W2 | 0.25 | Low |
@@ -468,7 +468,7 @@ The scenario uses the verified Pole-21E envelope. The truth GNSS module is 300 W
 
 Assertions:
 1. Truth ∈ 90% region at 1:15 and 1:50 (demo seed).
-2. **Seed sweep (K3):** seeds 0–19 at the demo truth, containment ≥ 15/20 (measured 17/20); the same at the off-node truth 420 W / 20 m at (9.63, 1.13) km (measured 19/19 bounded).
+2. **Seed sweep (K3):** seeds 0–19 at the demo truth, containment ≥ 15/20 (measured 17/20); the same at the off-node truth 420 W / 20 m at (9.63, 1.13) km (measured 19/19 bounded). **Built estimator (`golden.rs`, 2026-10-04):** demo 17/20 (20 bounded); off-node **15/20, counting the 5 `unbounded` runs as misses (15/15 among bounded runs)**. That counting rule is the coordinator's K3 interpretation, **pending user confirmation**.
 3. **Recorded, not asserted:** the back-lobe case (sector az 315°), measured 9/20. A failing value is printed as the known limitation (D8).
 4. area90 ≤ 1.1 × the recorded golden value.
 5. AoE IoU (civil 50% vs the true denial area) **inside the evidence footprint** ≥ 0.4. The footprint is computed in the test.
@@ -526,6 +526,11 @@ Assertions:
 | 1:20 | Operator presses [1] → M795 | Same |
 | 1:50 | B 0.22, jammer fix | B moves **5 km** west: GNSS healthy (new healthy evidence), link still partly jammed (0.22, gated). The estimate updates within 6 s (NAI 906 → 809 km², not drawn). Still not located |
 | 2:15 | B recovered | Jammer off → +10 s **STALE** (outline only, *"Last est. HHMMZ"*) → retired at +120 s; one terminal line each. Truth vs estimate only in the sim-side AAR script (deferred) |
+
+**Simulator decisions recorded at integration ([ASM], WS-B; System Design §2 note).**
+- **Per-net control stations:** each unit's comms signal is its own net control station (fire-support, command, battery nets; 50 W, 10 m) at the unit, so the comms J/S is per unit.
+- **Net-sync latch:** a link loses net sync at a 9 dB margin and re-syncs only below 0 dB. In sync it shows 1.17 s; out of sync the cadence grows with the margin. This is why B at 1:50 has 4% CRC (< 6% at 0:55) but 1.8 s cadence.
+- **D and H** (observers on B's fire-support net) **show comms degradation from 0:45.** Recorded as goldens, not pinned. A and C stay healthy at every beat (K5).
 
 ---
 

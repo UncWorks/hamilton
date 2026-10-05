@@ -763,9 +763,10 @@ export const OptionBPrimeRatingTooltip: Story = {
     // Engine beat 1:15 (Unit B): components 0 / 0.308 / 0.6 / 0 → 0.127.
     await expect(tip).toHaveTextContent('UNRELIABLE');
     await expect(tip).toHaveTextContent('J E5');
-    await expect(within(tip).getByTestId('formula')).toHaveTextContent(/= 0\.127$/);
-    await expect(tip).toHaveTextContent('1.0s → 6.1s');
-    await expect(tip).toHaveTextContent('0.2% → 14%');
+    // 0.6 × 0.212 + 0.4 × 0 = 0.127 → shown to two places by the shared RatingTooltip.
+    await expect(within(tip).getByTestId('formula')).toHaveTextContent(/^Score 0\.13 = 60% weighted average \(0\.21\) \+ 40% weakest factor \(0\.00\)$/);
+    await expect(tip).toHaveTextContent('Messages arriving every 6.1 s (normally 1.0 s)');
+    await expect(tip).toHaveTextContent('14% of frames corrupted (normally under 1%)');
     // Every fixture reproduces its payload score: no mismatch warning anywhere.
     await expect(canvasElement.ownerDocument.querySelectorAll('[role="alert"]')).toHaveLength(0);
     await expect(tip).toHaveTextContent('Below TSS minimum (GPS-guided, C ≥ 0.60)');

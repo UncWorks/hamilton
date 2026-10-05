@@ -46,10 +46,15 @@ The 5-minute demo flow Adam triggers, beat by beat:
 1. **`B-0:00`** — COP renders Units A, B, C with full-opacity icons. Each carries a continuous trust score visible on hover. *(`UR-01`, `FR-05`, `FR-06`)*
 2. **`B-0:45`** — Unit B's inter-arrival time stretches from ~1.0s to 1.17s (3.4σ). Temporal anomaly fires; trust drops to ≈0.70 (WATCH band, still at/above the 0.60 GPS-guided TSS minimum, C); B's icon begins to fade; trust trace beside it reads *"B-link cadence degraded 18s ago — investigating."* *(`UR-02`, `UR-03`, `FR-01`, `FR-06`, `FR-08`)*
 3. **`B-0:55`** — CRC error rate climbs 0.2% → 6% (past the 5% threshold). Trust ≈0.65, still WATCH. Trust trace updates: *"B-link: 6% corrupted frames, cadence 1.17s."* *(`UR-03`, `FR-02`, `FR-08`)*
-4. **`B-1:05`** — Spatial discrimination clears blanket-EMI hypothesis. Side panel: *"Degradation directional, vicinity B's flank corridor. Neighbors A, C unaffected."* A and C hold at 1.00; B's spatial component reads localized (0.60). *(`UR-04`, `FR-03`)*
+4. **`B-1:05`** — Spatial discrimination clears blanket-EMI hypothesis. Side panel: *"Degradation localized at B — no degrading unit within 500 m. A, C healthy."* A and C hold at 1.00 on their own `FR-05` scores; B's spatial component reads localized (0.60): no unit sits within 500 m of B in the km-scale layout. *(`UR-04`, `FR-03`)*
 5. **`B-1:15`** — The jammer reaches full power: cadence 1.0s → 6.1s gap, CRC 0.2% → 14%, and the fingerprint matcher names the candidate jammer profiles, ranked: `ground_based_gps_uhf_barrage (1.00) → affected: Excalibur, JDAM-ER, Switchblade 300, GMLRS-U`. Two more candidates shown with their munitions-affected lists; per-candidate citations on hover. B's trust falls to 0.13, its first score below the 0.60 GPS-guided TSS minimum (C → E5). *(`UR-04`, `UR-09`, `FR-04`, `FR-04a`)* **AoE (planned, `FR-04b` / `FR-06a`):** the high match (6/6, leading by ≥ 2/6) triggers the first estimate. The COP shows the civil-GNSS area of effect — 90% fill, 50% dashed outline — labelled `Est. GPS denial · Pole-21-class · 90% · 3 s ago · 4 degraded / 4 healthy`, and the card lists *"Inside: OBS B (AB1001 observer) — 90%"*. **No jammer point, no bearing line, no ring:** the emitter's position is known only to the simulator. *(`HS-20`, `HS-21`, `HS-22`, `HS-24`)*
 6. **`B-1:20` (the wedge) — call for fire at B fails TSS in-row.** At `B-1:12` OBS B (FO) sends a call for fire, AB1001, for M982 Excalibur (`fires/mission/AB1001`); it enters the mission queue as TSS PASS (B C3). At `B-1:15` B drops to E5 and the row — not the screen — changes: `FM AB1001 | OBS B (FO) | M982 (GPS) | TSS: FAIL — RELIABILITY E5 (min C) · AGE 1s OK`, `Rec. method of control: DO NOT LOAD (M982)`, branches `[1] Shift → M795 HE, adjust fire` / `[2] Confirm via alt channel` / `[3] AT MY COMMAND — re-rate in 60 s` / `[4] Accept risk… (FSO)`. No modal, no scrim, focus unchanged. Adam presses `1`: the mission re-plans to M795 HE, TSS PASS (unguided is not gated); the branch is logged with mission id, TSS result, J, report age, role and DTG. *(`HS-05`, `UR-06`, `UR-07`, `FR-07`)* **SHOULD (`FR-07a`), deferred from the AoE MVP:** the row adds `ADVISORY OBS B in est. GPS denial (90%)`; the verdict and branches do not change. *(`HS-23`)*
 7. **`B-1:50` → `B-2:15` — the estimate follows its evidence (planned).** B repositions and reports healthy; the estimate recomputes within 6 s and the area edge moves. At `B-2:15` the jammer is off: 10 s later the area is outline-only, *"Last est. HHMMZ"*; at +120 s it is retired. Each change is an after-action line. *(`HS-21`, `HS-24`, `HS-25`, `FR-04b`, `FR-06a`)*
+
+> **Simulator decisions behind these beats ([ASM], `services/comms-sim/src/comms_sim/scenarios/avdiivka.py`).** Every symptom comes from one hidden two-module EW site through a stated link budget; nothing is scripted per unit. Two modelling decisions are assumptions, calibrated on B:
+> - **Per-net control stations.** Each unit's comms signal is its own net control station's signal at the unit (fire-support, command and battery nets; 50 W, 10 m masts). The jammer-to-signal ratio is formed per unit against that station.
+> - **Net-sync latch.** A link has two states. In sync, any positive margin costs about one retry in six frames (1.17 s). Once the margin reaches 9 dB the radio loses net sync and falls back to a robust mode whose cadence grows with the margin, and it re-syncs only when the margin drops below 0 dB. This hysteresis is why B at 1:50 shows a lower CRC than at 0:55 (4% vs 6%) but a longer cadence (1.8 s vs 1.17 s).
+> - **Side effect:** the observers D and H share B's fire-support net, so their comms also degrade from `B-0:45`. These values are recorded as goldens, not pinned; the beats above pin only A, B and C.
 
 The **30 seconds that win the demo are 1:15 → 1:50.** Everything else is setup or recovery.
 
@@ -193,12 +198,12 @@ flowchart LR
       "named_systems": ["R-330Zh Zhitel", "Pole-21"],
       "score": 1.0,
       "munitions_affected": ["Excalibur", "JDAM-ER", "Switchblade 300", "GMLRS-U"],
-      "source_citation": "Bronk RUSI 2024"
+      "source_citation": "Bronk, Reynolds & Watling, RUSI \"The Russian Air War and Ukrainian Requirements for Air Defence\" (Nov 2022); NTC REB Pole-21E manufacturer page (archived 2018-01-15)"
     },
     {
       "method_id": "pulsed_uhf_wide",
       "named_systems": ["Lorandit"],
-      "score": 0.5,
+      "score": 0.6666666666666666,
       "munitions_affected": ["FPV C2 link", "Switchblade 300"],
       "source_citation": "JAPCC 2023"
     },

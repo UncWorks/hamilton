@@ -12,6 +12,7 @@
 import { useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
 import { AOE_DASH_PX, AOE_EDGE50_PX, AOE_EDGE90_PX, AOE_FILL_ALPHA, AOE_RGB, cssRgb } from '@/lib/aoe-style';
 import type { AoeDisplayState } from '@/lib/emitter-estimate';
+import { nudgeLabelRect } from '@/lib/aoe';
 
 const plate: CSSProperties = {
   background: 'oklch(14% 0.01 250 / 0.86)',
@@ -68,6 +69,10 @@ export interface AoeScreenProps {
   /** Current fade-in opacity (1 = done / reduced motion). */
   opacity: number;
   reducedMotion: boolean;
+  /** Screen centres of the drawn unit symbols / stacks; the label plate is nudged off them. */
+  avoid?: readonly { x: number; y: number }[];
+  /** Symbol box size in px (LIVE_SYMBOL_PX). */
+  avoidPx?: number;
 }
 
 /** Label + key + state marker, inside SpineOverlay (below the symbols). */
@@ -75,15 +80,19 @@ export function AoeScreen(p: AoeScreenProps) {
   const drawn = p.layers.length > 0;
   const labelRef = useRef<HTMLDivElement>(null);
   const [labelW, setLabelW] = useState(0);
+  const [labelH, setLabelH] = useState(0);
   useLayoutEffect(() => {
     const w = labelRef.current?.offsetWidth ?? 0;
+    const h = labelRef.current?.offsetHeight ?? 0;
     if (w && w !== labelW) setLabelW(w);
+    if (h && h !== labelH) setLabelH(h);
   });
   let labelEl = null;
   if (p.label && p.anchor && drawn) {
     const est = labelW || p.label.length * 7.5 + 24;
     const x = Math.min(Math.max(p.anchor.x - est / 2, 8), Math.max(8, p.viewport.width - est - 8));
-    const y = Math.min(Math.max(p.anchor.y - 34, 48), Math.max(48, p.viewport.height - 60));
+    const y0 = Math.min(Math.max(p.anchor.y - 34, 48), Math.max(48, p.viewport.height - 60));
+    const y = nudgeLabelRect({ x, y: y0, w: est, h: labelH || 24 }, p.avoid ?? [], p.avoidPx ?? 32, p.viewport).y;
     labelEl = (
       <div
         ref={labelRef}
