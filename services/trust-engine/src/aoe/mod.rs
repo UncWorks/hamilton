@@ -163,7 +163,12 @@ impl AoeTracker {
 
     /// Evaluate the trigger: the best candidate list over every unit with an
     /// RF observation (highest top count, then lead, then source id).
-    pub fn trigger(&mut self, units: &[UnitView], library: &[FingerprintEntry], now_ms: i64) -> Option<TriggerReading> {
+    pub fn trigger(
+        &mut self,
+        units: &[UnitView],
+        library: &[FingerprintEntry],
+        now_ms: i64,
+    ) -> Option<TriggerReading> {
         for u in units {
             let e = self
                 .link
@@ -175,10 +180,9 @@ impl AoeTracker {
         }
         let hold = self.cfg.degraded_hold_ms;
         let degraded_held = units.iter().any(|u| {
-            let gnss = u
-                .gnss
-                .as_ref()
-                .is_some_and(|g| g.current.state == ClassState::Degraded && now_ms - g.since_ms >= hold);
+            let gnss = u.gnss.as_ref().is_some_and(|g| {
+                g.current.state == ClassState::Degraded && now_ms - g.since_ms >= hold
+            });
             let link = self
                 .link
                 .get(&u.source_id)
@@ -193,10 +197,17 @@ impl AoeTracker {
             let Some(top) = ranked.first().filter(|c| !c.method_id.is_empty()) else {
                 continue;
             };
-            let cand = (top.matched, lead_dimensions(&ranked), u.source_id.as_str(), top.method_id.clone());
+            let cand = (
+                top.matched,
+                lead_dimensions(&ranked),
+                u.source_id.as_str(),
+                top.method_id.clone(),
+            );
             let better = match &best {
                 None => true,
-                Some(b) => (cand.0, cand.1, std::cmp::Reverse(cand.2)) > (b.0, b.1, std::cmp::Reverse(b.2)),
+                Some(b) => {
+                    (cand.0, cand.1, std::cmp::Reverse(cand.2)) > (b.0, b.1, std::cmp::Reverse(b.2))
+                }
             };
             if better {
                 best = Some(cand);
@@ -238,15 +249,21 @@ impl AoeTracker {
             );
             let hash = inputs::evidence_hash(&r.method_id, &evidence, &self.cfg.frame);
             let method_match = f64::from(r.top_matched) / 6.0;
-            let compute = |me: &Self| {
-                let est = estimator.estimate(
-                    &inputs::to_est_evidence(&evidence, now_ms),
-                    &method,
-                    &inputs::receivers(receivers),
-                    &me.cfg.frame.grid(&evidence),
-                );
-                let unbounded = est.state == EstState::Unbounded
-                    || !inputs::edge_observed(&est.aoe, &evidence, &me.cfg.frame);
+            let est_evidence = inputs::to_est_evidence(&evidence, now_ms);
+            let est_receivers = inputs::receivers(receivers);
+            let Some(grid) = inputs::fit_grid(
+                &est_evidence,
+                &method,
+                &est_receivers,
+                self.cfg.frame.flot.clone(),
+            ) else {
+                return out;
+            };
+            // `unbounded` (no healthy same-class unit within R_max of a
+            // degraded one) is decided by the estimator.
+            let compute = |_: &Self| {
+                let est = estimator.estimate(&est_evidence, &method, &est_receivers, &grid);
+                let unbounded = est.state == EstState::Unbounded;
                 (est, unbounded)
             };
             match self.episode.take() {
@@ -331,8 +348,11 @@ pub fn estimate_id(open_ms: i64) -> String {
     format!("J1-{}", at(open_ms).format("%Y%m%dT%H%M%SZ"))
 }
 
-fn round(v: f64, step: f64) -> f64 {
-    (v / step).round() * step
+/// Round to `dp` decimal places (multiply-then-divide, so 5 dp stays exact
+/// in its shortest JSON form).
+fn round_dp(v: f64, dp: i32) -> f64 {
+    let k = 10f64.powi(dp);
+    (v * k).round() / k
 }
 
 fn to_payload(ep: &Episode, now_ms: i64, valid_for_ms: i64) -> EmitterEstimatePayload {
@@ -369,7 +389,11 @@ fn to_payload(ep: &Episode, now_ms: i64, valid_for_ms: i64) -> EmitterEstimatePa
         } else {
             e.emitter.region90.clone()
         }),
-        area90_km2: if no_polygons { 0.0 } else { e.emitter.area90_km2 },
+        area90_km2: if no_polygons {
+            0.0
+        } else {
+            e.emitter.area90_km2
+        },
         erp_dbm_range: e.emitter.erp_dbm_range,
     };
     EmitterEstimatePayload {
@@ -401,9 +425,9 @@ fn to_payload(ep: &Episode, now_ms: i64, valid_for_ms: i64) -> EmitterEstimatePa
                     ClassState::Healthy => EvidenceState::Healthy,
                 },
                 rx_class: v.rx_class,
-                age_s: round((now_ms - v.observed_ms).max(0) as f64 / 1000.0, 0.1),
-                lat: round(v.lat, 1e-5),
-                lon: round(v.lon, 1e-5),
+                age_s: round_dp((now_ms - v.observed_ms).max(0) as f64 / 1000.0, 1),
+                lat: round_dp(v.lat, 5),
+                lon: round_dp(v.lon, 5),
             })
             .collect(),
         evidence_hash: ep.hash.clone(),

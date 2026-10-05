@@ -22,9 +22,6 @@ pub const SIGMA_DB: f64 = 6.0;
 pub struct AoFrame {
     pub origin: est::LatLon,
     pub flot: Option<est::Flot>,
-    /// Grid padding around the evidence bounding box, km (≥ the largest
-    /// hypothesis denial radius, so the AoE edge fits).
-    pub pad_km: f64,
 }
 
 impl AoFrame {
@@ -36,11 +33,7 @@ impl AoFrame {
             lat: 48.14,
             lon: 37.745,
         };
-        let frame = Self {
-            origin,
-            flot: None,
-            pad_km: 40.0,
-        };
+        let frame = Self { origin, flot: None };
         let south = frame.to_latlon(1.0, -12.0);
         let north = frame.to_latlon(1.0, 12.0);
         Self {
@@ -72,12 +65,6 @@ impl AoFrame {
         }
     }
 
-    pub fn distance_km(&self, a: (f64, f64), b: (f64, f64)) -> f64 {
-        let (ax, ay) = self.to_xy(a.0, a.1);
-        let (bx, by) = self.to_xy(b.0, b.1);
-        (ax - bx).hypot(ay - by)
-    }
-
     /// Position quantised to the 250 m grid (evidence hash).
     pub fn quantise(&self, lat: f64, lon: f64) -> (i64, i64) {
         let (x, y) = self.to_xy(lat, lon);
@@ -86,26 +73,63 @@ impl AoFrame {
             (y / QUANTUM_KM).round() as i64,
         )
     }
+}
 
-    /// Grid over the evidence bounding box ± `pad_km`, snapped to whole km.
-    pub fn grid(&self, evidence: &[EvidenceItem]) -> est::Grid {
-        let (mut x0, mut x1, mut y0, mut y1) = (0.0_f64, 0.0_f64, 0.0_f64, 0.0_f64);
-        for e in evidence {
-            let (x, y) = self.to_xy(e.lat, e.lon);
-            x0 = x0.min(x);
-            x1 = x1.max(x);
-            y0 = y0.min(y);
-            y1 = y1.max(y);
+/// Hard cap on grid cells (FR-04b (5): compute < 50 ms; β measured 14 ms at
+/// ~20k cells and ~58 ms at ~82k).
+pub const MAX_GRID_CELLS: usize = 40_000;
+/// Base grid step, m.
+pub const BASE_CELL_M: f64 = 250.0;
+
+/// Estimator grid: the DEGRADED units' bounding box ± R_max (the method's
+/// largest denial radius over the published classes), centred on that box
+/// (`trust_estimator::grid::fit_grid`). If it would exceed
+/// [`MAX_GRID_CELLS`], the cell doubles (250 → 500 → 1000 m) until it fits;
+/// the step used is echoed in `model.grid_m`. With nothing degraded the box
+/// covers every observation.
+pub fn fit_grid(
+    evidence: &est::Evidence,
+    method: &est::MethodModel,
+    receivers: &est::Receivers,
+    flot: Option<est::Flot>,
+) -> Option<est::Grid> {
+    let degraded: Vec<est::Observation> = evidence
+        .observations
+        .iter()
+        .filter(|o| o.state == est::UnitState::Degraded)
+        .cloned()
+        .collect();
+    let box_obs = if degraded.is_empty() {
+        &evidence.observations
+    } else {
+        &degraded
+    };
+    let r_max = receivers
+        .classes
+        .iter()
+        .map(|c| est::r_max_km(method, receivers, c.js_threshold_db))
+        .fold(0.0, f64::max);
+    let mut cell_m = BASE_CELL_M;
+    loop {
+        let g = est::grid::fit_grid(
+            box_obs,
+            r_max,
+            cell_m,
+            flot.clone(),
+            est::PriorModel::default(),
+        )?;
+        if grid_cells(&g) <= MAX_GRID_CELLS || cell_m >= 4_000.0 {
+            return Some(g);
         }
-        est::Grid {
-            origin: self.origin,
-            cell_m: QUANTUM_KM * 1000.0,
-            x_km: [(x0 - self.pad_km).floor(), (x1 + self.pad_km).ceil()],
-            y_km: [(y0 - self.pad_km).floor(), (y1 + self.pad_km).ceil()],
-            flot: self.flot.clone(),
-            prior: est::PriorModel::default(),
-        }
+        cell_m *= 2.0;
     }
+}
+
+/// Cell count of a grid (centres from `x_km[0]` to `x_km[1]` inclusive).
+pub fn grid_cells(g: &est::Grid) -> usize {
+    let res = g.cell_m / 1000.0;
+    let n = |r: [f64; 2]| ((r[1] - r[0]) / res).round() as usize + 1;
+    n(g.x_km) * n(g.y_km)
 }
 
 /// One binary GNSS observation used as estimator evidence.
@@ -124,9 +148,6 @@ pub struct EvidenceItem {
 #[derive(Debug, Clone)]
 pub struct UnitView {
     pub source_id: String,
-    pub lat: f64,
-    pub lon: f64,
-    pub rx_class: Option<wire::RxClass>,
     pub gnss: Option<GnssTrack>,
     /// FR-01 / FR-02 link verdict (`spatial::is_degrading`). UHF-class
     /// evidence: dimension 6 and the trigger only, never the GNSS contours (K2).
@@ -196,10 +217,7 @@ pub fn evidence_hash(method_id: &str, evidence: &[EvidenceItem], frame: &AoFrame
         .iter()
         .map(|e| {
             let (qx, qy) = frame.quantise(e.lat, e.lon);
-            format!(
-                "{}|{:?}|{:?}|{qx}|{qy}",
-                e.source_id, e.rx_class, e.state
-            )
+            format!("{}|{:?}|{:?}|{qx}|{qy}", e.source_id, e.rx_class, e.state)
         })
         .collect();
     keys.sort();
@@ -301,27 +319,4 @@ pub fn receivers(table: &ReceiverTable) -> est::Receivers {
             })
             .collect(),
     }
-}
-
-/// `unbounded` rule (plan E15): for a class with degraded evidence, the edge
-/// is observed only if some healthy same-class unit lies within R_max (the
-/// layer's largest hypothesis denial radius) of a degraded one.
-pub fn edge_observed(layers: &[est::AoeLayer], evidence: &[EvidenceItem], frame: &AoFrame) -> bool {
-    layers.iter().all(|layer| {
-        let class = to_wire_class(layer.rx_class);
-        let r_max = layer.radius_km_range[1];
-        let of = |s: ClassState| {
-            evidence
-                .iter()
-                .filter(move |e| e.rx_class == class && e.state == s)
-        };
-        let mut degraded = of(ClassState::Degraded).peekable();
-        if degraded.peek().is_none() {
-            return true;
-        }
-        degraded.any(|d| {
-            of(ClassState::Healthy)
-                .any(|h| frame.distance_km((d.lat, d.lon), (h.lat, h.lon)) <= r_max)
-        })
-    })
 }

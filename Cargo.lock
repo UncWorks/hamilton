@@ -2446,6 +2446,7 @@ dependencies = [
  "tracing-subscriber",
  "trust-aggregator",
  "trust-detectors",
+ "trust-estimator",
  "trust-library",
  "trust-server",
  "trust-transport",
